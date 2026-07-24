@@ -1,0 +1,42 @@
+@import '../design-system/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Timetable Cell Utilities */
+.slot-cell {
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  padding: 6px;
+  transition: all 150ms ease-in-out;
+}
+
+.slot-cell--clash {
+  background-color: var(--slot-clash);
+  border-left: 4px solid var(--color-danger);
+}
+
+.slot-cell--lecture {
+  background-color: var(--slot-lecture);
+  border-left: 3px solid var(--color-primary);
+}
+
+.slot-cell--lab {
+  background-color: var(--slot-lab);
+  border-left: 3px solid var(--color-secondary);
+}
+
+.slot-cell--tutorial {
+  background-color: var(--slot-tutorial);
+  border-left: 3px solid var(--color-success);
+}

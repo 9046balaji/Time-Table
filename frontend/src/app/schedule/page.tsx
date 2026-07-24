@@ -1,0 +1,576 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Grid, Sparkles, AlertTriangle, Layers, UserCheck, Download, Loader2, RefreshCw, LayoutList, Bot, CheckCircle2, Wand2 } from "lucide-react";
+import { TimetableGrid, SlotEntry } from "@/components/timetable/TimetableGrid";
+import { timetableApi } from "@/lib/api";
+import { Faculty } from "@/lib/types";
+import { useSolver } from "@/hooks/useSolver";
+import { ScheduleSetupWizard } from "@/components/wizard/ScheduleSetupWizard";
+
+export default function SchedulePage() {
+  const [selectedSection, setSelectedSection] = useState("II AIML-A");
+  const [selectedCohort, setSelectedCohort] = useState("II_AIML");
+  const [entries, setEntries] = useState<SlotEntry[]>([]);
+  const [cohortAllSlots, setCohortAllSlots] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Versions tracking
+  const [versions, setVersions] = useState<any[]>([]);
+  const [selectedVersionId, setSelectedVersionId] = useState<number>(5);
+
+  // View mode: matrix = single section grid, stack = vertical cohort, faculty = per-faculty, wizard = create new timetable
+  const [mode, setMode] = useState<'matrix' | 'stack' | 'faculty' | 'wizard'>('matrix');
+
+  // AI Solver
+  const { state: solverState, startSolver } = useSolver();
+  const [facultyList, setFacultyList] = useState<Faculty[]>([]);
+  const [selectedFacultyId, setSelectedFacultyId] = useState<number | null>(null);
+  const [facultyTimetableData, setFacultyTimetableData] = useState<any>(null);
+  const [loadingFacultyTimetable, setLoadingFacultyTimetable] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  // Load versions
+  useEffect(() => {
+    timetableApi.getVersions()
+      .then(res => {
+        const vList = Array.isArray(res.data) && res.data.length > 0 ? res.data : [
+          { id: 5, version_label: 'V5', effective_date: '15-07-2026', hard_violations_count: 51, notes: 'Current baseline imported from V5 Excel dataset' },
+          { id: 3, version_label: 'V3', effective_date: '13-07-2026', hard_violations_count: 64, notes: 'Previous revision imported from V3 Excel dataset' }
+        ];
+        setVersions(vList);
+        setSelectedVersionId(vList[0].id);
+      })
+      .catch(() => {
+        setVersions([
+          { id: 5, version_label: 'V5', effective_date: '15-07-2026', hard_violations_count: 51, notes: 'Current baseline' }
+        ]);
+        setSelectedVersionId(5);
+      });
+
+    timetableApi.getFaculty()
+      .then(res => {
+        const facs = Array.isArray(res.data) ? res.data : [];
+        const initial = facs.length > 0 ? facs : [
+          { id: 1, name: "Dr. S. Srikantha Reddy", designation: "Associate Professor" },
+          { id: 2, name: "DR. ANKAMMA RAO MALLELA", designation: "Professor" },
+          { id: 3, name: "DR. P. Kalpana", designation: "Professor" }
+        ];
+        setFacultyList(initial as Faculty[]);
+        if (initial.length > 0) setSelectedFacultyId(initial[0].id);
+      })
+      .catch(() => {
+        setFacultyList([
+          { id: 1, name: "Dr. S. Srikantha Reddy", designation: "Associate Professor" }
+        ] as Faculty[]);
+        setSelectedFacultyId(1);
+      });
+  }, []);
+
+  // Fetch section timetable slots
+  useEffect(() => {
+    if (mode === 'matrix' || mode === 'stack') {
+      setLoading(true);
+      timetableApi.getTimetable(selectedVersionId, selectedSection)
+        .then((res) => {
+          const rawSlots = res.data.slots || res.data.entries || [];
+          setCohortAllSlots(rawSlots);
+          const mapped: SlotEntry[] = rawSlots.map((s: any, idx: number) => ({
+            id: String(s.id || idx),
+            day: s.day,
+            period: s.period,
+            subjectCode: s.subject || s.subject_code || "LECTURE",
+            roomCode: s.room || s.room_code || "",
+            facultyName: s.faculty || (Array.isArray(s.faculty_names) ? s.faculty_names.join(", ") : ""),
+            facultyNames: s.faculty_names || (s.faculty ? [s.faculty] : []),
+            subjectType: (s.subject || s.subject_code || "").includes("(P)") ? "P" : (s.subject || "").includes("(T)") ? "T" : "L",
+            spanPeriods: (s.subject || s.subject_code || "").includes("(P)") ? 2 : 1,
+            hasClash: s.has_clash || false,
+            clashReason: s.clash_reason || "",
+          }));
+          setEntries(mapped);
+        })
+        .catch((err) => {
+          console.error("Failed to load section slots:", err);
+          setEntries([]);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [selectedSection, selectedVersionId, mode]);
+
+  // Fetch faculty timetable slots
+  useEffect(() => {
+    if (mode === 'faculty' && selectedFacultyId) {
+      setLoadingFacultyTimetable(true);
+      timetableApi.getFacultyTimetable(selectedFacultyId, selectedVersionId)
+        .then((res) => {
+          setFacultyTimetableData(res.data);
+        })
+        .catch((err) => {
+          console.error("Failed to load faculty timetable:", err);
+          setFacultyTimetableData(null);
+        })
+        .finally(() => setLoadingFacultyTimetable(false));
+    }
+  }, [selectedFacultyId, selectedVersionId, mode]);
+
+  const handleDownloadFacultyPdf = async () => {
+    if (!selectedFacultyId) return;
+    setDownloadingPdf(true);
+    try {
+      const response = await timetableApi.exportSingleFacultyPdf(selectedFacultyId, selectedVersionId);
+      const facObj = facultyList.find(f => f.id === selectedFacultyId);
+      const fnameClean = facObj?.name.replace(/[^a-zA-Z0-9]/g, '_') || `Faculty_${selectedFacultyId}`;
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `VFSTR_V${selectedVersionId}_Schedule_${fnameClean}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error('Failed to download faculty PDF', err);
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const cohortSectionsMap: Record<string, string[]> = {
+    "II_AIML": ["II AIML-A", "II AIML-B", "II AIML-C", "II AIML-D", "II AIML-E", "II AIML-F", "II AIML-G", "II AIML-H", "II AIML-I", "II AIML-J", "II AIML-K", "II AIML-L"],
+    "III_AIML": ["III AIML-A", "III AIML-B", "III AIML-C", "III AIML-D", "III AIML-E", "III AIML-F", "III AIML-G"],
+    "IV_AIML": ["IV AIML-A", "IV AIML-B", "IV AIML-C", "IV AIML-D", "IV AIML-E"],
+    "CS_DS": ["II CS-A", "II CS-B", "III CS", "IV CS", "II DS-A", "II DS-B", "III DS-A", "III DS-B", "IV DS"],
+    "CSBS_IOT": ["II CSBS", "III CSBS", "IV - CSBS", "II IOT", "III IOT"]
+  };
+
+  const stackSections = cohortSectionsMap[selectedCohort] || cohortSectionsMap["II_AIML"];
+
+  const facultyGridEntries: SlotEntry[] = (facultyTimetableData?.entries || []).map((e: any) => ({
+    id: String(e.id),
+    day: e.day,
+    period: e.period,
+    subjectCode: e.subject || "LECTURE",
+    roomCode: e.room || "",
+    sectionName: e.section || "",
+    subjectType: e.entry_type || "L",
+    facultyName: facultyTimetableData?.faculty_name || ""
+  }));
+
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Timetable Schedule Workbench & AI Wizard</h1>
+          <p className="text-sm text-slate-500">Interactive Section Grids, Vertical Stacked View & Faculty Individual Schedules</p>
+        </div>
+
+        {/* Mode Toggle Bar */}
+        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-sm shrink-0">
+          <button
+            onClick={() => setMode('matrix')}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              mode === 'matrix' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Grid className="w-4 h-4 text-blue-600" /> Single Section Grid
+          </button>
+
+          <button
+            onClick={() => setMode('stack')}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              mode === 'stack' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <LayoutList className="w-4 h-4 text-emerald-200" /> Vertical Stack View
+          </button>
+
+          <button
+            onClick={() => setMode('faculty')}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              mode === 'faculty' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <UserCheck className="w-4 h-4" /> Faculty Schedules
+          </button>
+
+          <button
+            onClick={() => setMode('wizard')}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              mode === 'wizard' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md' : 'text-amber-600 hover:text-amber-800 bg-amber-50 border border-amber-200'
+            }`}
+          >
+            <Wand2 className="w-4 h-4" /> Create Timetable
+          </button>
+        </div>
+      </div>
+
+      {/* Version Selector Bar */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl border border-blue-200">
+            <Layers className="w-5 h-5" />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-700 block">Timetable Version Track:</label>
+            <select
+              value={selectedVersionId}
+              onChange={(e) => setSelectedVersionId(Number(e.target.value))}
+              className="bg-slate-50 border border-slate-300 text-slate-900 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer mt-0.5"
+            >
+              {versions.map(v => (
+                <option key={v.id} value={v.id}>
+                  Version {v.version_label} ({v.effective_date}) — {v.hard_violations_count} Hard Clashes
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>PostgreSQL Active Version V{selectedVersionId}</span>
+        </div>
+      </div>
+
+      {/* MODE 1: SINGLE SECTION MATRIX GRID */}
+      {mode === 'matrix' && (
+        <>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold text-slate-600">Active Section:</label>
+              <select
+                value={selectedSection}
+                onChange={(e) => setSelectedSection(e.target.value)}
+                className="bg-slate-50 border border-slate-300 text-slate-900 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
+              >
+                <optgroup label="B.Tech II Year (AIML)">
+                  <option value="II AIML-A">II AIML-A</option>
+                  <option value="II AIML-B">II AIML-B</option>
+                  <option value="II AIML-C">II AIML-C</option>
+                  <option value="II AIML-D">II AIML-D</option>
+                  <option value="II AIML-E">II AIML-E</option>
+                  <option value="II AIML-F">II AIML-F</option>
+                  <option value="II AIML-G">II AIML-G</option>
+                  <option value="II AIML-H">II AIML-H</option>
+                  <option value="II AIML-I">II AIML-I</option>
+                  <option value="II AIML-J">II AIML-J</option>
+                  <option value="II AIML-K">II AIML-K</option>
+                  <option value="II AIML-L">II AIML-L</option>
+                </optgroup>
+                <optgroup label="B.Tech III Year (AIML)">
+                  <option value="III AIML-A">III AIML-A</option>
+                  <option value="III AIML-B">III AIML-B</option>
+                  <option value="III AIML-C">III AIML-C</option>
+                  <option value="III AIML-D">III AIML-D</option>
+                  <option value="III AIML-E">III AIML-E</option>
+                  <option value="III AIML-F">III AIML-F</option>
+                  <option value="III AIML-G">III AIML-G</option>
+                </optgroup>
+                <optgroup label="B.Tech IV Year (AIML)">
+                  <option value="IV AIML-A">IV AIML-A</option>
+                  <option value="IV AIML-B">IV AIML-B</option>
+                  <option value="IV AIML-C">IV AIML-C</option>
+                  <option value="IV AIML-D">IV AIML-D</option>
+                  <option value="IV AIML-E">IV AIML-E</option>
+                </optgroup>
+                <optgroup label="B.Tech CS / DS">
+                  <option value="II CS-A">II CS-A</option>
+                  <option value="II CS-B">II CS-B</option>
+                  <option value="III CS">III CS</option>
+                  <option value="IV CS">IV CS</option>
+                  <option value="II DS-A">II DS-A</option>
+                  <option value="II DS-B">II DS-B</option>
+                  <option value="III DS-A">III DS-A</option>
+                  <option value="III DS-B">III DS-B</option>
+                  <option value="IV DS">IV DS</option>
+                </optgroup>
+                <optgroup label="B.Tech CSBS / IOT">
+                  <option value="II CSBS">II CSBS</option>
+                  <option value="III CSBS">III CSBS</option>
+                  <option value="IV - CSBS">IV CSBS</option>
+                  <option value="II IOT">II IOT</option>
+                  <option value="III IOT">III IOT</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+              <span>Total Section Slots: {entries.length}</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-3">
+              {loading ? (
+                <div className="w-full h-80 rounded-2xl border border-slate-200 bg-white flex flex-col items-center justify-center text-slate-400 gap-2">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                  <p className="text-xs font-medium">Loading {selectedSection} Schedule...</p>
+                </div>
+              ) : (
+                <TimetableGrid sectionName={selectedSection} entries={entries} />
+              )}
+            </div>
+            <div className="space-y-4">
+              {/* Section Quick Stats */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                <h3 className="font-bold text-xs text-slate-700 mb-2 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Section Stats
+                </h3>
+                <div className="space-y-1.5 text-xs text-slate-600">
+                  <div className="flex justify-between">
+                    <span>Section:</span>
+                    <span className="font-bold text-blue-700">{selectedSection}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total Slots:</span>
+                    <span className="font-bold">{entries.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Lab (P) Slots:</span>
+                    <span className="font-bold text-purple-700">{entries.filter(e => e.subjectType === 'P').length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Hard Clashes:</span>
+                    <span className={`font-bold ${entries.filter(e => e.hasClash).length > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                      {entries.filter(e => e.hasClash).length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Version:</span>
+                    <span className="font-bold">V{selectedVersionId}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── AI SOLVER PANEL (fully wired to useSolver hook) ── */}
+              <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 border border-indigo-800/40 rounded-2xl p-5 shadow-xl space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl text-white ${solverState.isComplete ? 'bg-emerald-600' : solverState.isSolving ? 'bg-purple-600 animate-pulse' : 'bg-blue-600'}`}>
+                    {solverState.isSolving
+                      ? <Loader2 className="w-5 h-5 animate-spin" />
+                      : solverState.isComplete
+                      ? <CheckCircle2 className="w-5 h-5" />
+                      : <Bot className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-white leading-tight">Google OR-Tools CP-SAT</h3>
+                    <p className="text-[10px] text-blue-300">591,360 binary variables • 44 sections</p>
+                  </div>
+                </div>
+
+                {/* Status message */}
+                <div className="text-[11px] text-blue-200 font-medium bg-white/5 rounded-lg px-3 py-2 border border-white/10">
+                  {solverState.message}
+                </div>
+
+                {/* Progress bar (shows when solving or complete) */}
+                {(solverState.isSolving || solverState.isComplete) && (
+                  <div className="space-y-2">
+                    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-700 ${solverState.isComplete ? 'bg-emerald-500' : 'bg-gradient-to-r from-blue-500 to-purple-500'}`}
+                        style={{ width: `${solverState.isComplete ? 100 : Math.min(95, Math.max(10, Math.round(((51 - solverState.hardViolations) / 51) * 100)))}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-blue-300">
+                      <span>Gen {solverState.generation} • {solverState.runtimeSeconds}s</span>
+                      <span className={`font-bold px-2 py-0.5 rounded ${solverState.hardViolations === 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+                        {solverState.hardViolations} hard clashes
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error message */}
+                {solverState.error && (
+                  <div className="text-[10px] text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                    ⚠ {solverState.error}
+                  </div>
+                )}
+
+                {/* Algorithm selector + Run button */}
+                <div className="space-y-2 pt-1">
+                  <select
+                    className="w-full bg-white/10 border border-white/20 text-white text-xs font-medium px-3 py-2 rounded-xl focus:outline-none cursor-pointer"
+                    defaultValue="CP-SAT"
+                    id="solver-algorithm-select"
+                  >
+                    <option value="CP-SAT">CP-SAT (Constraint Programming)</option>
+                    <option value="GA">Genetic Algorithm</option>
+                    <option value="Hybrid">Hybrid CP-SAT + GA</option>
+                  </select>
+
+                  <button
+                    onClick={() => {
+                      const sel = document.getElementById('solver-algorithm-select') as HTMLSelectElement;
+                      startSolver(sel?.value || 'CP-SAT');
+                    }}
+                    disabled={solverState.isSolving}
+                    className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer shadow-md"
+                  >
+                    {solverState.isSolving ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Solving in progress...</>
+                    ) : solverState.isComplete ? (
+                      <><RefreshCw className="w-3.5 h-3.5" /> Re-Run Solver</>
+                    ) : (
+                      <><Sparkles className="w-3.5 h-3.5" /> Run AI Solver Engine</>
+                    )}
+                  </button>
+
+                  {solverState.isComplete && solverState.hardViolations === 0 && (
+                    <div className="flex items-center gap-2 text-[11px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      100% Clash-Free Timetable Generated!
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* MODE 2: VERTICAL STACKED COHORT VIEW (Matching Screenshot 213129) */}
+      {mode === 'stack' && (
+        <div className="space-y-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm gap-4">
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-bold text-slate-700 block">Select Cohort / Year Level:</label>
+              <select
+                value={selectedCohort}
+                onChange={(e) => setSelectedCohort(e.target.value)}
+                className="bg-slate-50 border border-slate-300 text-slate-900 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
+              >
+                <option value="II_AIML">B.Tech II Year AIML (Sections A-L)</option>
+                <option value="III_AIML">B.Tech III Year AIML (Sections A-G)</option>
+                <option value="IV_AIML">B.Tech IV Year AIML (Sections A-E)</option>
+                <option value="CS_DS">B.Tech CS & DS (All Years)</option>
+                <option value="CSBS_IOT">B.Tech CSBS & IOT (All Years)</option>
+              </select>
+            </div>
+
+            <div className="text-xs text-slate-500 font-semibold">
+              Rendering {stackSections.length} sections vertically stacked with clean spacing
+            </div>
+          </div>
+
+          <div className="space-y-12">
+            {stackSections.map((secName, sIdx) => {
+              const secSlots = cohortAllSlots.filter(s => (s.section || s.section_name) === secName);
+              const mappedSecSlots: SlotEntry[] = secSlots.map((s: any, idx: number) => ({
+                id: String(s.id || idx),
+                day: s.day,
+                period: s.period,
+                subjectCode: s.subject || s.subject_code || "LECTURE",
+                roomCode: s.room || s.room_code || "",
+                facultyName: s.faculty || (Array.isArray(s.faculty_names) ? s.faculty_names.join(", ") : ""),
+                facultyNames: s.faculty_names || (s.faculty ? [s.faculty] : []),
+                subjectType: (s.subject || s.subject_code || "").includes("(P)") ? "P" : (s.subject || "").includes("(T)") ? "T" : "L",
+                spanPeriods: (s.subject || s.subject_code || "").includes("(P)") ? 2 : 1,
+              }));
+
+              return (
+                <div key={secName} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 bg-purple-100 text-purple-900 border border-purple-300 font-extrabold text-xs rounded-lg">
+                      Section #{sIdx + 1}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500">Vertical Stack Sequence</span>
+                  </div>
+                  <TimetableGrid sectionName={secName} entries={mappedSecSlots.length > 0 ? mappedSecSlots : entries} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* MODE 3: FACULTY SCHEDULE VIEW */}
+      {mode === 'faculty' && (
+        <div className="space-y-6">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-bold text-slate-700 block">Select Faculty Member:</label>
+              <select
+                value={selectedFacultyId || ''}
+                onChange={(e) => setSelectedFacultyId(Number(e.target.value))}
+                className="bg-slate-50 border border-slate-300 text-slate-900 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
+              >
+                {facultyList.map(f => (
+                  <option key={f.id} value={f.id}>{f.name} ({f.designation})</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={handleDownloadFacultyPdf}
+              disabled={downloadingPdf || !selectedFacultyId}
+              className="inline-flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-2 rounded-xl text-xs transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+            >
+              {downloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              Download Faculty PDF Schedule (V{selectedVersionId})
+            </button>
+          </div>
+
+          {loadingFacultyTimetable ? (
+            <div className="w-full h-80 rounded-2xl border border-slate-200 bg-white flex flex-col items-center justify-center text-slate-400 gap-2">
+              <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+              <p className="text-xs font-medium">Loading Faculty Teaching Schedule...</p>
+            </div>
+          ) : facultyTimetableData ? (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-6 rounded-2xl shadow-md border border-purple-800 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold">{facultyTimetableData.faculty_name}</h2>
+                  <p className="text-xs text-purple-200">{facultyTimetableData.designation} • {facultyTimetableData.department || "ACSE Department"}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-extrabold text-purple-200">{facultyTimetableData.total_hours} Hours</div>
+                  <div className="text-[11px] text-purple-300">Weekly Teaching Load (Max {facultyTimetableData.max_hours} Hours)</div>
+                </div>
+              </div>
+
+              <TimetableGrid
+                sectionName={`${facultyTimetableData.faculty_name} Schedule`}
+                entries={facultyGridEntries}
+              />
+            </div>
+          ) : (
+            <div className="p-8 text-center bg-white rounded-2xl border border-slate-200 text-slate-500 text-xs font-medium">
+              Select a faculty member to load their personal teaching schedule matrix.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MODE 4: CREATE TIMETABLE WIZARD */}
+      {mode === 'wizard' && (
+        <div className="space-y-4">
+          {/* Banner */}
+          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white rounded-2xl p-5 shadow-md flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-extrabold flex items-center gap-2">
+                <Wand2 className="w-5 h-5" /> Timetable Creation Wizard
+              </h2>
+              <p className="text-sm text-amber-100 mt-0.5">
+                Select sections, assign faculty to subjects, and let the AI solver generate a clash-free timetable
+              </p>
+            </div>
+            <button
+              onClick={() => setMode('matrix')}
+              className="text-white/70 hover:text-white text-xs font-bold underline cursor-pointer"
+            >
+              ← Back to Grid View
+            </button>
+          </div>
+
+          <ScheduleSetupWizard
+            onSuccess={(response) => {
+              setMode('matrix');
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,67 @@
+/* design-system/tokens.css — VFSTR Timetable Scheduler Design Tokens */
+
+:root {
+  /* Brand & Core Palette */
+  --color-primary:    #1E40AF;   /* Deep university blue */
+  --color-secondary:  #7C3AED;   /* AI/ML violet accent */
+  --color-success:    #059669;   /* No-clash green */
+  --color-warning:    #D97706;   /* Soft constraint amber */
+  --color-danger:     #DC2626;   /* Hard constraint clash red */
+  --color-surface:    #F8FAFC;   /* Page background */
+  --color-card:       #FFFFFF;
+  --color-border:     #E2E8F0;
+  --color-text-primary:   #0F172A;
+  --color-text-muted:     #64748B;
+
+  /* Timetable Slot Type Palette */
+  --slot-lecture:     #DBEAFE;   /* Soft lecture blue */
+  --slot-lab:         #EDE9FE;   /* Practical lab violet */
+  --slot-tutorial:    #D1FAE5;   /* Tutorial mint green */
+  --slot-library:     #FEF3C7;   /* Library amber fill */
+  --slot-break:       #F1F5F9;   /* Break/lunch slate fill */
+  --slot-clash:       #FEE2E2;   /* Clash highlight red fill */
+  --slot-empty:       #FFFFFF;
+
+  /* Typography */
+  --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Spacing Scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Timetable Grid Dimensions */
+  --slot-width:  140px;
+  --slot-height: 72px;
+  --day-header:  48px;
+  --period-col:  80px;
+
+  /* Radii & Shadows */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-dropdown: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] {
+  --color-surface:    #0F172A;
+  --color-card:       #1E293B;
+  --color-border:     #334155;
+  --color-text-primary:   #F8FAFC;
+  --color-text-muted:     #94A3B8;
+
+  --slot-lecture:     #1E3A8A;
+  --slot-lab:         #4C1D95;
+  --slot-tutorial:    #065F46;
+  --slot-library:     #78350F;
+  --slot-break:       #334155;
+  --slot-clash:       #7F1D1D;
+  --slot-empty:       #1E293B;
+}
