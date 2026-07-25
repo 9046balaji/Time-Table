@@ -39,6 +39,7 @@ COPY --chown=appuser:appgroup . .
 RUN mkdir -p /app/backend && \
     ln -s /app/parser /app/backend/parser && \
     ln -s /app/solver /app/backend/solver && \
+    ln -s /app/tasks /app/backend/tasks && \
     ln -s /app/app /app/backend/app && \
     chown -R appuser:appgroup /app
 
