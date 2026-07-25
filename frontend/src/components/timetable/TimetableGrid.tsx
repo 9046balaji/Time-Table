@@ -109,13 +109,13 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
 
   // Shorten faculty name for in-cell display: "Dr. S. Srikantha Reddy" → "Dr. S. Reddy"
   const shortFaculty = (entry: SlotEntry): string => {
-    const full = entry.facultyNames?.length
+    const raw: any = (Array.isArray(entry.facultyNames) && entry.facultyNames.length > 0)
       ? entry.facultyNames[0]
-      : (entry.facultyName || "");
-    if (!full) return "";
+      : entry.facultyName;
+    const full: string = typeof raw === 'string' ? raw : (Array.isArray(raw) ? (raw as string[]).join(', ') : String(raw || ''));
+    if (!full || full === 'undefined' || full === 'null') return "";
     const parts = full.trim().split(/\s+/);
     if (parts.length <= 2) return full;
-    // Keep title + first-name-initial + last-name
     const title = parts[0].match(/^(Dr|Mr|Ms|Prof)\./i) ? parts[0] + " " : "";
     return title + parts[parts.length - 1];
   };
