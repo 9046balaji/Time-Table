@@ -40,3 +40,46 @@ body {
   background-color: var(--slot-tutorial);
   border-left: 3px solid var(--color-success);
 }
+
+/* Dark Mode Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: rgba(51, 65, 85, 0.6);
+}
+
+/* Print Stylesheet Optimization (@media print) */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .print\:hidden,
+  header,
+  aside,
+  button,
+  .toast-container {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .slot-cell {
+    border: 1px solid #cbd5e1 !important;
+    page-break-inside: avoid;
+  }
+}
