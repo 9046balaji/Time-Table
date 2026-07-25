@@ -25,7 +25,7 @@ class TimetableService:
                     .outerjoin(Room, TimetableEntry.room_id == Room.id)\
                     .where(TimetableEntry.timetable_version_id == version_id)
 
-                if section_name:
+                if section_name and section_name.upper() != "ALL":
                     stmt = stmt.where(Section.name == section_name)
 
                 res = await db.execute(stmt)
@@ -55,7 +55,7 @@ class TimetableService:
             from app.core.seed_cache import get_seed_data
             seed = get_seed_data()
             entries = seed.get("entries", [])
-            target_norm = section_name.replace(" ", "").replace("-", "").upper() if section_name else ""
+            target_norm = section_name.replace(" ", "").replace("-", "").upper() if (section_name and section_name.upper() != "ALL") else ""
             for e in entries:
                 sec_norm = str(e.get("section", "")).replace(" ", "").replace("-", "").upper()
                 if not target_norm or sec_norm == target_norm:

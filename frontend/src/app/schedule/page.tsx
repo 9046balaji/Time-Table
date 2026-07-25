@@ -59,7 +59,8 @@ export default function SchedulePage() {
   useEffect(() => {
     if (mode === 'matrix' || mode === 'stack') {
       setLoading(true);
-      timetableApi.getTimetable(selectedVersionId, selectedSection)
+      const targetSecName = mode === 'stack' ? 'ALL' : selectedSection;
+      timetableApi.getTimetable(selectedVersionId, targetSecName)
         .then((res) => {
           const rawSlots = res.data.slots || res.data.entries || [];
           setCohortAllSlots(rawSlots);
@@ -475,7 +476,12 @@ export default function SchedulePage() {
 
           <div className="space-y-12">
             {stackSections.map((secName, sIdx) => {
-              const secSlots = cohortAllSlots.filter(s => (s.section || s.section_name) === secName);
+              const normSecName = secName.replace(/[\s-]/g, "").toUpperCase();
+              const secSlots = cohortAllSlots.filter(s => {
+                const rawSec = String(s.section || s.section_name || s.section_code || "");
+                return rawSec.replace(/[\s-]/g, "").toUpperCase() === normSecName;
+              });
+
               const mappedSecSlots: SlotEntry[] = secSlots.map((s: any, idx: number) => {
                 const subStr = String(s.subject || s.subject_code || "LECTURE");
                 const rmStr = String(s.room || s.room_code || "");
@@ -491,6 +497,8 @@ export default function SchedulePage() {
                   facultyNames: facArr,
                   subjectType: subStr.includes("(P)") ? "P" : subStr.includes("(T)") ? "T" : "L",
                   spanPeriods: subStr.includes("(P)") ? 2 : 1,
+                  hasClash: Boolean(s.has_clash),
+                  clashReason: String(s.clash_reason || ""),
                 };
               });
 
@@ -500,9 +508,9 @@ export default function SchedulePage() {
                     <span className="px-3 py-1 bg-purple-100 text-purple-900 border border-purple-300 font-extrabold text-xs rounded-lg">
                       Section #{sIdx + 1}
                     </span>
-                    <span className="text-xs font-bold text-slate-500">Vertical Stack Sequence</span>
+                    <span className="text-xs font-bold text-slate-500">Vertical Stack Sequence ({secName})</span>
                   </div>
-                  <TimetableGrid sectionName={secName} entries={mappedSecSlots.length > 0 ? mappedSecSlots : entries} />
+                  <TimetableGrid sectionName={secName} entries={mappedSecSlots} />
                 </div>
               );
             })}
