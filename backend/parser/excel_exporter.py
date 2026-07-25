@@ -108,8 +108,34 @@ class ExcelTimetableExporter:
         for r in range(grid_start_row, grid_end_row + 1):
             ws.cell(row=r, column=8).border = thin_border
 
-        faculty_lecture_map = {}
-        faculty_lab_map = {}
+        # Full Subject Names Mapping
+        SUBJECT_FULL_NAMES = {
+            "DS": "Data Structures",
+            "DBMS": "Data Base Management Systems",
+            "AI": "Artificial Intelligence Search Methods for Problem Solving",
+            "OOPS": "Object Oriented Programming",
+            "SFCDS": "Statistical Foundation for Computing and Data Science",
+            "DMS": "Discrete Mathematical Structures",
+            "DEF": "Data Engineering Foundations",
+            "DL": "Deep Learning & Neural Networks",
+            "WT": "Web Technologies",
+            "CV": "Computer Vision & Image Processing",
+            "ADS": "Advanced Data Structures & Algorithms",
+            "MLOP": "MLOps & AI Model Deployment",
+            "IDP": "Interdisciplinary Project",
+            "CNS": "Cryptography & Network Security",
+            "TM": "Technical Modules",
+            "GENAI": "Generative AI & LLMs",
+            "IOT": "Internet of Things & Sensor Networks",
+            "QALR": "Quantitative Aptitude & Logical Reasoning",
+            "KRR": "Knowledge Representation & Reasoning",
+            "Ethics-AI": "Ethics in Artificial Intelligence",
+            "OE": "Open Elective Course",
+            "CRT": "Campus Recruitment Training",
+        }
+
+        faculty_lecture_map: Dict[str, str] = {}
+        faculty_lab_map: Dict[str, str] = {}
 
         # Rows grid_start_row..grid_end_row: Days MON..SAT
         for d_off, day in enumerate(self.DAYS):
@@ -137,42 +163,62 @@ class ExcelTimetableExporter:
                     cell.value = f"{subj}\n{room}" if room else subj
                     cell.font = subj_font
 
-                    if subj and fac:
-                        if "(P)" in subj or "(T&P)" in subj or "Lab" in subj:
-                            faculty_lab_map[subj] = fac
-                        else:
-                            faculty_lecture_map[subj] = fac
+                    if subj:
+                        clean_code = subj.replace("(P)", "").replace("(T&P)", "").replace("(T)", "").strip()
+                        SKIP = {"BREAK", "LUNCH", "LIBRARY", "SL/EL", "IDP", "MINORS_HONORS", "CRT"}
+                        if clean_code and clean_code not in SKIP:
+                            full_subj_name = SUBJECT_FULL_NAMES.get(clean_code, clean_code)
+                            if "(P)" in subj or "(T&P)" in subj or "Lab" in subj or "(T)" in subj:
+                                type_suffix = "(T&P)" if "(T&P)" in subj else ("(T)" if "(T)" in subj else "(P)")
+                                key = f"{full_subj_name}{type_suffix}"
+                                if key not in faculty_lab_map or (not faculty_lab_map[key] and fac):
+                                    faculty_lab_map[key] = fac
+                            else:
+                                key = f"{full_subj_name}(L)"
+                                if key not in faculty_lecture_map or (not faculty_lecture_map[key] and fac):
+                                    faculty_lecture_map[key] = fac
                 else:
                     cell.value = ""
 
-        # 2-Column Faculty Allocation Legend Table
+        # 2-Column Faculty Allocation Legend Table (Matching Baseline Excel Format)
         start_leg_row = grid_end_row + 2
-        all_subjs = sorted(list(set(list(faculty_lecture_map.keys()) + list(faculty_lab_map.keys()))))
+        lec_items = list(faculty_lecture_map.items())
+        lab_items = list(faculty_lab_map.items())
+        max_leg_rows = max(len(lec_items), len(lab_items))
         last_leg_row = start_leg_row
 
-        if all_subjs:
-            for offset, subj_code in enumerate(all_subjs):
+        if max_leg_rows > 0:
+            for offset in range(max_leg_rows):
                 s_idx = start_leg_row + offset
                 last_leg_row = s_idx
 
                 # Left Column (A..E): Lecture Faculty
                 ws.merge_cells(start_row=s_idx, start_column=1, end_row=s_idx, end_column=5)
-                lec_fac = faculty_lecture_map.get(subj_code, "")
-                lec_text = f"{subj_code}(L): {lec_fac}" if lec_fac else f"{subj_code}: Course Allocation"
+                if offset < len(lec_items):
+                    subj_title, fac_name = lec_items[offset]
+                    fac_display = fac_name if fac_name else "Department Instructor"
+                    lec_text = f"{subj_title}: {fac_display}"
+                else:
+                    lec_text = ""
                 ws.cell(row=s_idx, column=1, value=lec_text).font = cell_font
                 for c in range(1, 6):
                     ws.cell(row=s_idx, column=c).border = thin_border
 
                 # Right Column (F..K): Practical/Tutorial Instructors
                 ws.merge_cells(start_row=s_idx, start_column=6, end_row=s_idx, end_column=11)
-                lab_fac = faculty_lab_map.get(subj_code, "")
-                lab_text = f"{subj_code}(P): {lab_fac}" if lab_fac else f"{subj_code}(T&P): Faculty Team"
+                if offset < len(lab_items):
+                    subj_title, fac_name = lab_items[offset]
+                    fac_display = fac_name if fac_name else "Lab Instructor Team"
+                    lab_text = f"{subj_title}: {fac_display}"
+                else:
+                    lab_text = ""
                 ws.cell(row=s_idx, column=6, value=lab_text).font = cell_font
                 for c in range(6, 12):
                     ws.cell(row=s_idx, column=c).border = thin_border
         else:
             last_leg_row = start_leg_row
             ws.cell(row=last_leg_row, column=1, value="All section slots assigned to department instructors.").font = cell_font
+
 
         ws.column_dimensions['A'].width = 12
         for c in ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']:

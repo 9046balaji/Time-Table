@@ -252,11 +252,86 @@ class ExportService:
             ]))
 
             elements.append(table)
-            elements.append(Spacer(1, 12))
-            elements.append(Paragraph("<b>Legend:</b> (L) Lecture • (P) Practical Lab • (T) Tutorial • (LIBRARY) Library Reading Slot • Timetable Version: " + ver_label, styles['Normal']))
+            elements.append(Spacer(1, 8))
+
+            # Build 2-Column Faculty Allocation Table for PDF
+            SUBJECT_FULL_NAMES = {
+                "DS": "Data Structures",
+                "DBMS": "Data Base Management Systems",
+                "AI": "Artificial Intelligence Search Methods for Problem Solving",
+                "OOPS": "Object Oriented Programming",
+                "SFCDS": "Statistical Foundation for Computing and Data Science",
+                "DMS": "Discrete Mathematical Structures",
+                "DEF": "Data Engineering Foundations",
+                "DL": "Deep Learning & Neural Networks",
+                "WT": "Web Technologies",
+                "CV": "Computer Vision & Image Processing",
+                "ADS": "Advanced Data Structures & Algorithms",
+                "MLOP": "MLOps & AI Model Deployment",
+                "IDP": "Interdisciplinary Project",
+                "CNS": "Cryptography & Network Security",
+                "TM": "Technical Modules",
+                "GENAI": "Generative AI & LLMs",
+                "IOT": "Internet of Things & Sensor Networks",
+                "QALR": "Quantitative Aptitude & Logical Reasoning",
+                "KRR": "Knowledge Representation & Reasoning",
+                "Ethics-AI": "Ethics in Artificial Intelligence",
+                "OE": "Open Elective Course",
+            }
+
+            sec_slots = [s for s in slots_list if s.get("section") == sname]
+            lec_fac_map = {}
+            lab_fac_map = {}
+            for s in sec_slots:
+                subj = s.get("subject", "")
+                fac = s.get("faculty", "")
+                if subj:
+                    clean = subj.replace("(P)", "").replace("(T&P)", "").replace("(T)", "").strip()
+                    SKIP = {"BREAK", "LUNCH", "LIBRARY", "SL/EL", "IDP", "MINORS_HONORS", "CRT"}
+                    if clean and clean not in SKIP:
+                        fname = SUBJECT_FULL_NAMES.get(clean, clean)
+                        if "(P)" in subj or "(T&P)" in subj or "(T)" in subj or "Lab" in subj:
+                            sfx = "(T&P)" if "(T&P)" in subj else ("(T)" if "(T)" in subj else "(P)")
+                            key = f"{fname}{sfx}"
+                            if key not in lab_fac_map or (not lab_fac_map[key] and fac):
+                                lab_fac_map[key] = fac
+                        else:
+                            key = f"{fname}(L)"
+                            if key not in lec_fac_map or (not lec_fac_map[key] and fac):
+                                lec_fac_map[key] = fac
+
+            lec_list = list(lec_fac_map.items())
+            lab_list = list(lab_fac_map.items())
+            max_r = max(len(lec_list), len(lab_list))
+
+            legend_style = ParagraphStyle(
+                'PdfLegText',
+                parent=styles['Normal'],
+                fontName='Helvetica',
+                fontSize=7,
+                leading=9,
+                textColor=colors.HexColor('#1E293B')
+            )
+
+            if max_r > 0:
+                leg_table_data = []
+                for r_idx in range(max_r):
+                    l_str = f"<b>{lec_list[r_idx][0]}:</b> {lec_list[r_idx][1] or 'Department Instructor'}" if r_idx < len(lec_list) else ""
+                    r_str = f"<b>{lab_list[r_idx][0]}:</b> {lab_list[r_idx][1] or 'Lab Instructor Team'}" if r_idx < len(lab_list) else ""
+                    leg_table_data.append([Paragraph(l_str, legend_style), Paragraph(r_str, legend_style)])
+
+                leg_table = Table(leg_table_data, colWidths=[360, 360])
+                leg_table.setStyle(TableStyle([
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+                    ('TOPPADDING', (0,0), (-1,-1), 2),
+                    ('GRID', (0,0), (-1,-1), 0.4, colors.HexColor('#CBD5E1')),
+                ]))
+                elements.append(leg_table)
 
             if idx < len(section_names) - 1:
                 elements.append(PageBreak())
+
 
         doc.build(elements)
         return buffer.getvalue()
