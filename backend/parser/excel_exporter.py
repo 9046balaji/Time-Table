@@ -262,14 +262,29 @@ class ExcelTimetableExporter:
                 if not slots:
                     slots = []
 
-        # 1. Master Department Sheet (All Sections Stacked Vertically with Spacers)
+        # 1. Master Department Sheet (All 44 Sections Stacked Vertically with Spacers)
         ws_master = wb.create_sheet(title="Master Department View")
         curr_row = 2
         for sec in sections:
             sec_name = sec.get("name", "Section")
             curr_row = self._write_section_block(ws_master, curr_row, sec_name, slots)
 
-        # 2. Individual Section Worksheets
+        # 2. Year & Branch Cohort Master Sheets (Stacked per Cohort / Year)
+        cohort_master_tabs = [
+            ("2nd Year AIML Master", ["II AIML-A", "II AIML-B", "II AIML-C", "II AIML-D", "II AIML-E", "II AIML-F", "II AIML-G", "II AIML-H", "II AIML-I", "II AIML-J", "II AIML-K", "II AIML-L"]),
+            ("3rd Year AIML Master", ["III AIML-A", "III AIML-B", "III AIML-C", "III AIML-D", "III AIML-E", "III AIML-F", "III AIML-G"]),
+            ("4th Year AIML Master", ["IV AIML-A", "IV AIML-B", "IV AIML-C", "IV AIML-D", "IV AIML-E"]),
+            ("CS & DS Master", ["II CS-A", "II CS-B", "III CS", "IV CS", "II DS-A", "II DS-B", "III DS-A", "III DS-B", "IV DS"]),
+            ("CSBS & IOT Master", ["II CSBS", "III CSBS", "IV - CSBS", "II IOT", "III IOT"]),
+        ]
+
+        for tab_title, cohort_sec_list in cohort_master_tabs:
+            ws_c = wb.create_sheet(title=tab_title[:31])
+            c_row = 2
+            for sec_name in cohort_sec_list:
+                c_row = self._write_section_block(ws_c, c_row, sec_name, slots)
+
+        # 3. Individual Section Worksheets (44 Tabs)
         for sec in sections:
             sec_name = sec.get("name", "Section")
             sheet_title = sec_name[:31]
@@ -279,6 +294,7 @@ class ExcelTimetableExporter:
         buffer = io.BytesIO()
         wb.save(buffer)
         return buffer.getvalue()
+
 
     def export_cohort_excel(self, cohort_key: str, timetable_data: Optional[Dict[str, Any]] = None) -> bytes:
         """Export cohort-specific Excel workbook with Sections Vertical Stacked on Sheet 1 + individual section tabs."""
