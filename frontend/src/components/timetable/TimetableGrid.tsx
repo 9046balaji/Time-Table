@@ -65,25 +65,43 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
       "SFCDS": "Statistical Foundation for Computing and Data Science",
       "DMS": "Discrete Mathematical Structures",
       "DEF": "Data Engineering Foundations",
+      "DL": "Deep Learning & Neural Networks",
+      "WT": "Web Technologies",
+      "CV": "Computer Vision & Image Processing",
+      "ADS": "Advanced Data Structures & Algorithms",
+      "MLOP": "MLOps & AI Model Deployment",
+      "IDP": "Interdisciplinary Project",
+      "CNS": "Cryptography & Network Security",
+      "TM": "Technical Modules",
+      "GENAI": "Generative AI & LLMs",
+      "IOT": "Internet of Things & Sensor Networks",
+      "QALR": "Quantitative Aptitude & Logical Reasoning",
+      "KRR": "Knowledge Representation & Reasoning",
+      "Ethics-AI": "Ethics in Artificial Intelligence",
+      "OE": "Open Elective Course",
     };
 
     entries.forEach((e) => {
       if (!e.subjectCode) return;
       const facs = e.facultyNames?.length
-        ? e.facultyNames.join(", ")
-        : e.facultyName || "";
-      const code = e.subjectCode.replace("(P)", "").replace("(T)", "").replace("(T&P)", "").trim();
-      const fullName = allSubjNames[code] || code;
+        ? e.facultyNames.filter(Boolean).join(", ")
+        : (e.facultyName && e.facultyName !== "undefined" ? e.facultyName : "");
+      
+      const rawCode = e.subjectCode.replace("(P)", "").replace("(T)", "").replace("(T&P)", "").trim();
+      if (!rawCode || rawCode === "BREAK" || rawCode === "LUNCH" || rawCode === "LIBRARY") return;
 
+      const fullName = allSubjNames[rawCode] || rawCode;
       const isLab = e.subjectType === "P" || e.subjectCode.includes("(P)") || e.subjectCode.includes("(T&P)");
       const isTut = e.subjectType === "T" || e.subjectCode.includes("(T)");
 
-      if (isLab) {
-        if (!labMap.has(code)) labMap.set(code, { name: fullName, faculty: facs });
-      } else if (isTut) {
-        if (!labMap.has(code)) labMap.set(code, { name: fullName, faculty: facs });
+      if (isLab || isTut) {
+        if (!labMap.has(rawCode) || (!labMap.get(rawCode)?.faculty && facs)) {
+          labMap.set(rawCode, { name: fullName, faculty: facs });
+        }
       } else {
-        if (!lectureMap.has(code)) lectureMap.set(code, { name: fullName, faculty: facs });
+        if (!lectureMap.has(rawCode) || (!lectureMap.get(rawCode)?.faculty && facs)) {
+          lectureMap.set(rawCode, { name: fullName, faculty: facs });
+        }
       }
     });
 
