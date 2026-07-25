@@ -50,10 +50,22 @@ class TimetableService:
             except Exception as ex:
                 print(f"[TimetableService Error] {ex}")
 
+        # Fast memory seed cache fallback if DB entries are empty
+        if not result:
+            from app.core.seed_cache import get_seed_data
+            seed = get_seed_data()
+            entries = seed.get("entries", [])
+            target_norm = section_name.replace(" ", "").replace("-", "").upper() if section_name else ""
+            for e in entries:
+                sec_norm = str(e.get("section", "")).replace(" ", "").replace("-", "").upper()
+                if not target_norm or sec_norm == target_norm:
+                    result.append(e)
+
         return {
             "version_id": version_id,
             "count": len(result),
-            "entries": result
+            "entries": result,
+            "slots": result
         }
 
     @staticmethod
@@ -86,7 +98,6 @@ class TimetableService:
                 rows = res.all()
                 for e, sec, ts, rm in rows:
                     raw_fac = e.raw_faculty_text or ""
-                    # Check if faculty ID or faculty name matches entry
                     is_match = (faculty_id and e.faculty_ids and faculty_id in e.faculty_ids) or \
                                (target_name and target_name.lower() in raw_fac.lower())
                     if is_match:
@@ -102,6 +113,20 @@ class TimetableService:
                         })
             except Exception as ex:
                 print(f"[FacultyTimetable Error] {ex}")
+
+        # Fast memory seed cache fallback if DB data empty
+        if not result:
+            from app.core.seed_cache import get_seed_data
+            seed = get_seed_data()
+            if not target_name and faculty_id:
+                facs = seed.get("faculty", [])
+                if facs and faculty_id <= len(facs):
+                    target_name = facs[faculty_id - 1].get("name", "")
+
+            for e in seed.get("entries", []):
+                fac_list = e.get("faculty", [])
+                if target_name and any(target_name.lower() in f.lower() or f.lower() in target_name.lower() for f in fac_list):
+                    result.append(e)
 
         max_hours = fac_obj.max_hours_per_week if fac_obj else 16
         assigned_hours = len(result)

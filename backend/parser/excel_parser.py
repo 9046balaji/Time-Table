@@ -137,10 +137,11 @@ class ExcelTimetableParser:
                 self._parse_day_row(sheet, r, current_section, day, sheet_name,
                                     merged_value_map, all_slots, sections_dict[current_section])
 
-            if current_section and (":" in c1_val or ":" in c2_val):
-                line = c1_val if ":" in c1_val else c2_val
-                if not any(k in line.upper() for k in ["DEPARTMENT", "PERIOD", "DAY"]):
-                    self._parse_faculty_legend(line, current_section, faculty_map)
+            if current_section:
+                for col_idx in range(1, 12):
+                    c_val = str(sheet.cell(r, col_idx).value or "").strip()
+                    if ":" in c_val and not any(k in c_val.upper() for k in ["DEPARTMENT", "PERIOD", "DAY", "TIME"]):
+                        self._parse_faculty_legend(c_val, current_section, faculty_map)
 
             r += 1
 
@@ -246,7 +247,36 @@ class ExcelTimetableParser:
         subj_part = parts[0].strip()
         fac_part = parts[1].strip()
 
-        fac_names = [f.strip() for f in re.split(r"[,;/&]", fac_part) if f.strip()]
+        fac_names = [f.strip() for f in re.split(r"[,;/&]", fac_part) if f.strip() and f.strip().lower() != "nil"]
+        if not fac_names:
+            return
+
         if section not in faculty_map:
             faculty_map[section] = {}
+
         faculty_map[section][subj_part] = fac_names
+
+        # Extract code from brackets or prefix: "Data Structures(L)" -> "DS", "DS(L)"
+        # Map common subject titles to codes
+        title_to_code = {
+            "DATA STRUCTURES": "DS",
+            "STATISTICAL FOUNDATION FOR COMPUTING": "SFCDS",
+            "DISCRETE MATHEMATICAL STRUCTURES": "DMS",
+            "ARTIFICIAL INTELLIGENCE": "AI",
+            "DATABASE MANAGEMENT SYSTEMS": "DBMS",
+            "OBJECT ORIENTED PROGRAMMING": "OOPS",
+            "DATA ENGINEERING FOUNDATIONS": "DEF",
+            "WEB TECHNOLOGIES": "WT",
+            "COMPUTER VISION": "CV",
+            "MACHINE LEARNING": "ML",
+            "DEEP LEARNING": "DL",
+        }
+
+        subj_upper = subj_part.upper()
+        for title, code in title_to_code.items():
+            if title in subj_upper:
+                suffix = "(P)" if "(P)" in subj_upper or "(T&P)" in subj_upper or "LAB" in subj_upper else ("(T)" if "(T)" in subj_upper else "")
+                faculty_map[section][code] = fac_names
+                faculty_map[section][f"{code}{suffix}"] = fac_names
+                faculty_map[section][f"{code}(P)"] = fac_names if "(P)" in subj_upper or "(T&P)" in subj_upper else fac_names
+                faculty_map[section][f"{code}(T)"] = fac_names if "(T)" in subj_upper or "(T&P)" in subj_upper else fac_names

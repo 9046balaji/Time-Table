@@ -42,7 +42,19 @@ async def list_faculty(
         query = query.where(Faculty.name.ilike(f"%{search}%"))
 
     result = await db.execute(query)
-    return result.scalars().all()
+    items = result.scalars().all()
+    if items:
+        return items
+
+    # Fast memory seed cache fallback if DB table is empty
+    from app.core.seed_cache import get_seed_data
+    seed = get_seed_data()
+    fallback_facs = [FacultyResponse(**f) for f in seed.get("faculty", [])]
+    if designation:
+        fallback_facs = [f for f in fallback_facs if f.designation == designation]
+    if search:
+        fallback_facs = [f for f in fallback_facs if search.lower() in f.name.lower()]
+    return fallback_facs
 
 
 @router.post("/faculty", response_model=FacultyResponse, status_code=status.HTTP_201_CREATED)
@@ -104,7 +116,23 @@ async def list_rooms(
         query = query.where(Room.code.ilike(f"%{search}%"))
 
     result = await db.execute(query)
-    return result.scalars().all()
+    items = result.scalars().all()
+    if items:
+        return items
+
+    # Fast memory seed cache fallback if DB table is empty
+    from app.core.seed_cache import get_seed_data
+    seed = get_seed_data()
+    fallback_rooms = [RoomResponse(**r) for r in seed.get("rooms", [])]
+    if room_type:
+        fallback_rooms = [r for r in fallback_rooms if r.room_type == room_type]
+    if block:
+        fallback_rooms = [r for r in fallback_rooms if r.block == block]
+    if gpu_capable is not None:
+        fallback_rooms = [r for r in fallback_rooms if r.gpu_capable == gpu_capable]
+    if search:
+        fallback_rooms = [r for r in fallback_rooms if search.lower() in r.code.lower()]
+    return fallback_rooms
 
 
 @router.post("/rooms", response_model=RoomResponse, status_code=status.HTTP_201_CREATED)
@@ -163,7 +191,21 @@ async def list_subjects(
         query = query.where((Subject.code.ilike(f"%{search}%")) | (Subject.full_name.ilike(f"%{search}%")))
 
     result = await db.execute(query)
-    return result.scalars().all()
+    items = result.scalars().all()
+    if items:
+        return items
+
+    # Fast memory seed cache fallback if DB table is empty
+    from app.core.seed_cache import get_seed_data
+    seed = get_seed_data()
+    fallback_subjects = [SubjectResponse(**s) for s in seed.get("subjects", [])]
+    if slot_type:
+        fallback_subjects = [s for s in fallback_subjects if s.slot_type == slot_type]
+    if is_lab is not None:
+        fallback_subjects = [s for s in fallback_subjects if s.is_lab == is_lab]
+    if search:
+        fallback_subjects = [s for s in fallback_subjects if search.lower() in s.code.lower() or search.lower() in s.full_name.lower()]
+    return fallback_subjects
 
 
 @router.post("/subjects", response_model=SubjectResponse, status_code=status.HTTP_201_CREATED)
@@ -222,7 +264,19 @@ async def list_sections(
         query = query.where(Section.name.ilike(f"%{search}%"))
 
     result = await db.execute(query)
-    return result.scalars().all()
+    items = result.scalars().all()
+    if items:
+        return items
+
+    # Fast memory seed cache fallback if DB table is empty
+    from app.core.seed_cache import get_seed_data
+    seed = get_seed_data()
+    fallback_secs = [SectionResponse(**s) for s in seed.get("sections", [])]
+    if year_level:
+        fallback_secs = [s for s in fallback_secs if s.year_level == year_level]
+    if search:
+        fallback_secs = [s for s in fallback_secs if search.lower() in s.name.lower()]
+    return fallback_secs
 
 
 @router.post("/sections", response_model=SectionResponse, status_code=status.HTTP_201_CREATED)

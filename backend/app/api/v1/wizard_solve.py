@@ -1,7 +1,10 @@
 import time
 from fastapi import APIRouter, HTTPException, status
 from typing import Dict, Any, List
-from app.schemas.wizard import TimetableGenerationRequest, WizardGenerationResponse
+try:
+    from app.schemas.wizard import TimetableGenerationRequest, WizardGenerationResponse
+except ImportError:
+    from backend.app.schemas.wizard import TimetableGenerationRequest, WizardGenerationResponse
 from backend.solver.csat_solver import CPSATSolver, SolverConfig
 
 router = APIRouter()
@@ -66,55 +69,58 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
                 if assign.subject_code not in faculty_map[co]:
                     faculty_map[co].append(assign.subject_code)
 
-    # 3. Filter Rooms based on preferred block
-    block_clean = req.preferred_block.lower()
-    rooms_list = []
-    
-    if "aftf" in block_clean or "gpu" in block_clean:
-        rooms_list = [
-            {"id": "AFTF-12", "capacity": 72, "room_type": "gpu_lab"},
-            {"id": "AFTF-13", "capacity": 72, "room_type": "gpu_lab"},
-            {"id": "AFTF-14", "capacity": 72, "room_type": "gpu_lab"},
-            {"id": "601", "capacity": 66, "room_type": "classroom"},
-            {"id": "602", "capacity": 66, "room_type": "classroom"},
-        ]
-    elif "h-block" in block_clean or "divisional" in block_clean:
-        rooms_list = [
-            {"id": "514-A", "capacity": 66, "room_type": "classroom"},
-            {"id": "514-B", "capacity": 66, "room_type": "classroom"},
-            {"id": "518", "capacity": 66, "room_type": "classroom"},
-            {"id": "604", "capacity": 60, "room_type": "computer_lab"},
-            {"id": "605", "capacity": 60, "room_type": "computer_lab"},
-        ]
+    # 3. Dynamic Room Pool (allows custom rooms if supplied or filters block pools)
+    custom_rooms = getattr(req, "rooms", None)
+    if custom_rooms:
+        rooms_list = custom_rooms
     else:
-        # Default U-BLOCK / Block-VI (Aryabhatta Bhavan)
-        rooms_list = [
-            {"id": "601", "capacity": 66, "room_type": "classroom"},
-            {"id": "602", "capacity": 66, "room_type": "classroom"},
-            {"id": "603", "capacity": 66, "room_type": "classroom"},
-            {"id": "607", "capacity": 66, "room_type": "classroom"},
-            {"id": "608", "capacity": 66, "room_type": "classroom"},
-            {"id": "614", "capacity": 66, "room_type": "classroom"},
-            {"id": "619", "capacity": 66, "room_type": "classroom"},
-            {"id": "215", "capacity": 66, "room_type": "classroom"},
-            {"id": "218", "capacity": 66, "room_type": "classroom"},
-            {"id": "604", "capacity": 60, "room_type": "computer_lab"},
-            {"id": "605", "capacity": 60, "room_type": "computer_lab"},
-            {"id": "606", "capacity": 60, "room_type": "computer_lab"},
-            {"id": "611", "capacity": 60, "room_type": "computer_lab"},
-            {"id": "616", "capacity": 60, "room_type": "computer_lab"},
-        ]
+        block_clean = req.preferred_block.lower()
+        if "aftf" in block_clean or "gpu" in block_clean:
+            rooms_list = [
+                {"id": "AFTF-12", "capacity": 72, "room_type": "gpu_lab"},
+                {"id": "AFTF-13", "capacity": 72, "room_type": "gpu_lab"},
+                {"id": "AFTF-14", "capacity": 72, "room_type": "gpu_lab"},
+                {"id": "601", "capacity": 66, "room_type": "classroom"},
+                {"id": "602", "capacity": 66, "room_type": "classroom"},
+            ]
+        elif "h-block" in block_clean or "divisional" in block_clean:
+            rooms_list = [
+                {"id": "514-A", "capacity": 66, "room_type": "classroom"},
+                {"id": "514-B", "capacity": 66, "room_type": "classroom"},
+                {"id": "518", "capacity": 66, "room_type": "classroom"},
+                {"id": "604", "capacity": 60, "room_type": "computer_lab"},
+                {"id": "605", "capacity": 60, "room_type": "computer_lab"},
+            ]
+        else:
+            # Default U-BLOCK / Block-VI (Aryabhatta Bhavan)
+            rooms_list = [
+                {"id": "601", "capacity": 66, "room_type": "classroom"},
+                {"id": "602", "capacity": 66, "room_type": "classroom"},
+                {"id": "603", "capacity": 66, "room_type": "classroom"},
+                {"id": "607", "capacity": 66, "room_type": "classroom"},
+                {"id": "608", "capacity": 66, "room_type": "classroom"},
+                {"id": "614", "capacity": 66, "room_type": "classroom"},
+                {"id": "619", "capacity": 66, "room_type": "classroom"},
+                {"id": "215", "capacity": 66, "room_type": "classroom"},
+                {"id": "218", "capacity": 66, "room_type": "classroom"},
+                {"id": "604", "capacity": 60, "room_type": "computer_lab"},
+                {"id": "605", "capacity": 60, "room_type": "computer_lab"},
+                {"id": "606", "capacity": 60, "room_type": "computer_lab"},
+                {"id": "611", "capacity": 60, "room_type": "computer_lab"},
+                {"id": "616", "capacity": 60, "room_type": "computer_lab"},
+            ]
 
     # 4. Build Time Slots (MON..SAT, Periods 1..8)
+    # Note: Short break (09:55-10:10) is between P2 & P3; Lunch (12:40-13:40) is between P5 & P6.
+    # All periods 1..8 are valid teaching periods.
     time_slots = []
     for day in ["MON", "TUE", "WED", "THU", "FRI", "SAT"]:
         for period in range(1, 9):
-            is_blocked = (period == 3 or period == 6)  # Short break / Lunch
             time_slots.append({
                 "id": f"{day}_{period}",
                 "day": day,
                 "period": period,
-                "is_blocked": is_blocked
+                "is_blocked": False
             })
 
     # 5. Execute Solver Engine

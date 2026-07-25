@@ -19,6 +19,7 @@ class TimetableGenerationRequest(BaseModel):
     preferred_block: str = Field("Block-VI (601-619)", example="Block-VI (601-619)")
     max_daily_teaching_hours: int = Field(5, ge=1, le=8)
     max_classes_per_teacher_per_day: int = Field(5, ge=1, le=8)
+    rooms: Optional[List[Dict[str, Any]]] = Field(None, description="Optional custom room pool to override default building block list")
     assignments: List[CourseAssignmentInput] = Field(default_factory=list)
 
 
