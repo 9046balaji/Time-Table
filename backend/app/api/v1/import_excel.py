@@ -31,16 +31,23 @@ async def import_excel_timetable(file: UploadFile = File(...)):
         )
 
     content = await file.read()
-    if len(content) > MAX_FILE_SIZE_BYTES:
+    if len(content) > settings.MAX_UPLOAD_SIZE_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"Payload Error: Uploaded file exceeds maximum allowed size of {MAX_FILE_SIZE_BYTES // (1024 * 1024)}MB."
+            detail=f"Payload Error: Uploaded file exceeds maximum allowed size of {settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)}MB."
         )
 
     if len(content) < 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Parse Error: Uploaded payload is empty or corrupted."
+        )
+
+    # Byte-level magic number inspection (PK Zip header for OOXML .xlsx)
+    if not (content.startswith(b"PK\x03\x04") or content.startswith(b"\xd0\xcf\x11\xe0")):
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Security Error: File header does not match valid Excel spreadsheet MIME structure."
         )
 
     temp_dir = os.path.join(os.getcwd(), "scratch")

@@ -9,6 +9,10 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql+asyncpg://vfstr:password@localhost:5432/timetable_db"
     SYNC_DATABASE_URL: str = "postgresql://vfstr:password@localhost:5432/timetable_db"
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 1800
 
     REDIS_URL: str = "redis://localhost:6379/0"
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
@@ -20,8 +24,18 @@ class Settings(BaseSettings):
 
     SOLVER_DEFAULT_TIMEOUT: int = 120
     SOLVER_MAX_WORKERS: int = 8
+    MAX_UPLOAD_SIZE_BYTES: int = 15 * 1024 * 1024  # 15 MB Max Payload Capping
+
+    # Production CORS Whitelist
+    ALLOWED_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "https://timetable.vignan.ac.in"
+    ]
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 settings = Settings()
+
