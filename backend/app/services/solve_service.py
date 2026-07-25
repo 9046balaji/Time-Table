@@ -119,3 +119,12 @@ class SolveService:
     @classmethod
     def get_run_status(cls, run_id: str) -> Optional[Dict[str, Any]]:
         return cls._solver_runs_memory.get(run_id)
+
+    @classmethod
+    def abort_run(cls, run_id: str) -> bool:
+        if run_id in cls._solver_runs_memory:
+            cls._solver_runs_memory[run_id]["status"] = "ABORTED"
+            cls._solver_runs_memory[run_id]["message"] = "Solver run aborted by user."
+            return True
+        return False
+

@@ -21,6 +21,15 @@ async def get_solver_status(run_id: str):
     return status
 
 
+@router.post("/{run_id}/abort", response_model=Dict[str, Any])
+async def abort_solver_run(run_id: str):
+    aborted = SolveService.abort_run(run_id)
+    if not aborted:
+        raise HTTPException(status_code=404, detail="Active solver run not found or already finished.")
+    return {"status": "ABORTED", "run_id": run_id, "message": f"Solver run {run_id} has been aborted."}
+
+
+
 @router.websocket("/{run_id}/stream")
 async def websocket_solver_stream(websocket: WebSocket, run_id: str):
     await websocket.accept()
