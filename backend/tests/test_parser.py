@@ -32,7 +32,9 @@ def test_v5_baseline_parsing():
     print(f"\n--- V5 Baseline Validation Results ---")
     print(f"Total Sections: {result.total_sections}")
     print(f"Total Slots: {result.total_slots}")
-    print(f"Room Clashes: {report.room_clashes}")
+    print(f"Room Overlaps Total: {report.room_clashes}")
+    print(f"True Physical Room Clashes: {report.physical_room_clashes}")
+    print(f"Joint Section Shared Slots: {report.joint_section_slots}")
     print(f"Faculty Clashes: {report.faculty_clashes}")
     print(f"Total Hard Violations: {report.total_hard_violations}")
 

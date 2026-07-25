@@ -18,6 +18,8 @@ class ClashDetail:
 @dataclass
 class ClashReport:
     room_clashes: int = 0
+    physical_room_clashes: int = 0
+    joint_section_slots: int = 0
     faculty_clashes: int = 0
     student_clashes: int = 0
     break_clashes: int = 0
@@ -71,6 +73,18 @@ class ConflictChecker:
                         for j in range(i + 1, len(conflicting_slots)):
                             sa, sb = conflicting_slots[i], conflicting_slots[j]
                             report.room_clashes += 1
+
+                            # Distinguish physical room clashes (different subjects) vs joint section slots (same subject)
+                            sub_a_norm = (sa.subject_code or "").upper().replace("(P)", "").replace("(T)", "").replace("(L)", "").strip()
+                            sub_b_norm = (sb.subject_code or "").upper().replace("(P)", "").replace("(T)", "").replace("(L)", "").strip()
+                            
+                            is_physical_clash = (sub_a_norm != sub_b_norm)
+                            if is_physical_clash:
+                                report.physical_room_clashes += 1
+                            else:
+                                report.joint_section_slots += 1
+
+                            clash_label = "ROOM_CLASH" if is_physical_clash else "JOINT_SECTION"
                             report.details.append(
                                 ClashDetail(
                                     clash_type="ROOM",
@@ -81,7 +95,7 @@ class ConflictChecker:
                                     subject_a=sa.subject_code,
                                     section_b=sb.section,
                                     subject_b=sb.subject_code,
-                                    message=f"{day} Period-{period}, Room {room} → {sa.section}: {sa.subject_code} AND {sb.section}: {sb.subject_code}",
+                                    message=f"[{clash_label}] {day} Period-{period}, Room {room} → {sa.section}: {sa.subject_code} AND {sb.section}: {sb.subject_code}",
                                 )
                             )
 

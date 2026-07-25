@@ -50,6 +50,17 @@ class ConstraintRules:
     def get_max_faculty_hours(rank: str) -> int:
         return ConstraintRules.FACULTY_RANK_MAX_HOURS.get(rank, ConstraintRules.FACULTY_RANK_MAX_HOURS["Default"])
 
+    BREAK_GUARD_PAIRS: Set[Tuple[int, int]] = {(2, 3), (5, 6)}
+    VALID_LAB_START_PERIODS: Set[int] = {1, 3, 4, 6, 7}
+
+    @classmethod
+    def is_valid_lab_pair(cls, p1: int, p2: int, day: str = "MON") -> bool:
+        if day.upper() in ["SAT", "SATURDAY"]:
+            return False
+        if (p1, p2) in cls.BREAK_GUARD_PAIRS:
+            return False
+        return p1 in cls.VALID_LAB_START_PERIODS and p2 == p1 + 1
+
     # HC-09: Faculty Daily Teaching Cap (max 5 classes/day per teacher)
     @staticmethod
     def check_faculty_daily_cap(daily_classes_count: int, max_cap: int = 5) -> bool:

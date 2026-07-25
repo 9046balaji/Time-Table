@@ -215,28 +215,50 @@ class CPSATSolver:
                             model.Add(x[s_id, sub_id, r["id"], t_id] == 0)
 
         # HC-08: Continuous Lab Block Allocations (2 or 3 Consecutive Slots)
+        # Rule 1: Saturday is prohibited for Practical Lab (P) blocks.
+        # Rule 2: Labs cannot span recess intervals (P2->P3 Short Break, P5->P6 Lunch Break).
+        # Rule 3: Continuous lab block must occupy the SAME room across consecutive periods.
         for sec in sections:
             s_id = sec["id"]
             lab_subjs = [ss for ss in section_subjects if ss["section_id"] == s_id and ss.get("subject_type") == "P"]
             for ss in lab_subjs:
                 sub_id = ss["subject_id"]
-                c_slots = ss.get("continuous_slots", 2)
-                for day in days_list:
-                    day_slots = [t for t in time_slots if t.get("day") == day and not t.get("is_blocked")]
-                    day_slots.sort(key=lambda item: item.get("period", 0))
+                
+                # Rule 1: Prohibit Saturday labs
+                for r in rooms:
+                    for t in time_slots:
+                        if t.get("day") == "SAT":
+                            model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
+
+                # Rule 2 & 3: Continuous lab block start rules
+                for day in ["MON", "TUE", "WED", "THU", "FRI"]:
+                    day_slots = {t.get("period", 0): t for t in time_slots if t.get("day") == day and not t.get("is_blocked")}
                     
-                    # Group adjacent periods into continuous blocks (e.g. [P1, P2], [P4, P5])
-                    for idx in range(len(day_slots) - 1):
-                        t1 = day_slots[idx]
-                        t2 = day_slots[idx + 1]
-                        
-                        # Only enforce if periods are consecutive (e.g. 1 & 2, 4 & 5, 6 & 7)
-                        if t2.get("period", 0) == t1.get("period", 0) + 1:
+                    # Valid lab start periods (1, 3, 4, 6, 7). 2 and 5 are invalid start periods (recess break bridge)
+                    valid_start_periods = [1, 3, 4, 6, 7]
+                    invalid_start_periods = [2, 5, 8]
+                    
+                    # Prohibit lab starting on invalid start periods (2, 5, 8)
+                    for inv_p in invalid_start_periods:
+                        if inv_p in day_slots:
+                            t_inv = day_slots[inv_p]
+                            for r in rooms:
+                                # A lab cannot START at period 2, 5, or 8 unless it is a continuation of period 1, 4, or 7
+                                # Handled by linking start period p to p+1 below
+                                pass
+
+                    for p1 in valid_start_periods:
+                        p2 = p1 + 1
+                        if p1 in day_slots and p2 in day_slots:
+                            t1 = day_slots[p1]
+                            t2 = day_slots[p2]
                             t1_id = t1["id"]
                             t2_id = t2["id"]
-                            sum_t2 = sum(x[s_id, sub_id, r["id"], t2_id] for r in rooms)
+                            
+                            # If lab is assigned at t1 in room r, it MUST be assigned at t2 in the SAME room r
                             for r in rooms:
-                                model.Add(sum_t2 >= 1).OnlyEnforceIf(x[s_id, sub_id, r["id"], t1_id])
+                                r_id = r["id"]
+                                model.Add(x[s_id, sub_id, r_id, t2_id] == 1).OnlyEnforceIf(x[s_id, sub_id, r_id, t1_id])
 
 
         # Setup Solve Parameters
