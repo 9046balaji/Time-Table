@@ -121,46 +121,52 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
   };
 
   return (
-    <div className="w-full overflow-x-auto rounded-2xl border border-slate-300 bg-white shadow-sm">
+    <div className="w-full overflow-x-auto rounded-2xl border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm transition-colors">
       {/* ── Section Banner ── */}
-      <div className="text-center py-2 bg-white border-b border-slate-200">
-        <div className="text-[11px] font-semibold text-slate-500">Academic year 2026-27 (I Semester)</div>
-        <div className="mt-1 bg-purple-300 border border-purple-400 text-purple-950 font-extrabold text-sm py-1.5 px-4 inline-block rounded-lg shadow-sm uppercase tracking-widest">
+      <div className="text-center py-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+        <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+          Academic year 2026-27 (I Semester)
+        </div>
+        <div className="mt-1 bg-purple-200 dark:bg-purple-950/80 border border-purple-300 dark:border-purple-800 text-purple-950 dark:text-purple-200 font-extrabold text-sm py-1.5 px-4 inline-block rounded-lg shadow-sm uppercase tracking-widest">
           {sectionName}
         </div>
       </div>
 
       {/* ── Timetable Grid ── */}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[980px] border-collapse text-left text-xs border border-slate-900">
+        <table className="w-full min-w-[980px] border-collapse text-left text-xs border border-slate-300 dark:border-slate-800">
           <thead>
             {/* Row 5: Period Numbers */}
-            <tr className="bg-slate-100 text-slate-900 font-bold text-center border-b border-slate-900">
-              <th className="p-2 border border-slate-900 w-16">Period</th>
-              <th className="p-2 border border-slate-900">1</th>
-              <th className="p-2 border border-slate-900">2</th>
-              <th className="p-2 border border-slate-900 bg-slate-200 text-[10px] font-semibold">09:55-10:10</th>
-              <th className="p-2 border border-slate-900">3</th>
-              <th className="p-2 border border-slate-900">4</th>
-              <th className="p-2 border border-slate-900">5</th>
-              <th className="p-2 border border-slate-900 bg-slate-200 text-[10px] font-semibold">12:40-1:40</th>
-              <th className="p-2 border border-slate-900">6</th>
-              <th className="p-2 border border-slate-900">7</th>
-              <th className="p-2 border border-slate-900">8</th>
+            <tr className="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold text-center border-b border-slate-300 dark:border-slate-800">
+              <th className="p-2 border border-slate-300 dark:border-slate-800 w-16">Period</th>
+              <th className="p-2 border border-slate-300 dark:border-slate-800">1</th>
+              <th className="p-2 border border-slate-300 dark:border-slate-800">2</th>
+              <th className="p-2 border border-slate-300 dark:border-slate-800 bg-slate-200 dark:bg-slate-700/60 text-[10px] font-semibold text-slate-800 dark:text-slate-200">
+                09:55-10:10
+              </th>
+              <th className="p-2 border border-slate-300 dark:border-slate-800">3</th>
+              <th className="p-2 border border-slate-300 dark:border-slate-800">4</th>
+              <th className="p-2 border border-slate-300 dark:border-slate-800">5</th>
+              <th className="p-2 border border-slate-300 dark:border-slate-800 bg-slate-200 dark:bg-slate-700/60 text-[10px] font-semibold text-slate-800 dark:text-slate-200">
+                12:40-1:40
+              </th>
+              <th className="p-2 border border-slate-300 dark:border-slate-800">6</th>
+              <th className="p-2 border border-slate-300 dark:border-slate-800">7</th>
+              <th className="p-2 border border-slate-300 dark:border-slate-800">8</th>
             </tr>
             {/* Row 6: Time Ranges */}
-            <tr className="bg-slate-50 text-slate-700 text-[10px] font-semibold text-center border-b border-slate-900">
-              <th className="p-1 border border-slate-900">Day/Hour</th>
-              <th className="p-1 border border-slate-900">8:15-9:05</th>
-              <th className="p-1 border border-slate-900">9:05-09:55</th>
-              <th className="p-1 border border-slate-900 bg-slate-200">09:55-10:10</th>
-              <th className="p-1 border border-slate-900">10:10-11:00</th>
-              <th className="p-1 border border-slate-900">11:00-11:50</th>
-              <th className="p-1 border border-slate-900">11:50-12:40</th>
-              <th className="p-1 border border-slate-900 bg-slate-200">12:40-1:40</th>
-              <th className="p-1 border border-slate-900">1:40-2:30</th>
-              <th className="p-1 border border-slate-900">2:30-3:20</th>
-              <th className="p-1 border border-slate-900">3:20-4:05</th>
+            <tr className="bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 text-[10px] font-semibold text-center border-b border-slate-300 dark:border-slate-800">
+              <th className="p-1 border border-slate-300 dark:border-slate-800">Day/Hour</th>
+              <th className="p-1 border border-slate-300 dark:border-slate-800">8:15-9:05</th>
+              <th className="p-1 border border-slate-300 dark:border-slate-800">9:05-09:55</th>
+              <th className="p-1 border border-slate-300 dark:border-slate-800 bg-slate-200 dark:bg-slate-700/60">09:55-10:10</th>
+              <th className="p-1 border border-slate-300 dark:border-slate-800">10:10-11:00</th>
+              <th className="p-1 border border-slate-300 dark:border-slate-800">11:00-11:50</th>
+              <th className="p-1 border border-slate-300 dark:border-slate-800">11:50-12:40</th>
+              <th className="p-1 border border-slate-300 dark:border-slate-800 bg-slate-200 dark:bg-slate-700/60">12:40-1:40</th>
+              <th className="p-1 border border-slate-300 dark:border-slate-800">1:40-2:30</th>
+              <th className="p-1 border border-slate-300 dark:border-slate-800">2:30-3:20</th>
+              <th className="p-1 border border-slate-300 dark:border-slate-800">3:20-4:05</th>
             </tr>
           </thead>
 
@@ -168,9 +174,9 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
             {DAYS.map((day, dIdx) => {
               let skipPeriods = 0;
               return (
-                <tr key={day} className="border-b border-slate-900">
+                <tr key={day} className="border-b border-slate-300 dark:border-slate-800">
                   {/* Day label */}
-                  <td className="p-1.5 border border-slate-900 font-bold bg-slate-100 text-slate-900 text-center text-xs">
+                  <td className="p-1.5 border border-slate-300 dark:border-slate-800 font-bold bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-center text-xs">
                     {day}
                   </td>
 
@@ -183,9 +189,9 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                           <td
                             key={pIdx}
                             rowSpan={6}
-                            className="bg-slate-100 border border-slate-900 text-center text-[10px] font-bold align-middle p-1 w-12"
+                            className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-800 text-center text-[10px] font-bold align-middle p-1 w-12"
                           >
-                            <div className="flex flex-col items-center gap-0 leading-4 font-extrabold text-slate-800 tracking-widest">
+                            <div className="flex flex-col items-center gap-0 leading-4 font-extrabold text-slate-800 dark:text-slate-200 tracking-widest">
                               {isLunch
                                 ? ["L","U","N","C","H"].map((c,i)=><span key={i}>{c}</span>)
                                 : ["B","R","E","A","K"].map((c,i)=><span key={i}>{c}</span>)}
@@ -214,34 +220,34 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(e, day, periodId)}
                         onClick={() => entry && onCellClick?.(entry)}
-                        className={`border border-slate-900 text-center transition-all duration-150 cursor-pointer h-16 align-middle p-0.5 ${
+                        className={`border border-slate-300 dark:border-slate-800 text-center transition-all duration-150 cursor-pointer h-16 align-middle p-0.5 ${
                           entry?.hasClash
-                            ? "bg-red-100 border-l-4 border-l-red-600"
-                            : "bg-white hover:bg-purple-50"
+                            ? "bg-red-100 dark:bg-red-950/70 border-l-4 border-l-red-600"
+                            : "bg-white dark:bg-slate-900 hover:bg-purple-50 dark:hover:bg-purple-950/40"
                         }`}
                         title={entry?.hasClash ? `CLASH: ${entry.clashReason}` : ""}
                       >
                         {entry ? (
                           <div className="flex flex-col items-center justify-center h-full gap-0.5">
-                            {/* Line 1: Subject Code — Bold Black */}
-                            <div className="font-bold text-slate-900 text-[11px] leading-tight">
+                            {/* Line 1: Subject Code — Bold Text */}
+                            <div className="font-bold text-slate-900 dark:text-slate-100 text-[11px] leading-tight">
                               {entry.subjectCode}
                             </div>
                             {/* Line 2: Room Code — Bold Red */}
                             {entry.roomCode && (
-                              <div className="text-red-600 font-extrabold text-[11px] leading-tight">
+                              <div className="text-red-600 dark:text-red-400 font-extrabold text-[11px] leading-tight">
                                 {entry.roomCode}
                               </div>
                             )}
-                            {/* Line 3: Faculty short name — italic grey */}
+                            {/* Line 3: Faculty short name — italic muted text */}
                             {facShort && (
-                              <div className="text-slate-500 text-[9px] italic leading-tight truncate max-w-[110px]">
+                              <div className="text-slate-500 dark:text-slate-400 text-[9px] italic leading-tight truncate max-w-[110px]">
                                 {facShort}
                               </div>
                             )}
                           </div>
                         ) : (
-                          <span className="text-slate-300 text-[10px]">—</span>
+                          <span className="text-slate-300 dark:text-slate-700 text-[10px]">—</span>
                         )}
                       </td>
                     );
@@ -255,25 +261,25 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
 
       {/* ── 2-Column Faculty Allocation Legend (matching screenshot rows 14..22) ── */}
       {(lectureRows.length > 0 || labRows.length > 0) && (
-        <div className="border-t border-slate-900 text-[11px]">
-          <div className="grid grid-cols-2 divide-x divide-slate-300">
+        <div className="border-t border-slate-300 dark:border-slate-800 text-[11px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-800">
             {/* Left column: Lecture (L) faculty */}
-            <div className="divide-y divide-slate-200">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
               {lectureRows.map(([code, { name, faculty }], i) => (
-                <div key={i} className="px-3 py-1.5 text-slate-800 leading-snug">
+                <div key={i} className="px-3 py-1.5 text-slate-800 dark:text-slate-200 leading-snug">
                   <span className="font-semibold">{name}(L):</span>{" "}
-                  <span className="text-slate-600">{faculty || "Department Instructor"}</span>
+                  <span className="text-slate-600 dark:text-slate-400">{faculty || "Department Instructor"}</span>
                 </div>
               ))}
             </div>
             {/* Right column: Practical/Tutorial (P/T&P) faculty */}
-            <div className="divide-y divide-slate-200">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
               {labRows.map(([code, { name, faculty }], i) => {
                 const suffix = entries.find(e => e.subjectCode.startsWith(code) && e.subjectCode.includes("(T)")) ? "(T&P)" : "(P)";
                 return (
-                  <div key={i} className="px-3 py-1.5 text-slate-800 leading-snug">
+                  <div key={i} className="px-3 py-1.5 text-slate-800 dark:text-slate-200 leading-snug">
                     <span className="font-semibold">{name}{suffix}:</span>{" "}
-                    <span className="text-slate-600">{faculty || "Lab Instructor Team"}</span>
+                    <span className="text-slate-600 dark:text-slate-400">{faculty || "Lab Instructor Team"}</span>
                   </div>
                 );
               })}

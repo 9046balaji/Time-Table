@@ -42,15 +42,7 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
             </div>
           )}
 
-          {onToggle && (
-            <button
-              onClick={onToggle}
-              className={`p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer ${isCollapsed ? 'mt-2' : ''}`}
-              title={isCollapsed ? 'Expand Navigation Sidebar' : 'Collapse Navigation Sidebar'}
-            >
-              {isCollapsed ? <PanelLeftOpen className="w-5 h-5 text-emerald-400" /> : <PanelLeftClose className="w-5 h-5 text-blue-400" />}
-            </button>
-          )}
+          {/* Sidebar title */}
         </div>
 
         {/* Navigation Items */}

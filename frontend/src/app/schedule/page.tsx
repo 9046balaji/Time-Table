@@ -179,25 +179,25 @@ export default function SchedulePage() {
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Timetable Schedule Workbench & AI Wizard</h1>
-          <p className="text-sm text-slate-500">Interactive Section Grids, Vertical Stacked View & Faculty Individual Schedules</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Timetable Schedule Workbench & AI Wizard</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Interactive Section Grids, Vertical Stacked View & Faculty Individual Schedules</p>
         </div>
 
         {/* Mode Toggle Bar */}
-        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-sm shrink-0">
+        <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm shrink-0">
           <button
             onClick={() => setMode('matrix')}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              mode === 'matrix' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              mode === 'matrix' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            <Grid className="w-4 h-4 text-blue-600" /> Single Section Grid
+            <Grid className="w-4 h-4 text-blue-600 dark:text-blue-400" /> Single Section Grid
           </button>
 
           <button
             onClick={() => setMode('stack')}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              mode === 'stack' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
+              mode === 'stack' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
             <LayoutList className="w-4 h-4 text-emerald-200" /> Vertical Stack View
@@ -206,7 +206,7 @@ export default function SchedulePage() {
           <button
             onClick={() => setMode('faculty')}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              mode === 'faculty' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
+              mode === 'faculty' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
             <UserCheck className="w-4 h-4" /> Faculty Schedules
@@ -215,7 +215,7 @@ export default function SchedulePage() {
           <button
             onClick={() => setMode('wizard')}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              mode === 'wizard' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md' : 'text-amber-600 hover:text-amber-800 bg-amber-50 border border-amber-200'
+              mode === 'wizard' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md' : 'text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800'
             }`}
           >
             <Wand2 className="w-4 h-4" /> Create Timetable
@@ -224,17 +224,17 @@ export default function SchedulePage() {
       </div>
 
       {/* Version Selector Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl border border-blue-200">
+          <div className="p-2.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 rounded-xl border border-blue-200 dark:border-blue-800/60">
             <Layers className="w-5 h-5" />
           </div>
           <div>
-            <label className="text-xs font-bold text-slate-700 block">Timetable Version Track:</label>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Timetable Version Track:</label>
             <select
               value={selectedVersionId}
               onChange={(e) => setSelectedVersionId(Number(e.target.value))}
-              className="bg-slate-50 border border-slate-300 text-slate-900 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer mt-0.5"
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer mt-0.5"
             >
               {versions.map(v => (
                 <option key={v.id} value={v.id}>
@@ -245,7 +245,7 @@ export default function SchedulePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
           <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>PostgreSQL Active Version V{selectedVersionId}</span>
         </div>
@@ -254,13 +254,13 @@ export default function SchedulePage() {
       {/* MODE 1: SINGLE SECTION MATRIX GRID */}
       {mode === 'matrix' && (
         <>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm gap-4">
             <div className="flex items-center gap-2">
-              <label className="text-xs font-bold text-slate-600">Active Section:</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Active Section:</label>
               <select
                 value={selectedSection}
                 onChange={(e) => setSelectedSection(e.target.value)}
-                className="bg-slate-50 border border-slate-300 text-slate-900 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
               >
                 <optgroup label="B.Tech II Year (AIML)">
                   <option value="II AIML-A">II AIML-A</option>
