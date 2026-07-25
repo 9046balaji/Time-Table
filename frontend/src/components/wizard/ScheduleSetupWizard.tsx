@@ -161,6 +161,8 @@ const YEAR_SECTIONS: Record<string, string[]> = {
   "IV Year": ["IV AIML-A", "IV AIML-B", "IV CS"],
 };
 
+import { TimetableGrid } from "@/components/timetable/TimetableGrid";
+
 export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSuccess }) => {
   const [step, setStep] = useState<number>(1);
   const [branch, setBranch] = useState<string>("AIML");
@@ -172,6 +174,29 @@ export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSucc
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Faculty Schedule Modal State
+  const [inspectFacultyName, setInspectFacultyName] = useState<string | null>(null);
+  const [facultyTtData, setFacultyTtData] = useState<any | null>(null);
+  const [loadingFacultyTt, setLoadingFacultyTt] = useState<boolean>(false);
+
+  const openFacultySchedule = async (facName: string) => {
+    setInspectFacultyName(facName);
+    setLoadingFacultyTt(true);
+    setFacultyTtData(null);
+    try {
+      // Find faculty ID or fetch by name from backend
+      const facRes = await timetableApi.getFaculty();
+      const match = (facRes.data || []).find((f: any) => f.name.toLowerCase().includes(facName.toLowerCase()) || facName.toLowerCase().includes(f.name.toLowerCase()));
+      const facId = match ? match.id : 1;
+      const ttRes = await timetableApi.getFacultyTimetable(facId, 5);
+      setFacultyTtData(ttRes.data);
+    } catch (e) {
+      console.error("Failed to load faculty timetable", e);
+    } finally {
+      setLoadingFacultyTt(false);
+    }
+  };
 
   const handleYearChange = (newYear: string) => {
     setYearLevel(newYear);
@@ -472,17 +497,26 @@ export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSucc
                       <span className="ml-1 text-[10px] text-slate-500 font-mono">hrs/wk</span>
                     </td>
                     <td className="p-3">
-                      <select
-                        value={sub.faculty_name}
-                        onChange={(e) => updateAssignment(idx, "faculty_name", e.target.value)}
-                        className="w-full rounded border border-slate-300 bg-slate-50 p-1 font-semibold text-slate-800 focus:outline-none"
-                      >
-                        {FACULTY_POOL.map((fac) => (
-                          <option key={fac} value={fac}>
-                            {fac}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="space-y-1">
+                        <select
+                          value={sub.faculty_name}
+                          onChange={(e) => updateAssignment(idx, "faculty_name", e.target.value)}
+                          className="w-full rounded border border-slate-300 bg-slate-50 p-1 font-semibold text-slate-800 focus:outline-none"
+                        >
+                          {FACULTY_POOL.map((fac) => (
+                            <option key={fac} value={fac}>
+                              {fac}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => openFacultySchedule(sub.faculty_name)}
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 hover:text-purple-900 underline cursor-pointer"
+                        >
+                          <Clock className="w-3 h-3" /> View Schedule
+                        </button>
+                      </div>
                     </td>
                     <td className="p-3">
                       <div className="space-y-1.5">
@@ -492,7 +526,14 @@ export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSucc
                               key={cIdx}
                               className="inline-flex items-center gap-1 rounded border border-purple-200 bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-800"
                             >
-                              {co}
+                              <button
+                                type="button"
+                                onClick={() => openFacultySchedule(co)}
+                                className="hover:underline font-bold"
+                                title="Click to view weekly schedule"
+                              >
+                                {co}
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => toggleCoFaculty(idx, co)}
@@ -621,6 +662,71 @@ export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSucc
           </button>
         ) : null}
       </div>
+
+      {/* FACULTY TIMETABLE INSPECTOR MODAL */}
+      {inspectFacultyName && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-purple-600" /> Personal Weekly Schedule — {inspectFacultyName}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Inspect assigned teaching slots, section locations, and classroom venues across the department.
+                </p>
+              </div>
+              <button
+                onClick={() => setInspectFacultyName(null)}
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {loadingFacultyTt ? (
+              <div className="h-64 flex flex-col items-center justify-center gap-2 text-slate-400">
+                <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+                <p className="text-xs font-medium">Fetching {inspectFacultyName}'s timetable...</p>
+              </div>
+            ) : facultyTtData ? (
+              <div className="space-y-4">
+                <div className="bg-purple-900 text-white p-4 rounded-xl flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold text-sm">{facultyTtData.faculty_name || inspectFacultyName}</span>
+                    <span className="block text-purple-200">{facultyTtData.designation || "Faculty Member"} • ACSE Department</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-extrabold text-base text-purple-200">
+                      {(facultyTtData.entries || []).length} Hours / Week
+                    </span>
+                    <span className="block text-[10px] text-purple-300">Max Limit: {facultyTtData.max_hours_per_week || 16} Hours</span>
+                  </div>
+                </div>
+
+                <TimetableGrid
+                  sectionName={`${inspectFacultyName} Weekly Schedule`}
+                  entries={(facultyTtData.entries || []).map((e: any, idx: number) => ({
+                    id: String(e.id || idx),
+                    day: e.day,
+                    period: e.period,
+                    subjectCode: e.subject || "LECTURE",
+                    roomCode: e.room || "",
+                    sectionName: e.section || "",
+                    subjectType: (e.subject || "").includes("(P)") ? "P" : (e.subject || "").includes("(T)") ? "T" : "L",
+                    facultyName: inspectFacultyName
+                  }))}
+                />
+              </div>
+            ) : (
+              <div className="p-8 text-center text-slate-500 text-xs italic">
+                No active timetable entries found for {inspectFacultyName} in the current version.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
