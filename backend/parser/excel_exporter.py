@@ -363,25 +363,26 @@ class ExcelTimetableExporter:
 
         branches_data = [
             ("AIML", [
-                ("III", "I", "Minor", "CS301", "Digital Image Processing", "A", "NB518", "", "***", "", "3-0-2-4"),
-                ("III", "I", "Honors", "CS302", "Web and Sequence Data Mining", "A", "NB-218", "", "***", "", "3-0-2-4"),
-                ("III", "I", "Honors", "CS303", "Deep Learning", "B", "NB-614", "", "***", "", "3-0-2-4"),
-                ("IV", "I", "Honors", "CS401", "Cloud Computing for Machine Learning", "A", "NB-501", "***", "", "", "0-4-4-4")
+                ("III", "I", "Minor", "22CS301", "Digital Image Processing", "A", "NB518", "", "***", "", "3-0-2-4"),
+                ("III", "I", "Honors", "22CS302", "Web and Sequence Data Mining", "A", "NB-218", "", "***", "", "3-0-2-4"),
+                ("III", "I", "Honors", "22CS302", "Web and Sequence Data Mining", "B", "NB-614", "", "***", "", "3-0-2-4"),
+                ("IV", "I", "Minor", "22CS401", "Deep Learning", "A", "NB418", "", "***", "", "3-0-2-4"),
+                ("IV", "I", "Honors", "22CS402", "Cloud Computing for Machine Learning", "A", "NB-501", "***", "", "", "0-4-4-4")
             ]),
             ("CS", [
-                ("III", "I", "Honors", "CS305", "Vulnerability Assessment", "A", "514-B", "A. Hruday Raj", "***", "A. Hruday Raj", "3-0-2-4"),
-                ("IV", "I", "Honors", "CS405", "Security Audit", "A", "514-B", "Ms. Attuluri Ramy", "***", "Ms. Attuluri Ramy", "3-0-2-4")
+                ("III", "I", "Honors", "22CS305", "Penetration Testing and Vulnerability Assesment", "A", "514-B", "A. Hruday Raj / Ms. Attuluri Ramya", "***", "A. Hruday Raj / Ms. Attuluri Ramya", "3-0-2-4"),
+                ("IV", "I", "Honors", "22CS405", "Cyber Forensics & Incident Response", "A", "514-B", "Ms. Attuluri Ramya", "***", "Ms. Attuluri Ramya", "3-0-2-4")
             ]),
             ("CSBS", [
-                ("III", "I", "Honors", "CB301", "Image Processing & Pattern Recognition", "A", "402", "***", "", "", "3-0-2-3"),
-                ("IV", "I", "Honors", "CB401", "Business Analytics & Decision Systems", "A", "502", "***", "", "", "0-4-4-4")
+                ("III", "I", "Honors", "22CB301", "Image Processing and Pattren Recognition", "A", "402", "***", "", "", "3-0-2-3"),
+                ("IV", "I", "Honors", "22CB401", "Business Analytics & Decisicon Systems", "A", "502", "***", "", "", "0-4-4-4")
             ]),
             ("DS", [
-                ("III", "I", "Honors", "DS301", "Web and Sequence Data Mining", "A", "514-A", "", "***", "", "3-0-2-4"),
-                ("IV", "I", "Honors", "DS401", "Business Analytics & Decision Systems", "A", "501", "***", "", "", "0-4-4-4")
+                ("III", "I", "Honors", "22DS301", "Web and Sequence Data Mining", "A", "514-A", "", "***", "", "3-0-2-4"),
+                ("IV", "I", "Honors", "22DS401", "Business Analytics & Decisicon Systems", "A", "501", "", "***", "", "0-4-4-4")
             ]),
             ("IoT", [
-                ("III", "I", "Honors", "IT301", "Machine Learning for IoT Systems", "A", "NB-514", "", "", "", "3-0-2-4")
+                ("III", "I", "Honors", "22IT301", "Machine Learning for IoT Systems", "A", "NB-514", "", "", "", "3-0-2-4")
             ])
         ]
 

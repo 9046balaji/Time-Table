@@ -409,46 +409,13 @@ class ExportService:
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
             ('FONTSIZE', (0,0), (-1,-1), 7.5),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
-            ('TOPPADDING', (0,0), (-1,-1), 4),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+            ('TOPPADDING', (0,0), (-1,-1), 5),
             ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
         ]))
 
         elements.append(table)
-        elements.append(Spacer(1, 10))
-
-        # Detailed Class Allocation Table for PDF
-        breakdown_headers = ['#', 'Day', 'Period / Time', 'Subject', 'Section & Cohort', 'Room / Venue']
-        breakdown_rows = [breakdown_headers]
-        PERIOD_TIMES: Dict[int, str] = {
-            1: "8:15–9:05", 2: "9:05–9:55", 3: "10:10–11:00", 4: "11:00–11:50",
-            5: "11:50–12:40", 6: "1:40–2:30", 7: "2:30–3:20", 8: "3:20–4:05"
-        }
-        for idx, e in enumerate(entries, 1):
-            day_str = e.get("day", "")
-            p_num = e.get("period", 1)
-            time_str = f"P{p_num} ({PERIOD_TIMES.get(p_num, '')})"
-            subj_str = e.get("subject", "")
-            sec_str = e.get("section", "")
-            room_str = e.get("room", "")
-            breakdown_rows.append([str(idx), day_str, time_str, subj_str, sec_str, room_str])
-
-        if len(breakdown_rows) > 1:
-            b_table = Table(breakdown_rows, colWidths=[25, 45, 95, 160, 110, 95])
-            b_table.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#334155')),
-                ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-                ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0,0), (-1,-1), 7),
-                ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
-                ('TOPPADDING', (0,0), (-1,-1), 2.5),
-                ('GRID', (0,0), (-1,-1), 0.4, colors.HexColor('#CBD5E1')),
-            ]))
-            elements.append(b_table)
-            elements.append(Spacer(1, 10))
-
+        elements.append(Spacer(1, 15))
         elements.append(Paragraph(
             f"<b>Faculty Profile:</b> {fname} ({desig}) • Assigned Workload: <b>{assigned_hrs} / {max_hrs} hrs/week</b> • Department: ACSE",
             styles['Normal']
@@ -457,10 +424,12 @@ class ExportService:
         doc.build(elements)
         return buffer.getvalue()
 
-
     @staticmethod
     async def generate_faculty_pdfs(db: Any = None, version_id: int = 5) -> bytes:
         """Generate printable PDF containing weekly teaching schedules for all faculty."""
+        from app.services.timetable_service import TimetableService
+        from app.core.seed_cache import get_seed_data
+
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(
             buffer,
@@ -492,36 +461,50 @@ class ExportService:
             spaceAfter=12
         )
 
-        parser = ExcelTimetableParser()
-        try:
-            v_label = "V3" if version_id == 3 else "V5"
-            parsed_data = parser.parse_file(resolve_version_path(v_label))
-            faculty_dict = parsed_data.faculty_mappings
-            slots_list = parsed_data.raw_entries
-        except Exception:
-            faculty_dict = {"Dr. S. Srikantha Reddy": [], "Dr. P. Kalpana": []}
-            slots_list = []
+        seed = get_seed_data()
+        fac_list = seed.get("faculty", [])
+        
+        valid_faculty = []
+        seen_names = set()
+        for f in fac_list:
+            fname = str(f.get("name", "")).strip()
+            if not fname or fname.startswith("*") or ":" in fname or fname in seen_names or len(fname) < 3 or fname.isdigit():
+                continue
+            seen_names.add(fname)
+            valid_faculty.append(f)
 
-        faculty_names = list(faculty_dict.keys()) if faculty_dict else ["Dr. S. Srikantha Reddy"]
+        if not valid_faculty:
+            valid_faculty = [{"id": 1, "name": "Dr. S. Srikantha Reddy", "designation": "Associate Professor"}]
 
-        for idx, fname in enumerate(faculty_names):
+        total_faculty = len(valid_faculty)
+
+        for idx, f_obj in enumerate(valid_faculty):
+            f_id = f_obj.get("id")
+            f_name = f_obj.get("name", "Faculty Member")
+            f_desig = f_obj.get("designation", "Assistant Professor")
+
+            fac_tt = await TimetableService.get_faculty_timetable(db, faculty_id=f_id, faculty_name=f_name, version_id=version_id)
+            entries = fac_tt.get("entries", [])
+            assigned_hrs = fac_tt.get("assigned_hours", len(entries))
+            max_hrs = fac_tt.get("max_hours_per_week", 16)
+
             elements.append(Paragraph("VIGNAN'S FOUNDATION FOR SCIENCE, TECHNOLOGY & RESEARCH", title_style))
-            elements.append(Paragraph(f"DEPARTMENT OF ACSE — FACULTY WEEKLY TEACHING SCHEDULE: <b>{fname}</b>", subtitle_style))
+            elements.append(Paragraph(f"DEPARTMENT OF ACSE — FACULTY WEEKLY TEACHING SCHEDULE: <b>{f_name}</b>", subtitle_style))
 
-            headers = ['Day / Period', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']
+            headers = ['Day / Period', 'P1\n08:15', 'P2\n09:05', 'P3\n10:10', 'P4\n11:00', 'P5\n11:50', 'P6\n13:40', 'P7\n14:30', 'P8\n15:20']
             table_data = [headers]
-
             days = ["MON", "TUE", "WED", "THU", "FRI", "SAT"]
-            assigned_hours = 0
 
             for d in days:
                 row = [d]
                 for p in range(1, 9):
-                    match = [s for s in slots_list if fname in s.faculty_list and s.day == d and s.period == p]
+                    match = [e for e in entries if e.get("day") == d and e.get("period") == p]
                     if match:
-                        slot = match[0]
-                        cell_text = f"{slot.subject_code}\n{slot.section}\n({slot.room or ''})"
-                        assigned_hours += 1
+                        entry = match[0]
+                        subj = entry.get("subject", "")
+                        sec = entry.get("section", "")
+                        room = entry.get("room", "")
+                        cell_text = f"{subj}\n{sec}\n({room})" if room else f"{subj}\n{sec}"
                     else:
                         cell_text = "—"
                     row.append(cell_text)
@@ -534,70 +517,25 @@ class ExportService:
                 ('ALIGN', (0,0), (-1,-1), 'CENTER'),
                 ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                 ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0,0), (-1,-1), 7),
-                ('BOTTOMPADDING', (0,0), (-1,-1), 4),
-                ('TOPPADDING', (0,0), (-1,-1), 4),
+                ('FONTSIZE', (0,0), (-1,-1), 7.5),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+                ('TOPPADDING', (0,0), (-1,-1), 5),
                 ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
             ]))
 
             elements.append(table)
-            elements.append(Spacer(1, 8))
+            elements.append(Spacer(1, 15))
+            elements.append(Paragraph(
+                f"<b>Faculty Profile:</b> {f_name} ({f_desig}) • Assigned Workload: <b>{assigned_hrs} / {max_hrs} hrs/week</b> • Department: ACSE",
+                styles['Normal']
+            ))
 
-            # Detailed Class Breakdown for Booklet
-            def _get_val(obj: Any, key: str, alt_key: str = "", default: Any = "") -> Any:
-                if isinstance(obj, dict):
-                    return obj.get(key, obj.get(alt_key, default))
-                v = getattr(obj, key, None)
-                if v is None and alt_key:
-                    v = getattr(obj, alt_key, default)
-                return v if v is not None else default
-
-            fac_matched = []
-            for s in slots_list:
-                f_list = _get_val(s, 'faculty_list', 'faculty', [])
-                if isinstance(f_list, list) and any(fname in f for f in f_list):
-                    fac_matched.append(s)
-                elif isinstance(f_list, str) and fname in f_list:
-                    fac_matched.append(s)
-
-            if fac_matched:
-                PERIOD_TIMES: Dict[int, str] = {
-                    1: "8:15–9:05", 2: "9:05–9:55", 3: "10:10–11:00", 4: "11:00–11:50",
-                    5: "11:50–12:40", 6: "1:40–2:30", 7: "2:30–3:20", 8: "3:20–4:05"
-                }
-                b_rows = [['#', 'Day', 'Period / Time', 'Subject', 'Section & Cohort', 'Room / Venue']]
-                for b_idx, s in enumerate(fac_matched, 1):
-                    day_val = str(_get_val(s, 'day', '', ''))
-                    p_val = int(_get_val(s, 'period', '', 1))
-                    subj_val = str(_get_val(s, 'subject_code', 'subject', ''))
-                    sec_val = str(_get_val(s, 'section', 'section_name', ''))
-                    room_val = str(_get_val(s, 'room', 'room_code', ''))
-                    b_rows.append([str(b_idx), day_val, f"P{p_val} ({PERIOD_TIMES.get(p_val, '')})", subj_val, sec_val, room_val])
-
-
-                b_table = Table(b_rows, colWidths=[25, 45, 95, 160, 110, 95])
-                b_table.setStyle(TableStyle([
-                    ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#334155')),
-                    ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-                    ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-                    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                    ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0,0), (-1,-1), 7),
-                    ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-                    ('TOPPADDING', (0,0), (-1,-1), 2),
-                    ('GRID', (0,0), (-1,-1), 0.4, colors.HexColor('#CBD5E1')),
-                ]))
-                elements.append(b_table)
-                elements.append(Spacer(1, 8))
-
-            elements.append(Paragraph(f"<b>Faculty Summary:</b> Total Weekly Workload Assigned: <b>{assigned_hours} hours/week</b> • Department: ACSE", styles['Normal']))
-
-            if idx < len(faculty_names) - 1:
+            if idx < total_faculty - 1:
                 elements.append(PageBreak())
-
 
         doc.build(elements)
         return buffer.getvalue()
+
 
     @staticmethod
     async def sync_smartclass_nodes() -> Dict[str, Any]:
