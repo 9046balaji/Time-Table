@@ -46,7 +46,7 @@ services:
       dockerfile: Dockerfile
     container_name: vfstr_celery_worker
     restart: always
-    command: celery -A backend.tasks.celery_app worker --loglevel=info
+    command: celery -A backend.tasks.celery_app worker --loglevel=info --concurrency=2 --max-tasks-per-child=100
     volumes:
       - ./time_table:/app/time_table:ro
       - ./data:/app/data:ro
@@ -59,6 +59,7 @@ services:
       - redis
       - postgres
       - backend
+
 
   frontend:
     build:
