@@ -5,6 +5,7 @@ import shutil
 import tempfile
 from fastapi import APIRouter, UploadFile, File, HTTPException, status
 from typing import Dict, Any
+from app.core.config import settings
 from backend.parser.excel_parser import ExcelTimetableParser
 from backend.solver.conflict_checker import ConflictChecker
 
