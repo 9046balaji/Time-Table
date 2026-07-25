@@ -48,23 +48,11 @@ export default function SchedulePage() {
         setSelectedVersionId(5);
       });
 
-    timetableApi.getFaculty()
-      .then(res => {
-        const facs = Array.isArray(res.data) ? res.data : [];
-        const initial = facs.length > 0 ? facs : [
-          { id: 1, name: "Dr. S. Srikantha Reddy", designation: "Associate Professor" },
-          { id: 2, name: "DR. ANKAMMA RAO MALLELA", designation: "Professor" },
-          { id: 3, name: "DR. P. Kalpana", designation: "Professor" }
-        ];
-        setFacultyList(initial as Faculty[]);
-        if (initial.length > 0) setSelectedFacultyId(initial[0].id);
-      })
-      .catch(() => {
-        setFacultyList([
-          { id: 1, name: "Dr. S. Srikantha Reddy", designation: "Associate Professor" }
-        ] as Faculty[]);
-        setSelectedFacultyId(1);
-      });
+    timetableApi.getFaculty().then(res => {
+      const facs = Array.isArray(res.data) ? res.data : ((res.data as any)?.items || []);
+      setFacultyList(facs);
+      if (facs.length > 0) setSelectedFacultyId(facs[0].id);
+    });
   }, []);
 
   // Fetch section timetable slots
@@ -75,19 +63,33 @@ export default function SchedulePage() {
         .then((res) => {
           const rawSlots = res.data.slots || res.data.entries || [];
           setCohortAllSlots(rawSlots);
-          const mapped: SlotEntry[] = rawSlots.map((s: any, idx: number) => ({
-            id: String(s.id || idx),
-            day: s.day,
-            period: s.period,
-            subjectCode: s.subject || s.subject_code || "LECTURE",
-            roomCode: s.room || s.room_code || "",
-            facultyName: s.faculty || (Array.isArray(s.faculty_names) ? s.faculty_names.join(", ") : ""),
-            facultyNames: s.faculty_names || (s.faculty ? [s.faculty] : []),
-            subjectType: (s.subject || s.subject_code || "").includes("(P)") ? "P" : (s.subject || "").includes("(T)") ? "T" : "L",
-            spanPeriods: (s.subject || s.subject_code || "").includes("(P)") ? 2 : 1,
-            hasClash: s.has_clash || false,
-            clashReason: s.clash_reason || "",
-          }));
+          const mapped: SlotEntry[] = rawSlots.map((s: any, idx: number) => {
+            const facList: string[] = Array.isArray(s.faculty)
+              ? s.faculty.map((f: any) => String(f))
+              : (Array.isArray(s.faculty_names)
+                  ? s.faculty_names.map((f: any) => String(f))
+                  : (typeof s.faculty === 'string' && s.faculty ? [s.faculty] : []));
+
+            const facStr: string = typeof s.faculty === 'string'
+              ? s.faculty
+              : (facList.length > 0 ? facList.join(', ') : '');
+
+            const subjStr: string = String(s.subject || s.subject_code || 'LECTURE');
+
+            return {
+              id: String(s.id || idx),
+              day: s.day,
+              period: s.period,
+              subjectCode: subjStr,
+              roomCode: String(s.room || s.room_code || ''),
+              facultyName: facStr,
+              facultyNames: facList,
+              subjectType: subjStr.includes('(P)') ? 'P' : (subjStr.includes('(T)') ? 'T' : 'L'),
+              spanPeriods: subjStr.includes('(P)') ? 2 : 1,
+              hasClash: Boolean(s.has_clash),
+              clashReason: String(s.clash_reason || ''),
+            };
+          });
           setEntries(mapped);
         })
         .catch((err) => {
@@ -114,14 +116,32 @@ export default function SchedulePage() {
     }
   }, [selectedFacultyId, selectedVersionId, mode]);
 
+  const handleDownloadSinglePdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      const res = await timetableApi.exportSectionPdfs(selectedVersionId);
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Timetable_${selectedSection}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error('Download PDF error:', err);
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const handleDownloadFacultyPdf = async () => {
     if (!selectedFacultyId) return;
     setDownloadingPdf(true);
     try {
-      const response = await timetableApi.exportSingleFacultyPdf(selectedFacultyId, selectedVersionId);
+      const res = await timetableApi.exportSingleFacultyPdf(selectedFacultyId, selectedVersionId);
       const facObj = facultyList.find(f => f.id === selectedFacultyId);
       const fnameClean = facObj?.name.replace(/[^a-zA-Z0-9]/g, '_') || `Faculty_${selectedFacultyId}`;
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `VFSTR_V${selectedVersionId}_Schedule_${fnameClean}.pdf`);
@@ -139,8 +159,7 @@ export default function SchedulePage() {
     "II_AIML": ["II AIML-A", "II AIML-B", "II AIML-C", "II AIML-D", "II AIML-E", "II AIML-F", "II AIML-G", "II AIML-H", "II AIML-I", "II AIML-J", "II AIML-K", "II AIML-L"],
     "III_AIML": ["III AIML-A", "III AIML-B", "III AIML-C", "III AIML-D", "III AIML-E", "III AIML-F", "III AIML-G"],
     "IV_AIML": ["IV AIML-A", "IV AIML-B", "IV AIML-C", "IV AIML-D", "IV AIML-E"],
-    "CS_DS": ["II CS-A", "II CS-B", "III CS", "IV CS", "II DS-A", "II DS-B", "III DS-A", "III DS-B", "IV DS"],
-    "CSBS_IOT": ["II CSBS", "III CSBS", "IV - CSBS", "II IOT", "III IOT"]
+    "OTHER": ["II CS-A", "II CS-B", "III CS", "IV CS", "II DS-A", "II DS-B", "III DS-A", "III DS-B", "IV DS", "II CSBS", "III CSBS", "IV CSBS", "II IOT", "III IOT"]
   };
 
   const stackSections = cohortSectionsMap[selectedCohort] || cohortSectionsMap["II_AIML"];

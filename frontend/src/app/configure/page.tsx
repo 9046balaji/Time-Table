@@ -69,42 +69,38 @@ export default function ConfigurePage() {
         timetableApi.getFaculty().catch(() => ({ data: [] })),
         timetableApi.getRooms().catch(() => ({ data: [] })),
         timetableApi.getSubjects().catch(() => ({ data: [] })),
-        timetableApi.getSections().catch(() => ({ data: { items: [] } })),
+        timetableApi.getSections().catch(() => ({ data: [] })),
       ]);
 
-      const initialFaculty: Faculty[] = Array.isArray(facRes.data) && facRes.data.length > 0 ? facRes.data : [
+      const rawFacs = Array.isArray(facRes.data) ? facRes.data : (facRes.data as any)?.items || [];
+      const rawRooms = Array.isArray(roomRes.data) ? roomRes.data : (roomRes.data as any)?.items || [];
+      const rawSubjs = Array.isArray(subRes.data) ? subRes.data : (subRes.data as any)?.items || [];
+      const rawSecs = Array.isArray(secRes.data) ? secRes.data : (secRes.data as any)?.items || [];
+
+      const initialFaculty: Faculty[] = rawFacs.length > 0 ? rawFacs : [
         { id: 1, name: "Dr. S. Srikantha Reddy", employee_id: "FAC-101", designation: "Associate Professor", max_hours_per_week: 14, max_daily_classes: 5, is_external: false, availability: {} },
         { id: 2, name: "DR. ANKAMMA RAO MALLELA", employee_id: "FAC-102", designation: "Professor", max_hours_per_week: 12, max_daily_classes: 4, is_external: false, availability: {} },
         { id: 3, name: "DR. P. Kalpana", employee_id: "FAC-103", designation: "Professor", max_hours_per_week: 12, max_daily_classes: 4, is_external: false, availability: {} },
         { id: 4, name: "Dr. B. Sudha Rani", employee_id: "FAC-104", designation: "Professor", max_hours_per_week: 12, max_daily_classes: 4, is_external: false, availability: {} },
         { id: 5, name: "Ms. P. Seetha Lakshmi", employee_id: "FAC-105", designation: "Assistant Professor", max_hours_per_week: 16, max_daily_classes: 5, is_external: false, availability: {} },
-        { id: 6, name: "Ms. G. Mahalakshmi", employee_id: "FAC-106", designation: "Assistant Professor", max_hours_per_week: 16, max_daily_classes: 5, is_external: false, availability: {} },
-        { id: 7, name: "Mr. Industry Instructor", employee_id: "EXT-001", designation: "Assistant Professor", max_hours_per_week: 10, max_daily_classes: 3, is_external: true, availability: {} },
       ];
 
-      const initialRooms: Room[] = Array.isArray(roomRes.data) && roomRes.data.length > 0 ? roomRes.data : [
+      const initialRooms: Room[] = rawRooms.length > 0 ? rawRooms : [
         { id: 1, code: "601", room_type: "classroom", capacity: 66, floor: "6", block: "Aryabhatta Bhavan / U-Block", gpu_capable: false, is_available: true },
         { id: 2, code: "604", room_type: "computer_lab", capacity: 60, floor: "6", block: "Aryabhatta Bhavan / U-Block", gpu_capable: false, is_available: true },
         { id: 3, code: "AFTF-12", room_type: "gpu_lab", capacity: 72, floor: "AFTF", block: "Aryabhatta Bhavan / U-Block", gpu_capable: true, is_available: true },
-        { id: 4, code: "AFF-09", room_type: "project_room", capacity: 35, floor: "AFF", block: "Aryabhatta Bhavan / U-Block", gpu_capable: false, is_available: true },
-        { id: 5, code: "NB-518", room_type: "classroom", capacity: 60, floor: "NB", block: "New Block / NB", gpu_capable: false, is_available: true },
       ];
 
-      const initialSubjects: Subject[] = Array.isArray(subRes.data) && subRes.data.length > 0 ? subRes.data : [
+      const initialSubjects: Subject[] = rawSubjs.length > 0 ? rawSubjs : [
         { id: 1, code: "DS", full_name: "Data Structures", lecture_hours: 3, tutorial_hours: 1, lab_hours: 0, is_lab: false, gpu_required: false, slot_type: "L" },
         { id: 2, code: "DS(P)", full_name: "Data Structures Lab", lecture_hours: 0, tutorial_hours: 0, lab_hours: 2, is_lab: true, gpu_required: false, slot_type: "P", requires_consecutive: 2 },
         { id: 3, code: "AI", full_name: "Artificial Intelligence", lecture_hours: 3, tutorial_hours: 0, lab_hours: 0, is_lab: false, gpu_required: false, slot_type: "L" },
-        { id: 4, code: "DL(P)", full_name: "Deep Learning Practical Lab", lecture_hours: 0, tutorial_hours: 0, lab_hours: 2, is_lab: true, gpu_required: true, slot_type: "P", requires_consecutive: 2 },
-        { id: 5, code: "SFCDS", full_name: "Statistical Foundations for Computing", lecture_hours: 3, tutorial_hours: 0, lab_hours: 0, is_lab: false, gpu_required: false, slot_type: "L" },
-        { id: 6, code: "IDP", full_name: "Inter-Departmental Project", lecture_hours: 0, tutorial_hours: 0, lab_hours: 2, is_lab: true, gpu_required: true, slot_type: "IDP", requires_consecutive: 2 },
       ];
 
-      const sectionsData = secRes.data?.items || [
-        { id: 1, name: "II AIML-A", label: "A", year_level: 2, strength: 60, is_active: true },
-        { id: 2, name: "II AIML-B", label: "B", year_level: 2, strength: 58, is_active: true },
-        { id: 3, name: "III AIML-A", label: "A", year_level: 3, strength: 62, is_active: true },
-        { id: 4, name: "III CS", label: "A", year_level: 3, strength: 64, is_active: true },
-        { id: 5, name: "IV DS", label: "A", year_level: 4, strength: 52, is_active: true },
+      const sectionsData: Section[] = rawSecs.length > 0 ? rawSecs : [
+        { id: 1, name: "II AIML-A", label: "A", year_level: 2, strength: 66, is_active: true },
+        { id: 2, name: "II AIML-B", label: "B", year_level: 2, strength: 66, is_active: true },
+        { id: 3, name: "III AIML-A", label: "A", year_level: 3, strength: 66, is_active: true },
       ];
 
       setFacultyList(initialFaculty);
@@ -274,25 +270,34 @@ export default function ConfigurePage() {
 
   // Filtered Lists
   const filteredFaculty = useMemo(() => {
-    return facultyList.filter(f =>
-      f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (f.employee_id && f.employee_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      f.designation.toLowerCase().includes(searchQuery.toLowerCase())
+    const q = (searchQuery || '').toLowerCase();
+    return (facultyList || []).filter(f =>
+      f && (
+        (f.name || '').toLowerCase().includes(q) ||
+        (f.employee_id || '').toLowerCase().includes(q) ||
+        (f.designation || '').toLowerCase().includes(q)
+      )
     );
   }, [facultyList, searchQuery]);
 
   const filteredRooms = useMemo(() => {
-    return roomList.filter(r =>
-      r.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (r.block && r.block.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (r.room_type && r.room_type.toLowerCase().includes(searchQuery.toLowerCase()))
+    const q = (searchQuery || '').toLowerCase();
+    return (roomList || []).filter(r =>
+      r && (
+        (r.code || '').toLowerCase().includes(q) ||
+        (r.block || '').toLowerCase().includes(q) ||
+        (r.room_type || '').toLowerCase().includes(q)
+      )
     );
   }, [roomList, searchQuery]);
 
   const filteredSubjects = useMemo(() => {
-    return subjectList.filter(s =>
-      s.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.full_name.toLowerCase().includes(searchQuery.toLowerCase())
+    const q = (searchQuery || '').toLowerCase();
+    return (subjectList || []).filter(s =>
+      s && (
+        (s.code || '').toLowerCase().includes(q) ||
+        (s.full_name || '').toLowerCase().includes(q)
+      )
     );
   }, [subjectList, searchQuery]);
 
