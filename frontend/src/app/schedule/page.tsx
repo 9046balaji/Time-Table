@@ -507,13 +507,13 @@ export default function SchedulePage() {
       {/* MODE 3: FACULTY SCHEDULE VIEW */}
       {mode === 'faculty' && (
         <div className="space-y-6">
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <label className="text-xs font-bold text-slate-700 block">Select Faculty Member:</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block shrink-0">Select Faculty Member:</label>
               <select
                 value={selectedFacultyId || ''}
                 onChange={(e) => setSelectedFacultyId(Number(e.target.value))}
-                className="bg-slate-50 border border-slate-300 text-slate-900 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
               >
                 {facultyList.map(f => (
                   <option key={f.id} value={f.id}>{f.name} ({f.designation})</option>
@@ -521,46 +521,158 @@ export default function SchedulePage() {
               </select>
             </div>
 
-            <button
-              onClick={handleDownloadFacultyPdf}
-              disabled={downloadingPdf || !selectedFacultyId}
-              className="inline-flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-2 rounded-xl text-xs transition-colors shadow-sm cursor-pointer disabled:opacity-50"
-            >
-              {downloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              Download Faculty PDF Schedule (V{selectedVersionId})
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleDownloadFacultyPdf}
+                disabled={downloadingPdf || !selectedFacultyId}
+                className="inline-flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {downloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                Download Individual PDF
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await timetableApi.exportFacultyPdf(selectedVersionId);
+                    const blob = new Blob([res.data], { type: 'application/pdf' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `VFSTR_V${selectedVersionId}_Faculty_Booklet.pdf`;
+                    a.click();
+                  } catch (e) {
+                    console.error("Booklet export failed", e);
+                  }
+                }}
+                className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition-colors shadow-sm cursor-pointer"
+              >
+                <Download className="w-4 h-4 text-purple-300" /> Full Faculty Booklet PDF
+              </button>
+            </div>
           </div>
 
           {loadingFacultyTimetable ? (
-            <div className="w-full h-80 rounded-2xl border border-slate-200 bg-white flex flex-col items-center justify-center text-slate-400 gap-2">
+            <div className="w-full h-80 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col items-center justify-center text-slate-400 gap-2">
               <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
               <p className="text-xs font-medium">Loading Faculty Teaching Schedule...</p>
             </div>
           ) : facultyTimetableData ? (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-6 rounded-2xl shadow-md border border-purple-800 flex items-center justify-between">
+              {/* Profile Card & Workload Bar */}
+              <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white p-6 rounded-2xl shadow-md border border-purple-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold">{facultyTimetableData.faculty_name}</h2>
-                  <p className="text-xs text-purple-200">{facultyTimetableData.designation} • {facultyTimetableData.department || "ACSE Department"}</p>
+                  <h2 className="text-xl font-bold">{facultyTimetableData.faculty_name || facultyTimetableData.name}</h2>
+                  <p className="text-xs text-purple-200 mt-0.5">
+                    {facultyTimetableData.designation || "Faculty Member"} • ACSE Department • Vignan University
+                  </p>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-extrabold text-purple-200">{facultyTimetableData.total_hours} Hours</div>
-                  <div className="text-[11px] text-purple-300">Weekly Teaching Load (Max {facultyTimetableData.max_hours} Hours)</div>
+                <div className="text-right shrink-0">
+                  <div className="text-2xl font-extrabold text-purple-200">
+                    {facultyTimetableData.assigned_hours ?? facultyTimetableData.total_hours ?? (facultyTimetableData.entries || []).length} / {facultyTimetableData.max_hours_per_week ?? facultyTimetableData.max_hours ?? 16} Hours
+                  </div>
+                  <div className="text-[11px] text-purple-300">Weekly Teaching Load Limit</div>
+                  <div className="w-48 h-2 bg-purple-950 rounded-full mt-2 overflow-hidden border border-purple-700/60">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-400 to-purple-400 rounded-full"
+                      style={{
+                        width: `${Math.min(100, Math.round((((facultyTimetableData.assigned_hours ?? (facultyTimetableData.entries || []).length)) / (facultyTimetableData.max_hours_per_week ?? 16)) * 100))}%`
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 
+              {/* Personal Teaching Schedule Matrix Grid */}
               <TimetableGrid
-                sectionName={`${facultyTimetableData.faculty_name} Schedule`}
-                entries={facultyGridEntries}
+                sectionName={`${facultyTimetableData.faculty_name || facultyTimetableData.name} Schedule`}
+                entries={(facultyTimetableData.entries || []).map((e: any, idx: number) => ({
+                  id: String(e.id || idx),
+                  day: e.day,
+                  period: e.period,
+                  subjectCode: e.subject || e.subject_code || "LECTURE",
+                  roomCode: e.room || e.room_code || "",
+                  sectionName: e.section || e.section_name || "",
+                  subjectType: (e.subject || "").includes("(P)") ? "P" : (e.subject || "").includes("(T)") ? "T" : "L",
+                  spanPeriods: (e.subject || "").includes("(P)") ? 2 : 1,
+                  facultyName: facultyTimetableData.faculty_name || facultyTimetableData.name || ""
+                }))}
               />
+
+              {/* Detailed Weekly Teaching Allocation Breakdown Table */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Weekly Teaching Class Allocation Breakdown — {facultyTimetableData.faculty_name || facultyTimetableData.name}
+                  </h3>
+                  <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-3 py-1 rounded-full border border-purple-200 dark:border-purple-800">
+                    {(facultyTimetableData.entries || []).length} Classes Assigned
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
+                        <th className="p-2.5 w-10 text-center">#</th>
+                        <th className="p-2.5 w-24">Day</th>
+                        <th className="p-2.5 w-24">Period / Time</th>
+                        <th className="p-2.5">Subject</th>
+                        <th className="p-2.5 w-32">Section & Cohort</th>
+                        <th className="p-2.5 w-28">Classroom / Lab</th>
+                        <th className="p-2.5 w-20 text-center">Type</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(facultyTimetableData.entries || []).map((e: any, i: number) => {
+                        const PERIOD_TIMES: Record<number, string> = {
+                          1: "8:15–9:05",
+                          2: "9:05–9:55",
+                          3: "10:10–11:00",
+                          4: "11:00–11:50",
+                          5: "11:50–12:40",
+                          6: "1:40–2:30",
+                          7: "2:30–3:20",
+                          8: "3:20–4:05"
+                        };
+                        const subjCode = e.subject || e.subject_code || "LECTURE";
+                        const isLab = subjCode.includes("(P)");
+                        const isTut = subjCode.includes("(T)");
+                        return (
+                          <tr key={i} className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                            <td className="p-2.5 text-center font-mono text-slate-400">{i + 1}</td>
+                            <td className="p-2.5 font-extrabold text-slate-900 dark:text-slate-100">{e.day}</td>
+                            <td className="p-2.5 font-semibold text-slate-700 dark:text-slate-300">
+                              Period {e.period} <span className="text-[10px] text-slate-400 block font-normal">{PERIOD_TIMES[e.period] || ""}</span>
+                            </td>
+                            <td className="p-2.5 font-bold text-slate-800 dark:text-slate-200">{subjCode}</td>
+                            <td className="p-2.5">
+                              <span className="bg-purple-100 dark:bg-purple-950/60 text-purple-900 dark:text-purple-200 font-extrabold px-2 py-0.5 rounded text-[11px] border border-purple-200 dark:border-purple-800">
+                                {e.section || e.section_name || "Section"}
+                              </span>
+                            </td>
+                            <td className="p-2.5 font-extrabold text-red-600 dark:text-red-400">{e.room || e.room_code || "Room"}</td>
+                            <td className="p-2.5 text-center">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isLab ? "bg-violet-100 text-violet-800 dark:bg-violet-950/60 dark:text-violet-300" : isTut ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"}`}>
+                                {isLab ? "Lab (P)" : isTut ? "Tutorial (T)" : "Lecture (L)"}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="p-8 text-center bg-white rounded-2xl border border-slate-200 text-slate-500 text-xs font-medium">
+            <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 text-xs font-medium">
               Select a faculty member to load their personal teaching schedule matrix.
             </div>
           )}
         </div>
       )}
+
 
       {/* MODE 4: CREATE TIMETABLE WIZARD */}
       {mode === 'wizard' && (

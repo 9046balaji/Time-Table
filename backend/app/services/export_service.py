@@ -415,7 +415,40 @@ class ExportService:
         ]))
 
         elements.append(table)
-        elements.append(Spacer(1, 15))
+        elements.append(Spacer(1, 10))
+
+        # Detailed Class Allocation Table for PDF
+        breakdown_headers = ['#', 'Day', 'Period / Time', 'Subject', 'Section & Cohort', 'Room / Venue']
+        breakdown_rows = [breakdown_headers]
+        PERIOD_TIMES: Dict[int, str] = {
+            1: "8:15–9:05", 2: "9:05–9:55", 3: "10:10–11:00", 4: "11:00–11:50",
+            5: "11:50–12:40", 6: "1:40–2:30", 7: "2:30–3:20", 8: "3:20–4:05"
+        }
+        for idx, e in enumerate(entries, 1):
+            day_str = e.get("day", "")
+            p_num = e.get("period", 1)
+            time_str = f"P{p_num} ({PERIOD_TIMES.get(p_num, '')})"
+            subj_str = e.get("subject", "")
+            sec_str = e.get("section", "")
+            room_str = e.get("room", "")
+            breakdown_rows.append([str(idx), day_str, time_str, subj_str, sec_str, room_str])
+
+        if len(breakdown_rows) > 1:
+            b_table = Table(breakdown_rows, colWidths=[25, 45, 95, 160, 110, 95])
+            b_table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#334155')),
+                ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+                ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0,0), (-1,-1), 7),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
+                ('TOPPADDING', (0,0), (-1,-1), 2.5),
+                ('GRID', (0,0), (-1,-1), 0.4, colors.HexColor('#CBD5E1')),
+            ]))
+            elements.append(b_table)
+            elements.append(Spacer(1, 10))
+
         elements.append(Paragraph(
             f"<b>Faculty Profile:</b> {fname} ({desig}) • Assigned Workload: <b>{assigned_hrs} / {max_hrs} hrs/week</b> • Department: ACSE",
             styles['Normal']
@@ -423,6 +456,7 @@ class ExportService:
 
         doc.build(elements)
         return buffer.getvalue()
+
 
     @staticmethod
     async def generate_faculty_pdfs(db: Any = None, version_id: int = 5) -> bytes:
@@ -507,11 +541,44 @@ class ExportService:
             ]))
 
             elements.append(table)
-            elements.append(Spacer(1, 12))
+            elements.append(Spacer(1, 8))
+
+            # Detailed Class Breakdown for Booklet
+            fac_matched = [s for s in slots_list if fname in getattr(s, 'faculty_list', []) or fname in str(s.get("faculty", ""))]
+            if fac_matched:
+                PERIOD_TIMES: Dict[int, str] = {
+                    1: "8:15–9:05", 2: "9:05–9:55", 3: "10:10–11:00", 4: "11:00–11:50",
+                    5: "11:50–12:40", 6: "1:40–2:30", 7: "2:30–3:20", 8: "3:20–4:05"
+                }
+                b_rows = [['#', 'Day', 'Period / Time', 'Subject', 'Section & Cohort', 'Room / Venue']]
+                for b_idx, s in enumerate(fac_matched, 1):
+                    day_val = str(getattr(s, 'day', s.get('day', '')))
+                    p_val = int(getattr(s, 'period', s.get('period', 1)))
+                    subj_val = str(getattr(s, 'subject_code', s.get('subject', '')))
+                    sec_val = str(getattr(s, 'section', s.get('section', '')))
+                    room_val = str(getattr(s, 'room', s.get('room', '')))
+                    b_rows.append([str(b_idx), day_val, f"P{p_val} ({PERIOD_TIMES.get(p_val, '')})", subj_val, sec_val, room_val])
+
+                b_table = Table(b_rows, colWidths=[25, 45, 95, 160, 110, 95])
+                b_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#334155')),
+                    ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+                    ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                    ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0,0), (-1,-1), 7),
+                    ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+                    ('TOPPADDING', (0,0), (-1,-1), 2),
+                    ('GRID', (0,0), (-1,-1), 0.4, colors.HexColor('#CBD5E1')),
+                ]))
+                elements.append(b_table)
+                elements.append(Spacer(1, 8))
+
             elements.append(Paragraph(f"<b>Faculty Summary:</b> Total Weekly Workload Assigned: <b>{assigned_hours} hours/week</b> • Department: ACSE", styles['Normal']))
 
             if idx < len(faculty_names) - 1:
                 elements.append(PageBreak())
+
 
         doc.build(elements)
         return buffer.getvalue()
