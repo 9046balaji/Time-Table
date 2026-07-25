@@ -476,17 +476,23 @@ export default function SchedulePage() {
           <div className="space-y-12">
             {stackSections.map((secName, sIdx) => {
               const secSlots = cohortAllSlots.filter(s => (s.section || s.section_name) === secName);
-              const mappedSecSlots: SlotEntry[] = secSlots.map((s: any, idx: number) => ({
-                id: String(s.id || idx),
-                day: s.day,
-                period: s.period,
-                subjectCode: s.subject || s.subject_code || "LECTURE",
-                roomCode: s.room || s.room_code || "",
-                facultyName: s.faculty || (Array.isArray(s.faculty_names) ? s.faculty_names.join(", ") : ""),
-                facultyNames: s.faculty_names || (s.faculty ? [s.faculty] : []),
-                subjectType: (s.subject || s.subject_code || "").includes("(P)") ? "P" : (s.subject || "").includes("(T)") ? "T" : "L",
-                spanPeriods: (s.subject || s.subject_code || "").includes("(P)") ? 2 : 1,
-              }));
+              const mappedSecSlots: SlotEntry[] = secSlots.map((s: any, idx: number) => {
+                const subStr = String(s.subject || s.subject_code || "LECTURE");
+                const rmStr = String(s.room || s.room_code || "");
+                const facStr = typeof s.faculty === "string" ? s.faculty : Array.isArray(s.faculty) ? s.faculty.map(String).join(", ") : "";
+                const facArr = Array.isArray(s.faculty_names) ? s.faculty_names.map(String) : Array.isArray(s.faculty) ? s.faculty.map(String) : facStr ? [facStr] : [];
+                return {
+                  id: String(s.id || idx),
+                  day: s.day,
+                  period: s.period,
+                  subjectCode: subStr,
+                  roomCode: rmStr,
+                  facultyName: facStr,
+                  facultyNames: facArr,
+                  subjectType: subStr.includes("(P)") ? "P" : subStr.includes("(T)") ? "T" : "L",
+                  spanPeriods: subStr.includes("(P)") ? 2 : 1,
+                };
+              });
 
               return (
                 <div key={secName} className="space-y-2">

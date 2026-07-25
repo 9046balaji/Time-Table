@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useMemo, useState } from "react";
 import { Download } from "lucide-react";
@@ -77,12 +77,13 @@ type SubjectEntry = {
 const SKIP_CODES = new Set(["BREAK", "LUNCH", "LIBRARY", "SL/EL", "IDP", "MINORS_HONORS", "CRT", "SL_EL"]);
 
 function shortFacultyName(entry: SlotEntry): string {
-  const raw =
+  const rawVal =
     Array.isArray(entry.facultyNames) && entry.facultyNames.length > 0
       ? entry.facultyNames[0]
       : entry.facultyName || "";
+  const raw = typeof rawVal === "string" ? rawVal.trim() : String(rawVal || "").trim();
   if (!raw || raw === "undefined" || raw === "null") return "";
-  const parts = raw.trim().split(/\s+/);
+  const parts = raw.split(/\s+/);
   if (parts.length <= 2) return raw;
   const title = parts[0].match(/^(Dr|Mr|Ms|Prof)\.?$/i) ? parts[0] + " " : "";
   return title + parts[parts.length - 1];
@@ -90,9 +91,10 @@ function shortFacultyName(entry: SlotEntry): string {
 
 function fullFacultyNames(entry: SlotEntry): string {
   if (Array.isArray(entry.facultyNames) && entry.facultyNames.length > 0) {
-    return entry.facultyNames.filter(Boolean).join(", ");
+    return entry.facultyNames.map(f => typeof f === "string" ? f : String(f || "")).filter(Boolean).join(", ");
   }
-  return entry.facultyName && entry.facultyName !== "undefined" ? entry.facultyName : "";
+  const raw = typeof entry.facultyName === "string" ? entry.facultyName : String(entry.facultyName || "");
+  return raw && raw !== "undefined" && raw !== "null" ? raw : "";
 }
 
 function slotBg(entry: SlotEntry | undefined): string {
@@ -126,14 +128,15 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
   const allocationRows = useMemo((): SubjectEntry[] => {
     const map = new Map<string, SubjectEntry>();
     entries.forEach((e) => {
-      if (!e.subjectCode) return;
-      const rawCode = e.subjectCode
+      if (!e || !e.subjectCode) return;
+      const strCode = typeof e.subjectCode === "string" ? e.subjectCode : String(e.subjectCode || "");
+      const rawCode = strCode
         .replace("(P)", "").replace("(T&P)", "").replace("(T)", "").trim();
       if (!rawCode || SKIP_CODES.has(rawCode)) return;
 
-      const hasTaP = e.subjectCode.includes("(T&P)");
-      const hasP   = e.subjectCode.includes("(P)") || e.subjectType === "P";
-      const hasT   = e.subjectCode.includes("(T)") || e.subjectType === "T";
+      const hasTaP = strCode.includes("(T&P)");
+      const hasP   = strCode.includes("(P)") || e.subjectType === "P";
+      const hasT   = strCode.includes("(T)") || e.subjectType === "T";
       const type: SubjectEntry["type"] = hasTaP ? "T&P" : hasP ? "P" : hasT ? "T" : "L";
       const key = `${rawCode}__${type}`;
       const facs = fullFacultyNames(e);
