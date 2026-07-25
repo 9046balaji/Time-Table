@@ -544,7 +544,22 @@ class ExportService:
             elements.append(Spacer(1, 8))
 
             # Detailed Class Breakdown for Booklet
-            fac_matched = [s for s in slots_list if fname in getattr(s, 'faculty_list', []) or fname in str(s.get("faculty", ""))]
+            def _get_val(obj: Any, key: str, alt_key: str = "", default: Any = "") -> Any:
+                if isinstance(obj, dict):
+                    return obj.get(key, obj.get(alt_key, default))
+                v = getattr(obj, key, None)
+                if v is None and alt_key:
+                    v = getattr(obj, alt_key, default)
+                return v if v is not None else default
+
+            fac_matched = []
+            for s in slots_list:
+                f_list = _get_val(s, 'faculty_list', 'faculty', [])
+                if isinstance(f_list, list) and any(fname in f for f in f_list):
+                    fac_matched.append(s)
+                elif isinstance(f_list, str) and fname in f_list:
+                    fac_matched.append(s)
+
             if fac_matched:
                 PERIOD_TIMES: Dict[int, str] = {
                     1: "8:15–9:05", 2: "9:05–9:55", 3: "10:10–11:00", 4: "11:00–11:50",
@@ -552,12 +567,13 @@ class ExportService:
                 }
                 b_rows = [['#', 'Day', 'Period / Time', 'Subject', 'Section & Cohort', 'Room / Venue']]
                 for b_idx, s in enumerate(fac_matched, 1):
-                    day_val = str(getattr(s, 'day', s.get('day', '')))
-                    p_val = int(getattr(s, 'period', s.get('period', 1)))
-                    subj_val = str(getattr(s, 'subject_code', s.get('subject', '')))
-                    sec_val = str(getattr(s, 'section', s.get('section', '')))
-                    room_val = str(getattr(s, 'room', s.get('room', '')))
+                    day_val = str(_get_val(s, 'day', '', ''))
+                    p_val = int(_get_val(s, 'period', '', 1))
+                    subj_val = str(_get_val(s, 'subject_code', 'subject', ''))
+                    sec_val = str(_get_val(s, 'section', 'section_name', ''))
+                    room_val = str(_get_val(s, 'room', 'room_code', ''))
                     b_rows.append([str(b_idx), day_val, f"P{p_val} ({PERIOD_TIMES.get(p_val, '')})", subj_val, sec_val, room_val])
+
 
                 b_table = Table(b_rows, colWidths=[25, 45, 95, 160, 110, 95])
                 b_table.setStyle(TableStyle([
