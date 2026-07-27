@@ -210,8 +210,12 @@ class ExportService:
             elements.append(Paragraph("VIGNAN'S FOUNDATION FOR SCIENCE, TECHNOLOGY & RESEARCH", title_style))
             elements.append(Paragraph(f"DEPARTMENT OF ACSE — SECTION WEEKLY TIMETABLE: <b>{sname}</b> ({ver_label})", subtitle_style))
 
-            headers = ['Day / Period', 'P1\n08:15', 'P2\n09:05', 'TEA\n09:55', 'P3\n10:10', 'P4\n11:00', 'P5\n11:50', 'LUNCH\n12:40', 'P6\n13:40', 'P7\n14:30', 'P8\n15:20']
-            table_data = [headers]
+            # Build 11-Column Grid Table: Banner + Period Headers + Time Subheaders + Days MON..SAT
+            row_banner = [sname] + [""] * 10
+            row_periods = ["Period", "1", "2", "TEA BREAK", "3", "4", "5", "LUNCH BREAK", "6", "7", "8"]
+            row_times = ["Day/Hour", "8:15-9:05", "9:05-09:55", "09:55 - 10:10", "10:10-11:00", "11:00-11:50", "11:50-12:40", "12:40 - 1:40", "1:40-2:30", "2:30-3:20", "3:20-4:05"]
+            
+            table_data = [row_banner, row_periods, row_times]
 
             days = ["MON", "TUE", "WED", "THU", "FRI", "SAT"]
             for d in days:
@@ -227,28 +231,32 @@ class ExportService:
                         slot = match[0]
                         subj = slot.get("subject", "")
                         rm = slot.get("room", "")
-                        fac = slot.get("faculty", "")
-                        # Shorten faculty name if long
-                        fac_short = fac.split(",")[0].replace("Dr. ", "").replace("Ms. ", "").replace("Mr. ", "").strip() if fac else ""
-                        cell_text = f"{subj}\n{rm}\n{fac_short}" if fac_short else f"{subj}\n{rm}"
+                        cell_text = f"{subj}\n{rm}" if rm else subj
                     else:
                         cell_text = "FREE"
                     row.append(cell_text)
                 table_data.append(row)
 
-            table = Table(table_data, colWidths=[65, 68, 68, 55, 68, 68, 68, 55, 68, 68, 68])
+            table = Table(table_data, colWidths=[62, 70, 70, 62, 70, 70, 70, 62, 70, 70, 70])
             table.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0F172A')),
-                ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0,0), (-1,-1), 7),
-                ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-                ('TOPPADDING', (0,0), (-1,-1), 3),
-                ('BACKGROUND', (3,0), (3,-1), colors.HexColor('#FEF3C7')),
-                ('BACKGROUND', (7,0), (7,-1), colors.HexColor('#F1F5F9')),
-                ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+                ('SPAN', (0, 0), (10, 0)),
+                ('BACKGROUND', (0, 0), (10, 0), colors.HexColor('#A855F7')),
+                ('TEXTCOLOR', (0, 0), (10, 0), colors.white),
+                ('FONTNAME', (0, 0), (10, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (10, 0), 10),
+                ('ALIGN', (0, 0), (10, 0), 'CENTER'),
+                ('VALIGN', (0, 0), (10, 0), 'MIDDLE'),
+                ('BACKGROUND', (0, 1), (-1, 2), colors.HexColor('#F1F5F9')),
+                ('TEXTCOLOR', (0, 1), (-1, 2), colors.HexColor('#0F172A')),
+                ('ALIGN', (0, 1), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 1), (-1, -1), 'MIDDLE'),
+                ('FONTNAME', (0, 1), (-1, 2), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 7.5),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+                ('TOPPADDING', (0, 0), (-1, -1), 3),
+                ('BACKGROUND', (3, 3), (3, -1), colors.HexColor('#FEF3C7')),
+                ('BACKGROUND', (7, 3), (7, -1), colors.HexColor('#F1F5F9')),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
             ]))
 
             elements.append(table)
