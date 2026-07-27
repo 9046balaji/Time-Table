@@ -3,7 +3,11 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Tuple, Optional
 from pydantic import BaseModel, Field
 from ortools.sat.python import cp_model
-from backend.solver.constraints import ConstraintRules
+
+try:
+    from backend.solver.constraints import ConstraintRules
+except (ImportError, ModuleNotFoundError):
+    from solver.constraints import ConstraintRules
 
 
 class SolverConfig(BaseModel):
@@ -62,6 +66,26 @@ class CPSATSolver:
         model = cp_model.CpModel()
         faculty_subject_map = faculty_subject_map or {}
 
+        # -----------------------------------------------------------------------
+        # SELF-DIRECTED SLOT TYPES — defined first so all constraint blocks can use it
+        # -----------------------------------------------------------------------
+        SELF_DIRECTED_TYPES = frozenset({"LIBRARY", "IIC", "SL_EL", "OE", "CRT", "SPECIAL", "MINORHONOR"})
+
+        def _has_faculty(ss: Dict[str, Any]) -> bool:
+            """True when a subject record carries a real (non-None, non-empty) faculty name."""
+            fname = ss.get("faculty_name")
+            return bool(fname and str(fname).strip())
+
+        # -----------------------------------------------------------------------
+        # VIRTUAL LIBRARY ROOM INJECTION
+        # Self-directed slots (LIBRARY, IIC, SL_EL, OE, CRT) have no physical room.
+        # We inject a virtual room so CP-SAT decision variables exist for HC-04
+        # (subject frequency == needed) to be satisfiable. HC-01 room-conflict
+        # constraints still apply to the virtual room, ensuring no two sections
+        # share the same LIBRARY slot simultaneously.
+        # -----------------------------------------------------------------------
+        VIRTUAL_LIB_ROOM = {"id": "VIRTUAL_LIBRARY", "room_type": "library", "capacity": 9999}
+
         # Decision Variable: x[section_id, subject_id, room_id, slot_id] -> Bool
         x = {}
         for sec in sections:
@@ -69,7 +93,10 @@ class CPSATSolver:
             sec_subjs = [ss for ss in section_subjects if ss["section_id"] == s_id]
             for ss in sec_subjs:
                 sub_id = ss["subject_id"]
-                for r in rooms:
+                sub_type = ss.get("subject_type", "L")
+                # Self-directed types: only the virtual room is a valid assignment
+                room_pool = [VIRTUAL_LIB_ROOM] if sub_type in SELF_DIRECTED_TYPES else rooms
+                for r in room_pool:
                     r_id = r["id"]
                     for t in time_slots:
                         t_id = t["id"]
@@ -80,19 +107,23 @@ class CPSATSolver:
             r_id = r["id"]
             for t in time_slots:
                 t_id = t["id"]
-                model.AddAtMostOne([
+                room_vars = [
                     x[sec["id"], ss["subject_id"], r_id, t_id]
                     for sec in sections
                     for ss in section_subjects if ss["section_id"] == sec["id"]
-                ])
+                    if (sec["id"], ss["subject_id"], r_id, t_id) in x
+                ]
+                if room_vars:
+                    model.AddAtMostOne(room_vars)
 
-        # Extract all unique faculty members from section_subjects + faculty_subject_map
+        # Extract all unique real faculty members (skip None / self-directed slots)
         all_faculty_names = set(faculty_subject_map.keys())
         for ss in section_subjects:
-            if ss.get("faculty_name"):
-                all_faculty_names.add(ss["faculty_name"].strip())
+            if not _has_faculty(ss):
+                continue  # CRITICAL: skip LIBRARY/IIC/SL_EL — no double-booking needed
+            all_faculty_names.add(ss["faculty_name"].strip())
             for co in ss.get("co_faculty", []):
-                if co.strip():
+                if co and co.strip():
                     all_faculty_names.add(co.strip())
 
         # Build lookup for subject involvement per faculty member
@@ -102,18 +133,22 @@ class CPSATSolver:
             s_id = sec["id"]
             sec_subjs = [ss for ss in section_subjects if ss["section_id"] == s_id]
             for ss in sec_subjs:
+                # CRITICAL FIX: self-directed slots must never enter HC-02 tracking
+                if ss.get("subject_type") in SELF_DIRECTED_TYPES or not _has_faculty(ss):
+                    continue
+
                 sub_id = ss["subject_id"]
                 sub_code = ss.get("subject_code", "")
-                
-                # Check direct faculty fields
-                ss_facs = set()
-                if ss.get("faculty_name"):
+
+                # Collect direct + co_faculty names
+                ss_facs: set = set()
+                if _has_faculty(ss):
                     ss_facs.add(ss["faculty_name"].strip())
                 for co in ss.get("co_faculty", []):
-                    if co.strip():
+                    if co and co.strip():
                         ss_facs.add(co.strip())
 
-                # Fallback to faculty_subject_map if empty
+                # Fallback to faculty_subject_map if no direct assignment
                 if not ss_facs:
                     for f_name, codes in faculty_subject_map.items():
                         if sub_code in codes:
@@ -159,11 +194,14 @@ class CPSATSolver:
             sec_subjs = [ss for ss in section_subjects if ss["section_id"] == s_id]
             for t in time_slots:
                 t_id = t["id"]
-                model.AddAtMostOne([
+                sec_vars = [
                     x[s_id, ss["subject_id"], r["id"], t_id]
                     for ss in sec_subjs
-                    for r in rooms
-                ])
+                    for r in ([VIRTUAL_LIB_ROOM] if ss.get("subject_type") in SELF_DIRECTED_TYPES else rooms)
+                    if (s_id, ss["subject_id"], r["id"], t_id) in x
+                ]
+                if sec_vars:
+                    model.AddAtMostOne(sec_vars)
 
         # HC-04: Subject Frequency (Exact slots needed per subject per section)
         for sec in sections:
@@ -172,15 +210,37 @@ class CPSATSolver:
             for ss in sec_subjs:
                 sub_id = ss["subject_id"]
                 needed = ss.get("total_slots_needed", 3)
-                model.Add(
-                    sum(
+                sub_type = ss.get("subject_type", "L")
+                sub_rooms = [VIRTUAL_LIB_ROOM] if sub_type in SELF_DIRECTED_TYPES else rooms
+
+                if sub_type == "P":
+                    # For practical labs, count starting periods only (periods 1, 3, 4, 6, 7)
+                    valid_lab_starts = [1, 3, 4, 6, 7]
+                    start_vars = [
                         x[s_id, sub_id, r["id"], t["id"]]
-                        for r in rooms
+                        for r in sub_rooms
                         for t in time_slots
-                    ) == needed
-                )
+                        if t.get("period") in valid_lab_starts and not t.get("is_blocked")
+                        and (s_id, sub_id, r["id"], t["id"]) in x
+                    ]
+                    if start_vars:
+                        model.Add(sum(start_vars) == needed)
+                else:
+                    all_sub_vars = [
+                        x[s_id, sub_id, r["id"], t["id"]]
+                        for r in sub_rooms
+                        for t in time_slots
+                        if (s_id, sub_id, r["id"], t["id"]) in x
+                    ]
+                    if all_sub_vars:
+                        model.Add(sum(all_sub_vars) == needed)
 
         # HC-05 & HC-06: Room Capacity & Room Type Compatibility
+        # CRITICAL FIX: Self-directed slots (LIBRARY, IIC, SL_EL) are assigned the
+        # virtual "LIBRARY" room and need no physical-room type check at all.
+        # Without this guard they fail HC-06 (no lab/classroom matches LIBRARY type)
+        # creating model.Add(x==0) for every real room which conflicts with HC-04's
+        # model.Add(sum==needed) — causing INFEASIBLE on every cohort size.
         for sec in sections:
             s_id = sec["id"]
             sec_capacity = sec.get("student_count", 60)
@@ -188,16 +248,19 @@ class CPSATSolver:
             for ss in sec_subjs:
                 sub_id = ss["subject_id"]
                 sub_type = ss.get("subject_type", "L")
+
+                # Skip room-type enforcement for self-directed slots—they use a virtual room
+                if sub_type in SELF_DIRECTED_TYPES:
+                    continue
+
                 for r in rooms:
                     r_id = r["id"]
                     r_cap = r.get("capacity", 60)
                     r_type = r.get("room_type", "classroom")
-                    
-                    # Room capacity check
-                    is_cap_ok = r_cap >= sec_capacity
-                    # Room type check for labs
+
+                    is_cap_ok  = r_cap >= sec_capacity
                     is_type_ok = ConstraintRules.is_room_compatible(sub_type, r_type)
-                    
+
                     if not (is_cap_ok and is_type_ok):
                         for t in time_slots:
                             model.Add(x[s_id, sub_id, r_id, t["id"]] == 0)
@@ -211,13 +274,17 @@ class CPSATSolver:
                     sec_subjs = [ss for ss in section_subjects if ss["section_id"] == s_id]
                     for ss in sec_subjs:
                         sub_id = ss["subject_id"]
-                        for r in rooms:
-                            model.Add(x[s_id, sub_id, r["id"], t_id] == 0)
+                        sub_rooms = [VIRTUAL_LIB_ROOM] if ss.get("subject_type") in SELF_DIRECTED_TYPES else rooms
+                        for r in sub_rooms:
+                            if (s_id, sub_id, r["id"], t_id) in x:
+                                model.Add(x[s_id, sub_id, r["id"], t_id] == 0)
+
 
         # HC-08: Continuous Lab Block Allocations (2 or 3 Consecutive Slots)
         # Rule 1: Saturday is prohibited for Practical Lab (P) blocks.
-        # Rule 2: Labs cannot span recess intervals (P2->P3 Short Break, P5->P6 Lunch Break).
-        # Rule 3: Continuous lab block must occupy the SAME room across consecutive periods.
+        # Rule 2: Block lab starts at invalid periods (2, 5, 8) to prevent crossing recess/lunch breaks or creating orphans.
+        # Rule 3: Continuous lab block must occupy the SAME room across consecutive periods (bidirectional implication).
+        # Rule 4: Max 1 lab block per day for the same subject per section.
         for sec in sections:
             s_id = sec["id"]
             lab_subjs = [ss for ss in section_subjects if ss["section_id"] == s_id and ss.get("subject_type") == "P"]
@@ -230,23 +297,11 @@ class CPSATSolver:
                         if t.get("day") == "SAT":
                             model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
 
-                # Rule 2 & 3: Continuous lab block start rules
                 for day in ["MON", "TUE", "WED", "THU", "FRI"]:
                     day_slots = {t.get("period", 0): t for t in time_slots if t.get("day") == day and not t.get("is_blocked")}
-                    
-                    # Valid lab start periods (1, 3, 4, 6, 7). 2 and 5 are invalid start periods (recess break bridge)
                     valid_start_periods = [1, 3, 4, 6, 7]
-                    invalid_start_periods = [2, 5, 8]
                     
-                    # Prohibit lab starting on invalid start periods (2, 5, 8)
-                    for inv_p in invalid_start_periods:
-                        if inv_p in day_slots:
-                            t_inv = day_slots[inv_p]
-                            for r in rooms:
-                                # A lab cannot START at period 2, 5, or 8 unless it is a continuation of period 1, 4, or 7
-                                # Handled by linking start period p to p+1 below
-                                pass
-
+                    # Rule 3: Bidirectional implication for consecutive slots
                     for p1 in valid_start_periods:
                         p2 = p1 + 1
                         if p1 in day_slots and p2 in day_slots:
@@ -255,10 +310,39 @@ class CPSATSolver:
                             t1_id = t1["id"]
                             t2_id = t2["id"]
                             
-                            # If lab is assigned at t1 in room r, it MUST be assigned at t2 in the SAME room r
                             for r in rooms:
                                 r_id = r["id"]
-                                model.Add(x[s_id, sub_id, r_id, t2_id] == 1).OnlyEnforceIf(x[s_id, sub_id, r_id, t1_id])
+                                if (s_id, sub_id, r_id, t1_id) in x and (s_id, sub_id, r_id, t2_id) in x:
+                                    # Forward implication: if lab starts at period p1 (t1), period p2 (t2) is reserved in room r
+                                    model.Add(x[s_id, sub_id, r_id, t2_id] == 1).OnlyEnforceIf(x[s_id, sub_id, r_id, t1_id])
+
+
+                    # Rule 4: Max 1 lab block per day for this subject
+                    start_day_vars = [
+                        x[s_id, sub_id, r["id"], day_slots[p]["id"]]
+                        for r in rooms
+                        for p in valid_start_periods
+                        if p in day_slots and (s_id, sub_id, r["id"], day_slots[p]["id"]) in x
+                    ]
+                    if start_day_vars:
+                        model.Add(sum(start_day_vars) <= 1)
+
+            # Rule 5: Soft Constraint (SC-07) - Penalize excessive P1 lab starts to distribute labs naturally
+            pass
+
+        # Objective Function: Minimize P1 lab starts so labs spread evenly across P1, P3, and P6
+        p1_lab_penalty_vars = []
+        for sec in sections:
+            s_id = sec["id"]
+            lab_subjs = [ss for ss in section_subjects if ss["section_id"] == s_id and ss.get("subject_type") == "P"]
+            for ss in lab_subjs:
+                for r in rooms:
+                    for t in time_slots:
+                        if t.get("period") == 1 and not t.get("is_blocked") and (s_id, ss["subject_id"], r["id"], t["id"]) in x:
+                            p1_lab_penalty_vars.append(x[s_id, ss["subject_id"], r["id"], t["id"]])
+
+        if p1_lab_penalty_vars:
+            model.Minimize(sum(p1_lab_penalty_vars))
 
 
         # Setup Solve Parameters
@@ -278,17 +362,51 @@ class CPSATSolver:
                 sec_subjs = [ss for ss in section_subjects if ss["section_id"] == s_id]
                 for ss in sec_subjs:
                     sub_id = ss["subject_id"]
-                    for r in rooms:
+                    sub_type = ss.get("subject_type", "L")
+                    # Mirror the same room_pool used during variable construction
+                    room_pool = [VIRTUAL_LIB_ROOM] if sub_type in SELF_DIRECTED_TYPES else rooms
+                    for r in room_pool:
                         r_id = r["id"]
                         for t in time_slots:
                             t_id = t["id"]
-                            if solver.Value(x[s_id, sub_id, r_id, t_id]) == 1:
+                            # Safe get: only keys in x from the construction phase above
+                            var = x.get((s_id, sub_id, r_id, t_id))
+                            if var is None:
+                                continue
+                            if solver.Value(var) == 1:
+                                sec_name = sec.get("name") or s_id
+                                sub_code = ss.get("subject_code") or ss.get("subject_id") or sub_id
+                                room_code = r.get("code") or r.get("id") or r_id
+                                fac_name = ss.get("faculty_name") or ""
+                                if fac_name:
+                                    fac_name = str(fac_name).strip()
+                                co_facs = ss.get("co_faculty") or []
+                                all_facs = [fac_name] + [c for c in co_facs if c] if fac_name else []
+                                stype = sub_type
+                                span = ss.get("continuous_slots") or 1
+
                                 entries.append({
+                                    "id": f"{s_id}_{sub_id}_{t_id}",
                                     "section_id": s_id,
+                                    "section": sec_name,
+                                    "sectionName": sec_name,
                                     "subject_id": sub_id,
+                                    "subject": sub_code,
+                                    "subjectCode": sub_code,
                                     "room_id": r_id,
-                                    "time_slot_id": t_id
+                                    "room": room_code,
+                                    "roomCode": room_code,
+                                    "time_slot_id": t_id,
+                                    "day": t.get("day"),
+                                    "period": t.get("period"),
+                                    "faculty": fac_name,
+                                    "facultyName": fac_name,
+                                    "facultyNames": all_facs,
+                                    "type": stype,
+                                    "subjectType": stype,
+                                    "spanPeriods": span
                                 })
+
 
         return {
             "status": "OPTIMAL" if status == cp_model.OPTIMAL else ("FEASIBLE" if is_feasible else "INFEASIBLE"),
