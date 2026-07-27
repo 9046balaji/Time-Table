@@ -45,19 +45,33 @@ async def get_faculty_timetable(
 ):
     return await TimetableService.get_faculty_timetable(db, faculty_id=faculty_id, version_id=version_id)
 
-@router.get("/{version_id}/section/{section_id}", response_model=Dict[str, Any])
-async def get_section_timetable(version_id: int, section_id: int):
-    return {
-        "version_id": version_id,
-        "section_id": section_id,
-        "section_name": "II AIML-A",
-        "entries": [
-            {"day": "MON", "period": 1, "subject": "DS", "room": "619", "faculty": "Dr. S.Srikantha Reddy", "type": "L"},
-            {"day": "MON", "period": 2, "subject": "DBMS", "room": "619", "faculty": "Ms. P Seetha Lakshmi", "type": "L"},
-            {"day": "MON", "period": 3, "subject": "BREAK", "room": "", "faculty": "", "type": "BREAK"},
-            {"day": "MON", "period": 4, "subject": "AI", "room": "607", "faculty": "Dr. B. Sudha Rani", "type": "L"},
-            {"day": "MON", "period": 5, "subject": "OOPS", "room": "607", "faculty": "Ms. G. Mahalakshmi", "type": "L"},
-            {"day": "MON", "period": 6, "subject": "LUNCH", "room": "", "faculty": "", "type": "LUNCH"},
-            {"day": "MON", "period": 7, "subject": "SFCDS", "room": "215", "faculty": "Dr. P. Kalpana", "type": "L"},
-        ]
-    }
+@router.post("/validate-move", response_model=Dict[str, Any])
+async def validate_slot_move(req: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Performs ultra-fast O(1) validation (< 5ms) for manual drag-and-drop cell moves.
+    """
+    from backend.solver.incremental_validator import ScheduleIndexStore
+    version_id = req.get("version_id", 5)
+    all_tt = await TimetableService.get_version_timetable(db, version_id=version_id, section_name="ALL")
+    entries = all_tt.get("entries", [])
+    
+    store = ScheduleIndexStore()
+    store.index_timetable(entries)
+
+    entry_id = str(req.get("entry_id") or "")
+    sec_name = str(req.get("section_name") or "II AIML-A")
+    fac_names = req.get("faculty_names") or []
+    if isinstance(fac_names, str):
+        fac_names = [f.strip() for f in fac_names.split(",") if f.strip()]
+    target_day = str(req.get("target_day") or "MON")
+    target_period = int(req.get("target_period") or 1)
+    target_room = req.get("target_room_code")
+
+    return store.validate_move(
+        entry_id=entry_id,
+        section_name=sec_name,
+        faculty_names=fac_names,
+        target_day=target_day,
+        target_period=target_period,
+        target_room_code=target_room
+    )
