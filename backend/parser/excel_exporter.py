@@ -4,7 +4,7 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from typing import List, Dict, Any, Optional
 
-from parser.excel_parser import ExcelTimetableParser, resolve_v5_path
+from .excel_parser import ExcelTimetableParser, resolve_v5_path
 
 
 COHORT_GROUPS = {
@@ -36,8 +36,10 @@ COHORT_GROUPS = {
 
 
 class ExcelTimetableExporter:
-    PERIOD_HEADERS = ["Period", "1", "2", "09:55 - 10:10", "3", "4", "5", "12:40 - 1:40", "6", "7", "8"]
-    TIME_SLOT_SUBHEADERS = ["Day/Hour", "8:15-9:05", "9:05-09:55", "09:55 - 10:10", "10:10-11:00", "11:00-11:50", "11:50-12:40", "12:40 - 1:40", "1:40-2:30", "2:30-3:20", "3:20-4:05"]
+    # MEDIUM-05 FIX: BREAK/LUNCH labels in Period row are short labels only;
+    # the full time range ("09:55 - 10:10") appears only in the Time Subheader row below.
+    PERIOD_HEADERS        = ["Period", "1", "2", "BREAK", "3", "4", "5", "LUNCH", "6", "7", "8"]
+    TIME_SLOT_SUBHEADERS  = ["Day/Hour", "8:15-9:05", "9:05-9:55", "09:55-10:10", "10:10-11:00", "11:00-11:50", "11:50-12:40", "12:40-13:40", "13:40-14:30", "14:30-15:20", "15:20-16:05"]
     DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT"]
 
     def _write_section_block(self, ws: Any, start_row: int, sec_name: str, slots: List[Dict[str, Any]]) -> int:
@@ -137,6 +139,17 @@ class ExcelTimetableExporter:
         faculty_lecture_map: Dict[str, str] = {}
         faculty_lab_map: Dict[str, str] = {}
 
+        # Build set of continuation periods (period 2 of 2-period lab block) to leave blank (B-01)
+        span_continuations = set()
+        for s in slots:
+            if (s.get("section") == sec_name or s.get("section_id") == sec_name):
+                span = s.get("spanPeriods", 1) or s.get("continuous_slots", 1) or 1
+                if span > 1:
+                    p = s.get("period", 0)
+                    day_s = s.get("day", "")
+                    for offset in range(1, span):
+                        span_continuations.add((day_s, p + offset))
+
         # Rows grid_start_row..grid_end_row: Days MON..SAT
         for d_off, day in enumerate(self.DAYS):
             r_num = grid_start_row + d_off
@@ -153,14 +166,27 @@ class ExcelTimetableExporter:
                 cell.border = thin_border
                 cell.alignment = center_align
 
-                matching = [s for s in slots if s.get("section") == sec_name and s.get("day") == day and s.get("period") == p_num]
+                if (day, p_num) in span_continuations:
+                    cell.value = ""
+                    cell.font = subj_font
+                    continue
+
+                matching = [s for s in slots if (s.get("section") == sec_name or s.get("section_id") == sec_name) and s.get("day") == day and s.get("period") == p_num]
                 if matching:
                     m = matching[0]
-                    subj = m.get("subject", "")
-                    room = m.get("room", "")
-                    fac = m.get("faculty", "")
+                    subj = m.get("subject") or m.get("subjectCode") or m.get("subject_code") or ""
+                    room = m.get("room") or m.get("roomCode") or m.get("room_id") or ""
+                    fac_names_arr = m.get("facultyNames") or []
+                    fac = m.get("faculty") or m.get("facultyName") or m.get("faculty_name") or (fac_names_arr[0] if fac_names_arr else "")
+                    co_facs = m.get("co_faculty") or m.get("coFaculty") or (fac_names_arr[1:] if len(fac_names_arr) > 1 else [])
+                    if isinstance(co_facs, list) and co_facs:
+                        co_str = ", ".join([c for c in co_facs if c])
+                        fac = f"{fac}, {co_str}" if fac else co_str
 
-                    cell.value = f"{subj}\n{room}" if room else subj
+                    if "LIBRARY" in subj.upper():
+                        cell.value = "LIBRARY"
+                    else:
+                        cell.value = f"{subj}\n{room}" if room else subj
                     cell.font = subj_font
 
                     if subj:
@@ -266,7 +292,7 @@ class ExcelTimetableExporter:
         ws_master = wb.create_sheet(title="Master Department View")
         curr_row = 2
         for sec in sections:
-            sec_name = sec.get("name", "Section")
+            sec_name = sec.get("name") or sec.get("id") or "Section"
             curr_row = self._write_section_block(ws_master, curr_row, sec_name, slots)
 
         # 2. Year & Branch Cohort Master Sheets (Stacked per Cohort / Year)
@@ -286,7 +312,7 @@ class ExcelTimetableExporter:
 
         # 3. Individual Section Worksheets (44 Tabs)
         for sec in sections:
-            sec_name = sec.get("name", "Section")
+            sec_name = sec.get("name") or sec.get("id") or "Section"
             sheet_title = sec_name[:31]
             ws = wb.create_sheet(title=sheet_title)
             self._write_section_block(ws, 2, sec_name, slots)
