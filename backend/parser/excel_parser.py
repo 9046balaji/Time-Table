@@ -4,6 +4,101 @@ import os
 from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Optional, Any, Set
 
+
+# ---------------------------------------------------------------------------
+# CRITICAL-03 / HIGH-04 / LOW-01 FIX: Robust name & code normalisation
+# ---------------------------------------------------------------------------
+
+def normalize_faculty_name(raw: str) -> str:
+    """Strip legend artefacts like '(P):' / '(L):' prefixes, leading dots,
+    collapsed whitespace and trailing punctuation from raw faculty name strings."""
+    if not raw:
+        return ""
+    name = raw.strip()
+    # Remove type-prefix artefacts e.g. "(P):Dr. Name", "(T&P):Name"
+    name = re.sub(r'^\([A-Z&]+\)\s*:', '', name).strip()
+    # Remove leading dots or commas
+    name = name.lstrip('.').lstrip(',').strip()
+    # Collapse multiple spaces
+    name = re.sub(r'\s+', ' ', name)
+    return name
+
+
+# Full-title → short-code bridge (50+ subject variants from VFSTR ACSE)
+SUBJECT_TITLE_TO_CODE: Dict[str, str] = {
+    # Core II Year AIML
+    "DATA STRUCTURES": "DS",
+    "STATISTICAL FOUNDATION FOR COMPUTING": "SFCDS",
+    "STATISTICAL FOUNDATION": "SFCDS",
+    "DISCRETE MATHEMATICAL STRUCTURES": "DMS",
+    "DISCRETE MATHEMATICAL": "DMS",
+    "DISCRETE MATH": "DMS",
+    "ARTIFICIAL INTELLIGENCE": "AI",
+    "DATABASE MANAGEMENT SYSTEMS": "DBMS",
+    "DATABASE MANAGEMENT": "DBMS",
+    "OBJECT ORIENTED PROGRAMMING": "OOPS",
+    "OBJECT-ORIENTED PROGRAMMING": "OOPS",
+    "DATA ENGINEERING FOUNDATIONS": "DEF",
+    "DATA ENGINEERING": "DEF",
+    # III Year
+    "DEEP LEARNING": "DL",
+    "WEB TECHNOLOGIES": "WT",
+    "COMPUTER VISION": "CV",
+    "ADVANCED DATA STRUCTURES": "ADS",
+    "ADVANCED DATA STRUCTURES AND ALGORITHMS": "ADS",
+    "MACHINE LEARNING OPERATIONS": "MLOP",
+    "MLOPS": "MLOP",
+    "INTERDISCIPLINARY PROJECT": "IDP",
+    "INTER DISCIPLINARY PROJECT": "IDP",
+    "IDP PROJECT": "IDP",
+    # IV Year
+    "GENERATIVE AI": "GENAI",
+    "GENERATIVE ARTIFICIAL INTELLIGENCE": "GENAI",
+    "GEN AI": "GENAI",
+    "CRYPTOGRAPHY AND NETWORK SECURITY": "CNS",
+    "CRYPTOGRAPHY & NETWORK SECURITY": "CNS",
+    "INTERNET OF THINGS": "IOT",
+    "TECHNICAL MANAGEMENT": "TM",
+    # Special / common
+    "MACHINE LEARNING": "ML",
+    "NATURAL LANGUAGE PROCESSING": "NLP",
+    "REINFORCEMENT LEARNING": "RL",
+    "CLOUD COMPUTING": "CC",
+    "OPERATIONS RESEARCH": "OR",
+    "QUANTITATIVE APTITUDE": "QALR",
+    "QUANTITATIVE ANALYSIS": "QALR",
+    "OPEN ELECTIVE": "OE",
+    "CAREER READINESS TRAINING": "CRT",
+    "INNOVATION AND INCUBATION": "IIC",
+    "SELF LEARNING": "SL_EL",
+    "SL/EL/IL": "SL_EL",
+}
+
+
+def normalize_subject_code(subj_part: str) -> Tuple[str, str]:
+    """Given a raw legend subject part like 'Data Structures(L)' or 'DS(T&P)',
+    return (clean_code, type_suffix) e.g. ('DS', '(L)') or ('DS', '(T&P)')."""
+    subj_upper = subj_part.strip().upper()
+    # Extract type suffix
+    suffix = ""
+    for s in ["(T&P)", "(T)", "(P)", "(L)"]:
+        if s in subj_upper:
+            suffix = s
+            break
+    # Strip suffix from the text to get the bare title
+    bare = re.sub(r'\([A-Z&]+\)', '', subj_part).strip()
+    bare_upper = bare.upper()
+    # Try direct short-code match first (e.g. subj_part is already "DS")
+    if len(bare) <= 8 and bare_upper.replace("-", "").replace("_", "").isalpha():
+        return bare_upper, suffix
+    # Try full-title lookup
+    for title, code in SUBJECT_TITLE_TO_CODE.items():
+        if title in bare_upper:
+            return code, suffix
+    # Fallback: return first word as code (capitalised)
+    first_word = bare_upper.split()[0] if bare_upper.split() else bare_upper
+    return first_word, suffix
+
 V5_FILE_PATH = "time_table/ACSE TIMETABLE (V5)  - W.e.f 15-7-2026.xlsx"
 V3_FILE_PATH = "time_table/ACSE TIMETABLE (V3)  - W.e.f 13-7-2026.xlsx"
 
@@ -241,42 +336,41 @@ class ExcelTimetableParser:
         return subj, room, stype
 
     def _parse_faculty_legend(self, line: str, section: str, faculty_map: Dict[str, Dict[str, List[str]]]):
+        """Parse a legend line like 'Data Structures(L): Dr. Name, Dr. Name2'
+        and populate faculty_map with ALL relevant normalised keys."""
         if ":" not in line:
             return
         parts = line.split(":", 1)
         subj_part = parts[0].strip()
-        fac_part = parts[1].strip()
+        fac_part  = parts[1].strip()
 
-        fac_names = [f.strip() for f in re.split(r"[,;/&]", fac_part) if f.strip() and f.strip().lower() != "nil"]
+        # CRITICAL-03 / HIGH-04: Normalise every faculty name — strip type prefixes & leading dots
+        raw_fac_names = re.split(r"[,;/&]", fac_part)
+        fac_names = [
+            normalize_faculty_name(f)
+            for f in raw_fac_names
+            if f.strip() and f.strip().lower() not in ("nil", "") and not f.strip()[0].isdigit()
+        ]
+        fac_names = [n for n in fac_names if n]  # remove empty strings after normalisation
         if not fac_names:
             return
 
         if section not in faculty_map:
             faculty_map[section] = {}
 
+        # Write raw key for backward compat
         faculty_map[section][subj_part] = fac_names
 
-        # Extract code from brackets or prefix: "Data Structures(L)" -> "DS", "DS(L)"
-        # Map common subject titles to codes
-        title_to_code = {
-            "DATA STRUCTURES": "DS",
-            "STATISTICAL FOUNDATION FOR COMPUTING": "SFCDS",
-            "DISCRETE MATHEMATICAL STRUCTURES": "DMS",
-            "ARTIFICIAL INTELLIGENCE": "AI",
-            "DATABASE MANAGEMENT SYSTEMS": "DBMS",
-            "OBJECT ORIENTED PROGRAMMING": "OOPS",
-            "DATA ENGINEERING FOUNDATIONS": "DEF",
-            "WEB TECHNOLOGIES": "WT",
-            "COMPUTER VISION": "CV",
-            "MACHINE LEARNING": "ML",
-            "DEEP LEARNING": "DL",
-        }
+        # Derive normalised short-code and type suffix
+        clean_code, suffix = normalize_subject_code(subj_part)
+        if not clean_code:
+            return
 
-        subj_upper = subj_part.upper()
-        for title, code in title_to_code.items():
-            if title in subj_upper:
-                suffix = "(P)" if "(P)" in subj_upper or "(T&P)" in subj_upper or "LAB" in subj_upper else ("(T)" if "(T)" in subj_upper else "")
-                faculty_map[section][code] = fac_names
-                faculty_map[section][f"{code}{suffix}"] = fac_names
-                faculty_map[section][f"{code}(P)"] = fac_names if "(P)" in subj_upper or "(T&P)" in subj_upper else fac_names
-                faculty_map[section][f"{code}(T)"] = fac_names if "(T)" in subj_upper or "(T&P)" in subj_upper else fac_names
+        # Write all variant keys so lookup by code, code+(T), code+(P) etc all hit
+        faculty_map[section][clean_code] = fac_names
+        faculty_map[section][f"{clean_code}(L)"] = fac_names
+        faculty_map[section][f"{clean_code}(P)"] = fac_names
+        faculty_map[section][f"{clean_code}(T)"] = fac_names
+        faculty_map[section][f"{clean_code}(T&P)"] = fac_names
+        if suffix:
+            faculty_map[section][f"{clean_code}{suffix}"] = fac_names
