@@ -45,7 +45,7 @@ def test_wizard_solve_endpoint():
 
     assert data["status"] in ("OPTIMAL", "FEASIBLE")
     assert data["hard_violations"] == 0
-    assert data["entries_count"] == 10  # (3 theory + 2 lab) * 2 sections = 10 slots
+    assert data["entries_count"] == 14  # (3 theory + 2 lab sessions * 2 periods) * 2 sections = 14 slots
 
 
 def test_wizard_solve_multi_faculty_lab():
@@ -82,7 +82,7 @@ def test_wizard_solve_multi_faculty_lab():
 
     assert data["status"] in ("OPTIMAL", "FEASIBLE")
     assert data["hard_violations"] == 0
-    assert data["entries_count"] == 10  # (2 lab + 3 theory) * 2 sections = 10 slots
+    assert data["entries_count"] == 14  # (2 lab sessions * 2 periods + 3 theory) * 2 sections = 14 slots
 
 
 def test_wizard_solve_iii_year_with_minor_honors():
@@ -120,4 +120,5 @@ def test_wizard_solve_iii_year_with_minor_honors():
 
     assert data["status"] in ("OPTIMAL", "FEASIBLE")
     assert data["hard_violations"] == 0
-    assert data["entries_count"] == 8  # (2 lab + 2 minor) * 2 sections = 8 slots
+    assert data["entries_count"] == 16  # (2 lab sessions * 2 periods + 2 minor sessions * 2 periods) * 2 sections = 16 slots
+
