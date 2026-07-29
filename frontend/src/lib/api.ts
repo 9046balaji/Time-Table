@@ -37,6 +37,7 @@ export const timetableApi = {
   getFaculty: () => api.get<Faculty[]>('/api/v1/configure/faculty'),
   getRooms: () => api.get<Room[]>('/api/v1/configure/rooms'),
   getSubjects: () => api.get<Subject[]>('/api/v1/configure/subjects'),
+  getWizardDefaults: () => api.get<any>('/api/v1/configure/wizard-defaults'),
   
   createFaculty: (data: Partial<Faculty>) => api.post<Faculty>('/api/v1/configure/faculty', data),
   updateFaculty: (id: number, data: Partial<Faculty>) => api.put<Faculty>(`/api/v1/configure/faculty/${id}`, data),
