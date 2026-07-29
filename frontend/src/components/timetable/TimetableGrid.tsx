@@ -275,11 +275,16 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                 {entry.sectionName}
                               </div>
                             )}
-                            {entry.roomCode && (
+                            {entry.roomCode && entry.roomCode !== "VIRTUAL_LIBRARY" ? (
                               <div className="text-red-600 dark:text-red-400 font-extrabold text-[11px] leading-tight">
                                 {entry.roomCode}
                               </div>
-                            )}
+                            ) : entry.roomCode === "VIRTUAL_LIBRARY" ? (
+                              <div className="text-slate-400 dark:text-slate-500 font-semibold text-[9.5px] italic leading-tight">
+                                Library
+                              </div>
+                            ) : null}
+
                             {facShort && !entry.sectionName && (
                               <div className="text-slate-500 dark:text-slate-400 text-[9px] italic leading-tight truncate max-w-[120px]">
                                 {facShort}
