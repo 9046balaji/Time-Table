@@ -75,5 +75,17 @@ services:
     depends_on:
       - backend
 
+  nginx:
+    image: nginx:alpine
+    container_name: vfstr_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+
 volumes:
   postgres_data:
