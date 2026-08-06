@@ -135,10 +135,12 @@ class ParsedSlot:
     period: int
     subject_code: str
     room: str
-    subject_type: str = "L"  # L, T, P, LIBRARY, BREAK, LUNCH, MINORHONOR
+    subject_type: str = "L"  # L, T, P, LIBRARY, BREAK, LUNCH, MINORHONOR, PROJECT
     faculty_list: List[str] = field(default_factory=list)
     raw_cell: str = ""
     sheet_name: str = ""
+    time_window: str = ""
+    class_teacher: str = ""
 
 
 @dataclass
@@ -177,7 +179,7 @@ class ExcelTimetableParser:
         9: 6, 10: 7, 11: 8
     }
 
-    def parse_file(self, file_path: str) -> ParsedResult:
+    def parse_file(self, file_path: str, max_sections: Optional[int] = None) -> ParsedResult:
         wb = openpyxl.load_workbook(file_path, data_only=True)
         result = ParsedResult()
 
@@ -185,12 +187,27 @@ class ExcelTimetableParser:
         sections_dict: Dict[str, List[ParsedSlot]] = {}
         faculty_map: Dict[str, Dict[str, List[str]]] = {}
 
+        # Auto-detect 4th year per-section format (e.g., sheets named sec1..sec19 or SECTION- headers)
+        is_per_section_format = any(
+            name.lower().startswith("sec") and name[3:].isdigit() for name in wb.sheetnames
+        )
+
         for sheet_name in wb.sheetnames:
             sheet = wb[sheet_name]
-            self._parse_sheet(sheet, sheet_name, all_slots, sections_dict, faculty_map)
+            if is_per_section_format:
+                self._parse_fourth_year_sheet(sheet, sheet_name, all_slots, sections_dict, faculty_map)
+            else:
+                self._parse_sheet(sheet, sheet_name, all_slots, sections_dict, faculty_map)
 
         # Filter out empty dummy section keys if any
         sections_dict = {k: v for k, v in sections_dict.items() if len(v) > 0}
+
+        # Focus on at most max_sections if specified
+        if max_sections and max_sections > 0:
+            target_keys = list(sections_dict.keys())[:max_sections]
+            sections_dict = {k: sections_dict[k] for k in target_keys}
+            all_slots = [s for s in all_slots if s.section in sections_dict]
+            faculty_map = {k: faculty_map[k] for k in target_keys if k in faculty_map}
 
         result.raw_entries = all_slots
         result.sections = sections_dict
@@ -199,6 +216,104 @@ class ExcelTimetableParser:
         result.faculty_mappings = faculty_map
 
         return result
+
+
+    def _parse_fourth_year_sheet(self, sheet: Any, sheet_name: str, all_slots: List[ParsedSlot],
+                                 sections_dict: Dict[str, List[ParsedSlot]],
+                                 faculty_map: Dict[str, Dict[str, List[str]]]):
+        sec_title = sheet_name.replace("sec", "SECTION-")
+        headers: List[str] = []
+        default_rooms: Dict[int, str] = {}
+        class_teacher = ""
+
+        # 1. Header & Default room scanning
+        for r in range(1, sheet.max_row + 1):
+            row_vals = [sheet.cell(r, c).value for c in range(1, sheet.max_column + 1)]
+            non_empty = [str(v).strip() for v in row_vals if v is not None and str(v).strip() != ""]
+            if not non_empty:
+                continue
+            if "SECTION" in non_empty[0].upper():
+                sec_title = non_empty[0].strip()
+                continue
+            if non_empty[0].lower() in ["day", "days"]:
+                headers = [str(v).strip() if v is not None else "" for v in row_vals]
+                for c_idx, h in enumerate(row_vals):
+                    if h and isinstance(h, str):
+                        rm = re.search(r'\(?(N-[\w\-]+|AFTF-[\w\-]+|\d{3}\w?)\)?', h)
+                        if rm and rm.group(1) not in ["8.30", "10.50", "11.40", "12.45", "1.30", "2.20", "3.10", "4.00"]:
+                            default_rooms[c_idx] = rm.group(1)
+                break
+
+        if sec_title not in sections_dict:
+            sections_dict[sec_title] = []
+        if sec_title not in faculty_map:
+            faculty_map[sec_title] = {}
+
+        # 2. Legend & Class Teacher scanning
+        for r in range(1, sheet.max_row + 1):
+            row_vals = [sheet.cell(r, c).value for c in range(1, sheet.max_column + 1)]
+            non_empty = [v for v in row_vals if v is not None and str(v).strip() != ""]
+            if not non_empty:
+                continue
+            first_val = str(non_empty[0]).strip()
+            if "CLASS TEACHER" in first_val.upper() and len(non_empty) > 1:
+                class_teacher = str(non_empty[1]).strip()
+            elif len(non_empty) >= 2 and ("22CS" in first_val or any(k in first_val for k in ["Privacy", "Big Data", "Cloud", "Machine", "Natural", "Agentic"])):
+                f_list = [normalize_faculty_name(f) for f in re.split(r"[,;/&]", str(non_empty[-1])) if f.strip()]
+                faculty_map[sec_title][first_val] = f_list
+
+        # 3. Day row scanning
+        for r in range(1, sheet.max_row + 1):
+            row_vals = [sheet.cell(r, c).value for c in range(1, sheet.max_column + 1)]
+            non_empty = [str(v).strip() for v in row_vals if v is not None and str(v).strip() != ""]
+            if not non_empty:
+                continue
+            first_val = str(non_empty[0]).strip().capitalize()
+            if first_val in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]:
+                day_norm = self.DAY_NORM_MAP.get(first_val.upper(), first_val[:3].upper())
+                for c_idx in range(1, min(len(headers), len(row_vals))):
+                    val = row_vals[c_idx]
+                    if not val:
+                        continue
+                    val_str = str(val).strip()
+                    if not val_str or val_str.upper() in ["BREAK", "LUNCH"]:
+                        continue
+
+                    period = c_idx
+                    h_time = headers[c_idx] if c_idx < len(headers) else ""
+
+                    rm_match = re.search(r'\[(N-[\w\-]+|AFTF-[\w\-]+|\d{3}\w?)\]|\((N-[\w\-]+|AFTF-[\w\-]+|\d{3}\w?)\)', val_str)
+                    if rm_match:
+                        room = rm_match.group(1) or rm_match.group(2)
+                    else:
+                        room = default_rooms.get(c_idx, "")
+
+                    stype = "L"
+                    if "[P]" in val_str or "(P)" in val_str or "LAB" in val_str.upper():
+                        stype = "P"
+                    elif "[T]" in val_str or "(T)" in val_str or "TUTORIAL" in val_str.upper():
+                        stype = "T"
+                    elif "PROJECT" in val_str.upper() or "SELF LEARNING" in val_str.upper():
+                        stype = "SL_EL"
+                    elif "MINOR" in val_str.upper():
+                        stype = "MINORHONOR"
+
+                    slot = ParsedSlot(
+                        section=sec_title,
+                        day=day_norm,
+                        period=period,
+                        subject_code=val_str,
+                        room=room,
+                        subject_type=stype,
+                        raw_cell=val_str,
+                        sheet_name=sheet_name,
+                        time_window=h_time,
+                        class_teacher=class_teacher
+                    )
+
+                    all_slots.append(slot)
+                    sections_dict[sec_title].append(slot)
+
 
     def _parse_sheet(self, sheet: Any, sheet_name: str, all_slots: List[ParsedSlot],
                      sections_dict: Dict[str, List[ParsedSlot]],
