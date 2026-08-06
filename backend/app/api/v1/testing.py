@@ -14,6 +14,9 @@ def get_source_filepath(dataset: str) -> str:
     file_map = {
         "4th_year": os.path.join(root_dir, "4th yr TT 17TH JULY.xlsx"),
         "e2e_test": os.path.join(root_dir, "data", "test_outputs", "Test3_Focused10Sections_Cohort.xlsx"),
+        "multi_branch_e2e": os.path.join(root_dir, "data", "test_outputs", "Test3_Focused10Sections_Cohort.xlsx"),
+        "multi_year_e2e": os.path.join(root_dir, "data", "test_outputs", "Test4_FocusedMultiYear_10Sections.xlsx"),
+        "test5_dept": os.path.join(root_dir, "data", "test_outputs", "Test5_FocusedDepartment_10Sections.xlsx"),
         "v5_baseline": os.path.join(root_dir, "data", "ACSE_TIMETABLE_V5.xlsx")
     }
 
@@ -28,7 +31,7 @@ def get_source_filepath(dataset: str) -> str:
 
 @router.get("/tested-data", response_model=Dict[str, Any])
 async def get_tested_timetable_data(
-    dataset: str = Query("4th_year", description="Dataset type: '4th_year', 'e2e_test', or 'v5_baseline'"),
+    dataset: str = Query("4th_year", description="Dataset type"),
     max_sections: int = Query(10, description="Max sections to return (default 10)")
 ):
     file_path = get_source_filepath(dataset)
@@ -108,11 +111,26 @@ async def get_tested_timetable_data(
                 "combined_sections": combined_sec
             })
 
+        # Dynamic branch and year detection
+        branch = "CSE (AIML)"
+        if "CSE" in sec_name and "AIML" not in sec_name:
+            branch = "CSE (Core)"
+        elif "DS" in sec_name:
+            branch = "CSE (Data Science)"
+        elif "CS" in sec_name and "CSE" not in sec_name:
+            branch = "CSE (Cyber Security)"
+
+        year_level = "II Year"
+        if "III" in sec_name:
+            year_level = "III Year"
+        elif "IV" in sec_name or "SECTION" in sec_name.upper():
+            year_level = "IV Year"
+
         sections_list.append({
             "id": sec_name.lower().replace(" ", "_").replace("-", "_"),
             "name": sec_name,
-            "year_level": "IV Year" if "SECTION" in sec_name.upper() else "II/III Year",
-            "branch": "CSE (AIML)",
+            "year_level": year_level,
+            "branch": branch,
             "class_teacher": {
                 "name": class_teacher_name or "Faculty Advisor",
                 "phone": class_teacher_phone or "N/A"
