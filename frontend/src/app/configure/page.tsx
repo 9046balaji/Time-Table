@@ -370,7 +370,8 @@ export default function ConfigurePage() {
       </div>
 
       {/* Search & Action Bar */}
-      {activeTab !== 'mapping' && (
+      {activeTab !== 'mapping' && activeTab !== 'faculty' && (
+
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="relative w-full md:max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -394,17 +395,7 @@ export default function ConfigurePage() {
               />
             </label>
 
-            {activeTab === 'faculty' && (
-              <button
-                onClick={() => {
-                  setEditingFaculty({ designation: 'Assistant Professor', max_hours_per_week: 16, max_daily_classes: 5, is_external: false });
-                  setShowFacultyModal(true);
-                }}
-                className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer"
-              >
-                <Plus className="w-4 h-4" /> Add Faculty
-              </button>
-            )}
+
 
             {activeTab === 'rooms' && (
               <button
