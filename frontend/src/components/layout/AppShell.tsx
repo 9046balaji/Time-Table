@@ -37,8 +37,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-      {/* Desktop Navigation Sidebar */}
-      <div className="hidden md:block print:hidden">
+      {/* Desktop Navigation Sidebar (Fixed/Sticky) */}
+      <div className="hidden md:block sticky top-0 h-screen shrink-0 z-30 print:hidden">
         <Sidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
       </div>
 
@@ -68,15 +68,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main App Workspace */}
       <div className="flex-1 flex flex-col min-w-0">
-        <TopBar
-          isSidebarCollapsed={isSidebarCollapsed}
-          onToggleSidebar={toggleSidebar}
-          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-          onOpenHelp={() => setIsHelpModalOpen(true)}
-          onToggleMobileMenu={toggleMobileMenu}
-        />
+        <div className="sticky top-0 z-20 print:hidden">
+          <TopBar
+            isSidebarCollapsed={isSidebarCollapsed}
+            onToggleSidebar={toggleSidebar}
+            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+            onOpenHelp={() => setIsHelpModalOpen(true)}
+            onToggleMobileMenu={toggleMobileMenu}
+          />
+        </div>
         <main className="p-4 sm:p-6 flex-1 max-w-7xl w-full mx-auto">{children}</main>
       </div>
+
 
       {/* Global Utilities & Modals */}
       <ToastContainer />
