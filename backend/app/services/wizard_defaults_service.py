@@ -49,7 +49,8 @@ class WizardDefaultsService:
             except Exception as ex:
                 print(f"[WizardDefaultsService DB Warning] {ex}")
 
-        if not rooms_list or len(rooms_list) < 39:
+        if not rooms_list:
+
             default_39 = [
                 {"id": "601", "capacity": 66, "room_type": "classroom"},
                 {"id": "602", "capacity": 66, "room_type": "classroom"},
