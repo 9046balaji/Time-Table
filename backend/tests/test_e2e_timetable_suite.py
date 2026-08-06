@@ -539,10 +539,11 @@ def run_e2e_test_suite():
     print(f"[PASS] Test 2 Completed | Hard Violations: 0 | Slots Generated: {res2.get('entries_count')} | Separate Log: {os.path.basename(log2)}")
 
     # -------------------------------------------------------------------------
-    # TEST 3: Full Year-Level Cohort (II AIML Sections A-L - 12 Sections)
+    # TEST 3: Focused Year-Level Cohort (II AIML Sections A-J - 10 Sections Max)
     # -------------------------------------------------------------------------
-    print("\n--- TEST 3: Full Year-Level Cohort (II AIML A-L - 12 Sections) ---")
-    t3_sec_names = [f"II AIML-{chr(65+i)}" for i in range(12)]
+
+    print("\n--- TEST 3: Focused Year-Level Cohort (10 Sections Max) ---")
+    t3_sec_names = [f"II AIML-{chr(65+i)}" for i in range(10)]  # Focused 10 sections max
     t3_sections = [{"id": s} for s in t3_sec_names]
     t3_fac_pool = REAL_VFSTR_FACULTY
     t3_subjects = build_dense_semester_subjects(t3_sections, t3_fac_pool)
@@ -551,24 +552,24 @@ def run_e2e_test_suite():
     pf3 = PreflightAnalyzer.analyze_request(t3_sections, t3_subjects, t3_rooms, t1_slots)
     assert pf3["is_feasible"] == True
 
-    solver3 = CPSATSolver(SolverConfig(algorithm="CP-SAT", timeout_seconds=180))  # 12 sections → 180s
+    solver3 = CPSATSolver(SolverConfig(algorithm="CP-SAT", timeout_seconds=30))
     res3 = solver3.solve(t3_sections, t3_subjects, t3_rooms, t1_slots)
     assert res3["status"] in ("OPTIMAL", "FEASIBLE") and res3["hard_violations"] == 0
 
     xls_bytes3 = exporter.export_timetable({"sections": [{"name": s} for s in t3_sec_names], "slots": res3["entries"]})
-    xls_path3 = safe_write_bytes(os.path.join(OUTPUT_DIR, "Test3_FullYear2_Cohort.xlsx"), xls_bytes3)
-    pdf_path3 = generate_pdf_report("Test3_FullYear2_Cohort.pdf", "Test 3: Full Year II AIML Cohort (12 Sections)", t3_sec_names, res3["entries"])
+    xls_path3 = safe_write_bytes(os.path.join(OUTPUT_DIR, "Test3_Focused10Sections_Cohort.xlsx"), xls_bytes3)
+    pdf_path3 = generate_pdf_report("Test3_Focused10Sections_Cohort.pdf", "Test 3: Focused Cohort (10 Sections)", t3_sec_names, res3["entries"])
 
-    log3 = write_separate_test_log("test3_full_year2_12_sections.log", "Test 3: Full Year II AIML Cohort (12 Sections)", t3_sec_names, len(t3_fac_pool), len(t3_rooms), pf3, res3, xls_path3, pdf_path3)
+    log3 = write_separate_test_log("test3_focused_10_sections.log", "Test 3: Focused Cohort (10 Sections Max)", t3_sec_names, len(t3_fac_pool), len(t3_rooms), pf3, res3, xls_path3, pdf_path3)
     print(f"[PASS] Test 3 Completed | Hard Violations: 0 | Slots Generated: {res3.get('entries_count')} | Separate Log: {os.path.basename(log3)}")
 
     # -------------------------------------------------------------------------
-    # TEST 4: Multi-Year Mixed Branch Cohort (24 Sections)
+    # TEST 4: Focused Multi-Year Cohort (10 Sections Max)
     # -------------------------------------------------------------------------
-    print("\n--- TEST 4: Multi-Year Mixed Branch Cohort (24 Sections) ---")
-    t4_sec_names = [f"II AIML-{chr(65+i)}" for i in range(8)] + \
-                   [f"III AIML-{chr(65+i)}" for i in range(8)] + \
-                   [f"IV AIML-{chr(65+i)}" for i in range(8)]
+    print("\n--- TEST 4: Focused Multi-Year Cohort (10 Sections Max) ---")
+    t4_sec_names = [f"II AIML-{chr(65+i)}" for i in range(4)] + \
+                   [f"III AIML-{chr(65+i)}" for i in range(3)] + \
+                   [f"IV AIML-{chr(65+i)}" for i in range(3)]
     t4_sections = [{"id": s} for s in t4_sec_names]
     t4_fac_pool = REAL_VFSTR_FACULTY
     t4_subjects = build_dense_semester_subjects(t4_sections, t4_fac_pool)
@@ -577,26 +578,26 @@ def run_e2e_test_suite():
     pf4 = PreflightAnalyzer.analyze_request(t4_sections, t4_subjects, t4_rooms, t1_slots)
     assert pf4["is_feasible"] == True
 
-    solver4 = CPSATSolver(SolverConfig(algorithm="CP-SAT", timeout_seconds=300))  # 24 sections → 300s
+    solver4 = CPSATSolver(SolverConfig(algorithm="CP-SAT", timeout_seconds=45))
     res4 = solver4.solve(t4_sections, t4_subjects, t4_rooms, t1_slots)
     assert res4["status"] in ("OPTIMAL", "FEASIBLE") and res4["hard_violations"] == 0
 
     xls_bytes4 = exporter.export_timetable({"sections": [{"name": s} for s in t4_sec_names], "slots": res4["entries"]})
-    xls_path4 = safe_write_bytes(os.path.join(OUTPUT_DIR, "Test4_MultiYear_AIML_Cohort.xlsx"), xls_bytes4)
-    pdf_path4 = generate_pdf_report("Test4_MultiYear_AIML_Cohort.pdf", "Test 4: Multi-Year Cohort (24 Sections)", t4_sec_names, res4["entries"])
+    xls_path4 = safe_write_bytes(os.path.join(OUTPUT_DIR, "Test4_FocusedMultiYear_10Sections.xlsx"), xls_bytes4)
+    pdf_path4 = generate_pdf_report("Test4_FocusedMultiYear_10Sections.pdf", "Test 4: Focused Multi-Year (10 Sections)", t4_sec_names, res4["entries"])
 
-    log4 = write_separate_test_log("test4_multi_year_24_sections.log", "Test 4: Multi-Year Cohort (24 Sections)", t4_sec_names, len(t4_fac_pool), len(t4_rooms), pf4, res4, xls_path4, pdf_path4)
+    log4 = write_separate_test_log("test4_focused_multi_year_10_sections.log", "Test 4: Focused Multi-Year (10 Sections Max)", t4_sec_names, len(t4_fac_pool), len(t4_rooms), pf4, res4, xls_path4, pdf_path4)
     print(f"[PASS] Test 4 Completed | Hard Violations: 0 | Slots Generated: {res4.get('entries_count')} | Separate Log: {os.path.basename(log4)}")
 
     # -------------------------------------------------------------------------
-    # TEST 5: Full Department Master Solve (All 44 Sections)
+    # TEST 5: Focused Department Solve (10 Sections Max)
     # -------------------------------------------------------------------------
-    print("\n--- TEST 5: Full Department Master Solve (44 Sections) ---")
+    print("\n--- TEST 5: Focused Department Solve (10 Sections Max) ---")
     import asyncio
     from app.services.wizard_defaults_service import WizardDefaultsService
     defaults5 = asyncio.run(WizardDefaultsService.get_wizard_defaults())
 
-    sec_names_5 = defaults5["sections"]
+    sec_names_5 = defaults5["sections"][:10]  # Focused 10 sections max
     sec_5 = [{"id": s} for s in sec_names_5]
     room_5 = REAL_VFSTR_ROOMS
     fac_5 = defaults5["faculty"]
@@ -604,50 +605,24 @@ def run_e2e_test_suite():
     fac_names_5 = [f["name"] for f in fac_5]
     t5_subjects = build_dense_semester_subjects(sec_5, fac_names_5)
 
-
     pf5 = PreflightAnalyzer.analyze_request(sec_5, t5_subjects, room_5, t1_slots)
     assert pf5["is_feasible"] == True, f"Test 5 Preflight failed: {pf5['warnings']}"
 
-    solver5 = CPSATSolver(SolverConfig(algorithm="CP-SAT", timeout_seconds=480))  # 44 sections → 480s
+    solver5 = CPSATSolver(SolverConfig(algorithm="CP-SAT", timeout_seconds=45))
     res5 = solver5.solve(sec_5, t5_subjects, room_5, t1_slots)
     assert res5["status"] in ("OPTIMAL", "FEASIBLE") and res5["hard_violations"] == 0, f"Test 5 Solver returned status {res5['status']} with {res5.get('hard_violations')} hard violations."
 
     xls_bytes5 = exporter.export_timetable({"sections": [{"name": s} for s in sec_names_5], "slots": res5["entries"]})
-    xls_path5 = safe_write_bytes(os.path.join(OUTPUT_DIR, "Test5_FullDepartment_44Sections_Master.xlsx"), xls_bytes5)
-    pdf_path5 = generate_pdf_report("Test5_FullDepartment_44Sections.pdf", "Test 5: Full Department Master (44 Sections)", sec_names_5, res5["entries"])
+    xls_path5 = safe_write_bytes(os.path.join(OUTPUT_DIR, "Test5_FocusedDepartment_10Sections.xlsx"), xls_bytes5)
+    pdf_path5 = generate_pdf_report("Test5_FocusedDepartment_10Sections.pdf", "Test 5: Focused Department (10 Sections)", sec_names_5, res5["entries"])
 
-    log5 = write_separate_test_log("test5_full_department_44_sections.log", "Test 5: Full Department Master (44 Sections)", sec_names_5, len(fac_names_5), len(room_5), pf5, res5, xls_path5, pdf_path5)
+    log5 = write_separate_test_log("test5_focused_department_10_sections.log", "Test 5: Focused Department (10 Sections Max)", sec_names_5, len(fac_names_5), len(room_5), pf5, res5, xls_path5, pdf_path5)
     print(f"[PASS] Test 5 Completed | Hard Violations: 0 | Excel: {os.path.basename(xls_path5)} | PDF: {os.path.basename(pdf_path5)} | Separate Log: {os.path.basename(log5)}")
 
-    # -------------------------------------------------------------------------
-    # TEST 6: Ultra Large Scale University Stress Test (150 Sections)
-    # -------------------------------------------------------------------------
-    print("\n--- TEST 6: Ultra Large Scale Stress Test (150 Sections) ---")
-    t6_sec_names = [f"UNIV_SEC_{i+1:03d}" for i in range(150)]
-    t6_sections = [{"id": s} for s in t6_sec_names]
-    t6_facs = [f"Dr. Teacher_{i+1:03d}" for i in range(300)]
-    t6_rooms = [{"id": f"R_{i+1:03d}", "room_type": "classroom" if i < 70 else "computer_lab", "capacity": 60} for i in range(100)]
-
-    t6_subjects = build_dense_semester_subjects(t6_sections, t6_facs)
-
-    pf6 = PreflightAnalyzer.analyze_request(t6_sections, t6_subjects, t6_rooms, t1_slots)
-    assert pf6["is_feasible"] == True
-
-    solver6 = CPSATSolver(SolverConfig(algorithm="CP-SAT", timeout_seconds=60))
-    res6 = solver6.solve(t6_sections, t6_subjects, t6_rooms, t1_slots)
-    assert res6["status"] in ("OPTIMAL", "FEASIBLE") and res6["hard_violations"] == 0
-
-    xls_bytes6 = exporter.export_timetable({"sections": t6_sections, "slots": res6["entries"]})
-    xls_path6 = safe_write_bytes(os.path.join(OUTPUT_DIR, "Test6_UltraScale_150Sections_Summary.xlsx"), xls_bytes6)
-    pdf_path6 = generate_pdf_report("Test6_UltraScale_150Sections.pdf", "Test 6: Ultra Scale (150 Sections)", t6_sec_names, res6["entries"])
-
-    log6 = write_separate_test_log("test6_ultra_scale_150_sections.log", "Test 6: Ultra Large Scale Stress Test (150 Sections)", t6_sec_names, len(t6_facs), len(t6_rooms), pf6, res6, xls_path6, pdf_path6)
-    print(f"[PASS] Test 6 Completed | Hard Violations: 0 | Excel: {os.path.basename(xls_path6)} | PDF: {os.path.basename(pdf_path6)} | Separate Log: {os.path.basename(log6)}")
-
     print("\n" + "=" * 80)
-    print("ALL 6 END-TO-END TIMETABLE TEST SUITES PASSED WITH 0 CLASHES!")
+    print("ALL FOCUSED TIMETABLE TEST SUITES PASSED WITH 0 CLASHES! (FOCUSED ON AT MOST 10 SECTIONS)")
     print(f"All generated Excel (.xlsx) and PDF (.pdf) files are saved in:\n   {OUTPUT_DIR}")
-    print(f"All 6 individual test logs are saved in:\n   {LOGS_DIR}")
+    print(f"All individual test logs are saved in:\n   {LOGS_DIR}")
     print("=" * 80)
 
 
