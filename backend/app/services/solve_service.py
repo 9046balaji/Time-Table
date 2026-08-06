@@ -2,7 +2,11 @@ import asyncio
 from typing import Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from backend.solver.csat_solver import CPSATSolver, SolverConfig
+try:
+    from backend.solver.csat_solver import CPSATSolver, SolverConfig
+except (ImportError, ModuleNotFoundError):
+    from solver.csat_solver import CPSATSolver, SolverConfig
+
 from app.models.solver_run import SolverRun
 from app.models.timetable import TimetableVersion, TimetableEntry
 
