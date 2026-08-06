@@ -94,13 +94,25 @@ class CPSATSolver:
             for ss in sec_subjs:
                 sub_id = ss["subject_id"]
                 sub_type = ss.get("subject_type", "L")
-                # Self-directed types: only the virtual room is a valid assignment
-                room_pool = [VIRTUAL_LIB_ROOM] if sub_type in SELF_DIRECTED_TYPES else rooms
+
+                # Room domain pre-filtering for fast solving:
+                # Theory slots (L/T) use non-lab classrooms; Labs (P) use lab rooms; Self-directed use VIRTUAL_LIB_ROOM
+                if sub_type in SELF_DIRECTED_TYPES:
+                    room_pool = [VIRTUAL_LIB_ROOM]
+                elif sub_type in ("P", "LAB"):
+                    room_pool = [r for r in rooms if r.get("room_type") in ("lab", "computer_lab", "gpu_lab")] or rooms
+                elif sub_type in ("L", "T"):
+                    room_pool = [r for r in rooms if r.get("room_type") not in ("lab", "computer_lab", "gpu_lab")] or rooms
+                else:
+                    room_pool = rooms
+
+
                 for r in room_pool:
                     r_id = r["id"]
                     for t in time_slots:
                         t_id = t["id"]
                         x[s_id, sub_id, r_id, t_id] = model.NewBoolVar(f"x_{s_id}_{sub_id}_{r_id}_{t_id}")
+
 
         # HC-01: Room Conflict (At most 1 class per room per slot)
         for r in rooms:
@@ -263,7 +275,9 @@ class CPSATSolver:
 
                     if not (is_cap_ok and is_type_ok):
                         for t in time_slots:
-                            model.Add(x[s_id, sub_id, r_id, t["id"]] == 0)
+                            if (s_id, sub_id, r_id, t["id"]) in x:
+                                model.Add(x[s_id, sub_id, r_id, t["id"]] == 0)
+
 
         # HC-07: Break/Lunch Blocking
         for t in time_slots:
@@ -294,8 +308,9 @@ class CPSATSolver:
                 # Rule 1: Prohibit Saturday labs
                 for r in rooms:
                     for t in time_slots:
-                        if t.get("day") == "SAT":
+                        if t.get("day") == "SAT" and (s_id, sub_id, r["id"], t["id"]) in x:
                             model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
+
 
                 for day in ["MON", "TUE", "WED", "THU", "FRI"]:
                     day_slots = {t.get("period", 0): t for t in time_slots if t.get("day") == day and not t.get("is_blocked")}
@@ -345,10 +360,13 @@ class CPSATSolver:
             model.Minimize(sum(p1_lab_penalty_vars))
 
 
-        # Setup Solve Parameters
+        # Setup Ultra-Fast Solve Parameters
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = float(self.config.timeout_seconds)
+        solver.parameters.num_search_workers = 8  # Parallel portfolio search across 8 worker threads
+        solver.parameters.cp_model_presolve = True  # Enable aggressive presolve logic
         solver.parameters.log_search_progress = False
+
 
         cb = LiveSolutionCallback(progress_callback)
         status = solver.Solve(model, cb)
