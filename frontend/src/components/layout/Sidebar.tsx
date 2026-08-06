@@ -3,11 +3,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Calendar, Upload, Settings, Download, Cpu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { LayoutDashboard, Calendar, Upload, Settings, Download, Cpu, FlaskConical } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/schedule', label: 'Timetable Grid', icon: Calendar },
+  { href: '/testing', label: 'Testing Lab (10 Sec)', icon: FlaskConical },
   { href: '/import', label: 'Import Excel', icon: Upload },
   { href: '/configure', label: 'Data Management', icon: Settings },
   { href: '/export', label: 'Export Options', icon: Download },
@@ -18,11 +19,12 @@ interface SidebarProps {
   onToggle?: () => void;
 }
 
-export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
+export function Sidebar({ isCollapsed = false }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className={`${isCollapsed ? 'w-16 p-2' : 'w-64 p-4'} bg-slate-900 text-white min-h-screen flex flex-col justify-between transition-all duration-300 shrink-0 border-r border-slate-800`}>
+    <aside className={`${isCollapsed ? 'w-16 p-2' : 'w-64 p-4'} bg-slate-900 text-white h-screen flex flex-col justify-between transition-all duration-300 shrink-0 border-r border-slate-800 overflow-y-auto`}>
+
       <div>
         {/* Header / Brand */}
         <div className={`flex items-center ${isCollapsed ? 'justify-center py-3' : 'justify-between px-3 py-4'} border-b border-slate-800 mb-6`}>
@@ -41,8 +43,6 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
               <Cpu className="w-5 h-5 text-white" />
             </div>
           )}
-
-          {/* Sidebar title */}
         </div>
 
         {/* Navigation Items */}
