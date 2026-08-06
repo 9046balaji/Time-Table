@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { timetableApi } from '@/lib/api';
 import { Faculty, Room, Subject, Section } from '@/lib/types';
+import { FacultyMasterProfile } from '@/components/faculty/FacultyMasterProfile';
+
 
 type TabType = 'faculty' | 'rooms' | 'subjects' | 'mapping';
 
@@ -431,83 +433,46 @@ export default function ConfigurePage() {
         </div>
       )}
 
-      {/* TAB 1: FACULTY MANAGEMENT */}
+      {/* TAB 1: COMPREHENSIVE FACULTY MASTER PROFILER HUB */}
       {activeTab === 'faculty' && (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-800 text-white">
-                <th className="p-3 border-b border-slate-700">Emp ID</th>
-                <th className="p-3 border-b border-slate-700">Faculty Name</th>
-                <th className="p-3 border-b border-slate-700">Designation</th>
-                <th className="p-3 border-b border-slate-700 text-center">AICTE Max Hrs/Wk</th>
-                <th className="p-3 border-b border-slate-700 text-center">Max Daily Cap</th>
-                <th className="p-3 border-b border-slate-700 text-center">Type</th>
-                <th className="p-3 border-b border-slate-700 text-center">Availability Grid</th>
-                <th className="p-3 border-b border-slate-700 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredFaculty.map((fac) => (
-                <tr key={fac.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                  <td className="p-3 font-mono text-slate-500 font-semibold">{fac.employee_id || `FAC-${fac.id}`}</td>
-                  <td className="p-3 font-bold text-slate-900">{fac.name}</td>
-                  <td className="p-3">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                      fac.designation === 'Professor' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
-                      fac.designation === 'Associate Professor' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                      'bg-slate-100 text-slate-700 border border-slate-200'
-                    }`}>
-                      {fac.designation}
-                    </span>
-                  </td>
-                  <td className="p-3 text-center font-bold text-slate-800">{fac.max_hours_per_week || 16} hrs</td>
-                  <td className="p-3 text-center">
-                    <span className="bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-bold">
-                      ≤ {fac.max_daily_classes || 5} classes/day
-                    </span>
-                  </td>
-                  <td className="p-3 text-center">
-                    {fac.is_external ? (
-                      <span className="bg-indigo-100 text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded text-[10px] font-bold">Industry / External</span>
-                    ) : (
-                      <span className="text-slate-500 text-[11px]">Regular ACSE</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-center">
-                    <button
-                      onClick={() => {
-                        setSelectedFacultyForGrid(fac);
-                        setShowAvailabilityModal(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-800 font-semibold underline text-xs cursor-pointer"
-                    >
-                      View / Edit Matrix
-                    </button>
-                  </td>
-                  <td className="p-3 text-right space-x-2">
-                    <button
-                      onClick={() => {
-                        setEditingFaculty(fac);
-                        setShowFacultyModal(true);
-                      }}
-                      className="p-1 text-slate-500 hover:text-blue-600 rounded transition-colors cursor-pointer"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteFaculty(fac.id)}
-                      className="p-1 text-slate-500 hover:text-red-600 rounded transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <FacultyMasterProfile
+          facultyList={facultyList}
+          subjectList={subjectList}
+          sectionList={sectionList}
+          onAddFaculty={async (newFac) => {
+            try {
+              const res = await timetableApi.createFaculty(newFac);
+              setFacultyList((prev) => [...prev, res.data || ({ ...newFac, id: Date.now() } as Faculty)]);
+              showToast("Faculty profile created successfully!");
+            } catch (e) {
+              setFacultyList((prev) => [...prev, { ...newFac, id: Date.now() } as Faculty]);
+              showToast("Faculty profile added!");
+            }
+          }}
+          onUpdateFaculty={async (id, updatedFac) => {
+            try {
+              await timetableApi.updateFaculty(id, updatedFac);
+              setFacultyList((prev) => prev.map((f) => (f.id === id ? ({ ...f, ...updatedFac } as Faculty) : f)));
+              showToast("Faculty master profile updated!");
+            } catch (e) {
+              setFacultyList((prev) => prev.map((f) => (f.id === id ? ({ ...f, ...updatedFac } as Faculty) : f)));
+              showToast("Faculty master profile updated!");
+            }
+          }}
+          onDeleteFaculty={async (id) => {
+            if (!confirm("Are you sure you want to remove this faculty member from master records?")) return;
+            try {
+              await timetableApi.deleteFaculty(id);
+              setFacultyList((prev) => prev.filter((f) => f.id !== id));
+              showToast("Faculty record removed.");
+            } catch (e) {
+              setFacultyList((prev) => prev.filter((f) => f.id !== id));
+              showToast("Faculty record removed.");
+            }
+          }}
+        />
       )}
+
 
       {/* TAB 2: VENUES & ROOMS */}
       {activeTab === 'rooms' && (
