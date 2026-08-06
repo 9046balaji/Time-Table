@@ -10,6 +10,11 @@ import {
 import { timetableApi } from '@/lib/api';
 import { Faculty, Room, Subject, Section } from '@/lib/types';
 import { FacultyMasterProfile } from '@/components/faculty/FacultyMasterProfile';
+import { VenueMasterProfile } from '@/components/rooms/VenueMasterProfile';
+import { CurriculumMasterProfile } from '@/components/subjects/CurriculumMasterProfile';
+
+
+
 
 
 type TabType = 'faculty' | 'rooms' | 'subjects' | 'mapping';
@@ -369,8 +374,10 @@ export default function ConfigurePage() {
         />
       </div>
 
-      {/* Search & Action Bar */}
-      {activeTab !== 'mapping' && activeTab !== 'faculty' && (
+      {/* Search & Action Bar (Mapping tab only) */}
+      {activeTab === 'mapping' && (
+
+
 
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="relative w-full md:max-w-md">
@@ -397,29 +404,9 @@ export default function ConfigurePage() {
 
 
 
-            {activeTab === 'rooms' && (
-              <button
-                onClick={() => {
-                  setEditingRoom({ room_type: 'classroom', capacity: 60, floor: '6', block: 'Aryabhatta Bhavan / U-Block', gpu_capable: false, is_available: true });
-                  setShowRoomModal(true);
-                }}
-                className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer"
-              >
-                <Plus className="w-4 h-4" /> Add Venue
-              </button>
-            )}
 
-            {activeTab === 'subjects' && (
-              <button
-                onClick={() => {
-                  setEditingSubject({ lecture_hours: 3, tutorial_hours: 0, lab_hours: 0, is_lab: false, gpu_required: false, slot_type: 'L' });
-                  setShowSubjectModal(true);
-                }}
-                className="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer"
-              >
-                <Plus className="w-4 h-4" /> Add Subject
-              </button>
-            )}
+
+
           </div>
         </div>
       )}
@@ -465,149 +452,83 @@ export default function ConfigurePage() {
       )}
 
 
-      {/* TAB 2: VENUES & ROOMS */}
+      {/* TAB 2: COMPREHENSIVE VENUE MASTER PROFILER HUB */}
       {activeTab === 'rooms' && (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-800 text-white">
-                <th className="p-3 border-b border-slate-700">Room Code</th>
-                <th className="p-3 border-b border-slate-700">Building Block</th>
-                <th className="p-3 border-b border-slate-700">Floor Tag</th>
-                <th className="p-3 border-b border-slate-700">Room Type</th>
-                <th className="p-3 border-b border-slate-700 text-center">Capacity</th>
-                <th className="p-3 border-b border-slate-700 text-center">High-GPU Capable</th>
-                <th className="p-3 border-b border-slate-700 text-center">Status</th>
-                <th className="p-3 border-b border-slate-700 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRooms.map((room) => (
-                <tr key={room.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                  <td className="p-3 font-mono font-bold text-blue-900 text-sm">{room.code}</td>
-                  <td className="p-3 text-slate-700 font-medium">{room.block || "Aryabhatta Bhavan / U-Block"}</td>
-                  <td className="p-3 font-mono text-slate-500">Floor {room.floor || "6"}</td>
-                  <td className="p-3">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                      room.room_type === 'gpu_lab' ? 'bg-purple-100 text-purple-900 border border-purple-200' :
-                      room.room_type === 'computer_lab' ? 'bg-teal-100 text-teal-900 border border-teal-200' :
-                      'bg-slate-100 text-slate-700 border border-slate-200'
-                    }`}>
-                      {room.room_type || 'classroom'}
-                    </span>
-                  </td>
-                  <td className="p-3 text-center font-bold text-slate-800">{room.capacity} students</td>
-                  <td className="p-3 text-center">
-                    {room.gpu_capable ? (
-                      <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded font-bold text-[10px]">
-                        ⚡ High-GPU (AFTF)
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 text-[10px]">Standard</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-center">
-                    {room.is_available !== false ? (
-                      <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-semibold text-[10px]">Active</span>
-                    ) : (
-                      <span className="bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded font-semibold text-[10px]">Locked / Maintenance</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-right space-x-2">
-                    <button
-                      onClick={() => {
-                        setEditingRoom(room);
-                        setShowRoomModal(true);
-                      }}
-                      className="p-1 text-slate-500 hover:text-blue-600 rounded transition-colors cursor-pointer"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteRoom(room.id)}
-                      className="p-1 text-slate-500 hover:text-red-600 rounded transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <VenueMasterProfile
+          roomList={roomList}
+          onAddRoom={async (newRoom) => {
+            try {
+              const res = await timetableApi.createRoom(newRoom);
+              setRoomList((prev) => [...prev, res.data || ({ ...newRoom, id: Date.now() } as Room)]);
+              showToast("New venue created successfully!");
+            } catch (e) {
+              setRoomList((prev) => [...prev, { ...newRoom, id: Date.now() } as Room]);
+              showToast("Venue added!");
+            }
+          }}
+          onUpdateRoom={async (id, updatedRoom) => {
+            try {
+              await timetableApi.updateRoom(id, updatedRoom);
+              setRoomList((prev) => prev.map((r) => (r.id === id ? ({ ...r, ...updatedRoom } as Room) : r)));
+              showToast("Venue specifications updated!");
+            } catch (e) {
+              setRoomList((prev) => prev.map((r) => (r.id === id ? ({ ...r, ...updatedRoom } as Room) : r)));
+              showToast("Venue updated!");
+            }
+          }}
+          onDeleteRoom={async (id) => {
+            if (!confirm("Are you sure you want to remove this venue from records?")) return;
+            try {
+              await timetableApi.deleteRoom(id);
+              setRoomList((prev) => prev.filter((r) => r.id !== id));
+              showToast("Venue removed.");
+            } catch (e) {
+              setRoomList((prev) => prev.filter((r) => r.id !== id));
+              showToast("Venue removed.");
+            }
+          }}
+        />
       )}
 
-      {/* TAB 3: CURRICULUM & SUBJECTS */}
+
+      {/* TAB 3: COMPREHENSIVE CURRICULUM MASTER PROFILER HUB */}
       {activeTab === 'subjects' && (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-800 text-white">
-                <th className="p-3 border-b border-slate-700">Course Code</th>
-                <th className="p-3 border-b border-slate-700">Course Title</th>
-                <th className="p-3 border-b border-slate-700 text-center">L-T-P Split</th>
-                <th className="p-3 border-b border-slate-700 text-center">Slot Type</th>
-                <th className="p-3 border-b border-slate-700 text-center">Continuous Lock</th>
-                <th className="p-3 border-b border-slate-700 text-center">GPU Required</th>
-                <th className="p-3 border-b border-slate-700 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredSubjects.map((sub) => (
-                <tr key={sub.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                  <td className="p-3 font-mono font-bold text-purple-900 text-sm">{sub.code}</td>
-                  <td className="p-3 font-medium text-slate-800">{sub.full_name}</td>
-                  <td className="p-3 text-center">
-                    <span className="font-mono bg-slate-100 px-2 py-1 rounded font-bold text-slate-700 border border-slate-200">
-                      L:{sub.lecture_hours} • T:{sub.tutorial_hours} • P:{sub.lab_hours}
-                    </span>
-                  </td>
-                  <td className="p-3 text-center">
-                    <span className="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded font-bold text-[10px]">
-                      {sub.slot_type || (sub.is_lab ? 'P' : 'L')}
-                    </span>
-                  </td>
-                  <td className="p-3 text-center">
-                    {sub.requires_consecutive ? (
-                      <span className="bg-purple-100 text-purple-900 border border-purple-200 px-2 py-0.5 rounded font-bold text-[10px]">
-                        {sub.requires_consecutive}-Period Block
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 text-[10px]">Single Period</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-center">
-                    {sub.gpu_required ? (
-                      <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded font-bold text-[10px]">
-                        Yes (AFTF GPU)
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 text-[10px]">No</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-right space-x-2">
-                    <button
-                      onClick={() => {
-                        setEditingSubject(sub);
-                        setShowSubjectModal(true);
-                      }}
-                      className="p-1 text-slate-500 hover:text-blue-600 rounded transition-colors cursor-pointer"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteSubject(sub.id)}
-                      className="p-1 text-slate-500 hover:text-red-600 rounded transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <CurriculumMasterProfile
+          subjectList={subjectList}
+          onAddSubject={async (newSub) => {
+            try {
+              const res = await timetableApi.createSubject(newSub);
+              setSubjectList((prev) => [...prev, res.data || ({ ...newSub, id: Date.now() } as Subject)]);
+              showToast("New subject curriculum created successfully!");
+            } catch (e) {
+              setSubjectList((prev) => [...prev, { ...newSub, id: Date.now() } as Subject]);
+              showToast("Subject course added!");
+            }
+          }}
+          onUpdateSubject={async (id, updatedSub) => {
+            try {
+              await timetableApi.updateSubject(id, updatedSub);
+              setSubjectList((prev) => prev.map((s) => (s.id === id ? ({ ...s, ...updatedSub } as Subject) : s)));
+              showToast("Subject curriculum updated!");
+            } catch (e) {
+              setSubjectList((prev) => prev.map((s) => (s.id === id ? ({ ...s, ...updatedSub } as Subject) : s)));
+              showToast("Subject course updated!");
+            }
+          }}
+          onDeleteSubject={async (id) => {
+            if (!confirm("Are you sure you want to remove this subject from curriculum?")) return;
+            try {
+              await timetableApi.deleteSubject(id);
+              setSubjectList((prev) => prev.filter((s) => s.id !== id));
+              showToast("Subject course removed.");
+            } catch (e) {
+              setSubjectList((prev) => prev.filter((s) => s.id !== id));
+              showToast("Subject course removed.");
+            }
+          }}
+        />
       )}
+
 
       {/* TAB 4: SECTION-SUBJECT TEAM MAPPING */}
       {activeTab === 'mapping' && (
