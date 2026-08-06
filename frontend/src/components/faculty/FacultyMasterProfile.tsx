@@ -44,7 +44,8 @@ interface FacultyMasterProfileProps {
 const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT"];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 
-type SubTab = "roster" | "dossier" | "availability";
+type SubTab = "roster" | "dossier";
+
 
 export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
   facultyList,
@@ -212,16 +213,7 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
             <FileText className="w-4 h-4" /> Master Dossier Inspector
           </button>
 
-          <button
-            onClick={() => setActiveSubTab("availability")}
-            className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all inline-flex items-center gap-2 shrink-0 ${
-              activeSubTab === "availability"
-                ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <Calendar className="w-4 h-4" /> Slot Availability Grid
-          </button>
+
         </div>
 
         {/* Global Action Button */}
@@ -567,59 +559,7 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
         </div>
       )}
 
-      {/* SUB-VIEW 3: AVAILABILITY & SLOT PREFERENCE MATRIX */}
-      {activeSubTab === "availability" && (
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-            <div>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                Faculty Weekly Availability Grid ({selectedFaculty?.name})
-              </h3>
-              <p className="text-xs text-slate-500">Configure blocked periods or preferred teaching slots per instructor</p>
-            </div>
 
-            <select
-              value={selectedFacultyId}
-              onChange={(e) => setSelectedFacultyId(Number(e.target.value))}
-              className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
-            >
-              {facultyList.map((f) => (
-                <option key={f.id} value={f.id}>{f.name} ({f.employee_id || `VF-${f.id}`})</option>
-              ))}
-            </select>
-          </div>
-
-          {/* 6-Day x 8-Period Availability Grid */}
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-center text-xs min-w-[700px]">
-              <thead>
-                <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700">
-                  <th className="p-3 text-left">Day / Period</th>
-                  {PERIODS.map((p) => (
-                    <th key={p} className="p-3">Period {p}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {DAYS.map((d) => (
-                  <tr key={d} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                    <td className="p-3 font-extrabold text-slate-900 dark:text-white text-left">{d}</td>
-                    {PERIODS.map((p) => (
-                      <td key={p} className="p-2">
-                        <button
-                          className="w-full py-2 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200 transition-colors"
-                        >
-                          Available
-                        </button>
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* ADD / EDIT FACULTY FORM MODAL */}
       {showEditModal && (
