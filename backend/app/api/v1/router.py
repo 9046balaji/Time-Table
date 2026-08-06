@@ -10,6 +10,7 @@ from app.api.v1.wizard_solve import router as wizard_solve_router
 from app.api.v1.wizard_defaults import router as wizard_defaults_router
 from app.api.v1.export import router as export_router, sync_master_timetable_to_smartclass
 from app.api.v1.configure import router as configure_router
+from app.api.v1.testing import router as testing_router
 
 api_v1_router = APIRouter()
 
@@ -24,5 +25,7 @@ api_v1_router.include_router(import_excel_router, prefix="/import/excel", tags=[
 api_v1_router.include_router(solve_router, prefix="/solve", tags=["Solver"])
 api_v1_router.include_router(wizard_solve_router, prefix="/solve", tags=["Wizard Solver"])
 api_v1_router.include_router(export_router, prefix="/export", tags=["Export"])
+api_v1_router.include_router(testing_router, prefix="/testing", tags=["Testing Lab"])
 api_v1_router.add_api_route("/timetable/sync-master", sync_master_timetable_to_smartclass, methods=["POST"], tags=["SmartClass Sync"])
+
 
