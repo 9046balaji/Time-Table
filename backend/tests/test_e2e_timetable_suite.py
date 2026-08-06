@@ -539,11 +539,15 @@ def run_e2e_test_suite():
     print(f"[PASS] Test 2 Completed | Hard Violations: 0 | Slots Generated: {res2.get('entries_count')} | Separate Log: {os.path.basename(log2)}")
 
     # -------------------------------------------------------------------------
-    # TEST 3: Focused Year-Level Cohort (II AIML Sections A-J - 10 Sections Max)
+    # TEST 3: Focused Multi-Branch Cohort (10 Sections Max: AIML, CSE, DS, CS)
     # -------------------------------------------------------------------------
-
-    print("\n--- TEST 3: Focused Year-Level Cohort (10 Sections Max) ---")
-    t3_sec_names = [f"II AIML-{chr(65+i)}" for i in range(10)]  # Focused 10 sections max
+    print("\n--- TEST 3: Focused Multi-Branch Cohort (AIML, CSE, DS, CS - 10 Sections Max) ---")
+    t3_sec_names = [
+        "II AIML-A", "II AIML-B", "II AIML-C",
+        "II CSE-A",  "II CSE-B",  "II CSE-C",
+        "II DS-A",   "II DS-B",
+        "II CS-A",   "II CS-B"
+    ]  # 10 sections across 4 specialized branches
     t3_sections = [{"id": s} for s in t3_sec_names]
     t3_fac_pool = REAL_VFSTR_FACULTY
     t3_subjects = build_dense_semester_subjects(t3_sections, t3_fac_pool)
@@ -558,19 +562,24 @@ def run_e2e_test_suite():
 
     xls_bytes3 = exporter.export_timetable({"sections": [{"name": s} for s in t3_sec_names], "slots": res3["entries"]})
     xls_path3 = safe_write_bytes(os.path.join(OUTPUT_DIR, "Test3_Focused10Sections_Cohort.xlsx"), xls_bytes3)
-    pdf_path3 = generate_pdf_report("Test3_Focused10Sections_Cohort.pdf", "Test 3: Focused Cohort (10 Sections)", t3_sec_names, res3["entries"])
+    pdf_path3 = generate_pdf_report("Test3_Focused10Sections_Cohort.pdf", "Test 3: Multi-Branch Cohort (10 Sections)", t3_sec_names, res3["entries"])
 
-    log3 = write_separate_test_log("test3_focused_10_sections.log", "Test 3: Focused Cohort (10 Sections Max)", t3_sec_names, len(t3_fac_pool), len(t3_rooms), pf3, res3, xls_path3, pdf_path3)
+    log3 = write_separate_test_log("test3_focused_10_sections.log", "Test 3: Multi-Branch Cohort (10 Sections Max)", t3_sec_names, len(t3_fac_pool), len(t3_rooms), pf3, res3, xls_path3, pdf_path3)
     print(f"[PASS] Test 3 Completed | Hard Violations: 0 | Slots Generated: {res3.get('entries_count')} | Separate Log: {os.path.basename(log3)}")
 
     # -------------------------------------------------------------------------
-    # TEST 4: Focused Multi-Year Cohort (10 Sections Max)
+    # TEST 4: Focused Multi-Year & Multi-Branch Cohort (10 Sections Max)
     # -------------------------------------------------------------------------
-    print("\n--- TEST 4: Focused Multi-Year Cohort (10 Sections Max) ---")
-    t4_sec_names = [f"II AIML-{chr(65+i)}" for i in range(4)] + \
-                   [f"III AIML-{chr(65+i)}" for i in range(3)] + \
-                   [f"IV AIML-{chr(65+i)}" for i in range(3)]
+    print("\n--- TEST 4: Focused Multi-Year & Multi-Branch Cohort (10 Sections Max) ---")
+    t4_sec_names = [
+        "II AIML-A",  "II AIML-B",
+        "II CSE-A",   "II CSE-B",
+        "III AIML-A", "III AIML-B",
+        "III CSE-A",  "III CSE-B",
+        "IV SECTION-1", "IV SECTION-2"
+    ]
     t4_sections = [{"id": s} for s in t4_sec_names]
+
     t4_fac_pool = REAL_VFSTR_FACULTY
     t4_subjects = build_dense_semester_subjects(t4_sections, t4_fac_pool)
     t4_rooms = REAL_VFSTR_ROOMS
