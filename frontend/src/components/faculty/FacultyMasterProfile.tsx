@@ -147,9 +147,11 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
     setShowEditModal(false);
   };
 
-  // Filtered Faculty Roster
+  const [sortBy, setSortBy] = useState<string>("NAME_ASC");
+
+  // Filtered & Sorted Faculty Roster
   const filteredFaculty = useMemo(() => {
-    return facultyList.filter((fac) => {
+    const list = facultyList.filter((fac) => {
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const matchName = fac.name.toLowerCase().includes(q);
@@ -170,7 +172,27 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
 
       return true;
     });
-  }, [facultyList, searchQuery, designationFilter, workloadFilter]);
+
+    return list.sort((a, b) => {
+      if (sortBy === "NAME_ASC") return a.name.localeCompare(b.name);
+      if (sortBy === "NAME_DESC") return b.name.localeCompare(a.name);
+      if (sortBy === "LOAD_DESC") {
+        const loadA = a.current_weekly_hours ?? a.hours_this_week ?? 12;
+        const loadB = b.current_weekly_hours ?? b.hours_this_week ?? 12;
+        return loadB - loadA;
+      }
+      if (sortBy === "LOAD_ASC") {
+        const loadA = a.current_weekly_hours ?? a.hours_this_week ?? 12;
+        const loadB = b.current_weekly_hours ?? b.hours_this_week ?? 12;
+        return loadA - loadB;
+      }
+      if (sortBy === "EMPID_ASC") {
+        return (a.employee_id || "").localeCompare(b.employee_id || "");
+      }
+      return 0;
+    });
+  }, [facultyList, searchQuery, designationFilter, workloadFilter, sortBy]);
+
 
   // Overall Stats
   const stats = useMemo(() => {
@@ -264,6 +286,20 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
                 <option value="OVERLOAD">Overloaded (&gt;16h)</option>
                 <option value="UNDERLOAD">Underloaded (&lt;8h)</option>
               </select>
+
+              {/* Sort Selector */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white shrink-0"
+              >
+                <option value="NAME_ASC">Sort: Name (A-Z)</option>
+                <option value="NAME_DESC">Sort: Name (Z-A)</option>
+                <option value="LOAD_DESC">Sort: Workload (High to Low)</option>
+                <option value="LOAD_ASC">Sort: Workload (Low to High)</option>
+                <option value="EMPID_ASC">Sort: Employee ID</option>
+              </select>
+
 
               <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0">
                 <button

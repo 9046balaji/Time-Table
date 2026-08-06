@@ -134,9 +134,11 @@ export const CurriculumMasterProfile: React.FC<CurriculumMasterProfileProps> = (
     setShowEditModal(false);
   };
 
-  // Filtered Subject Inventory
+  const [sortBy, setSortBy] = useState<string>("CODE_ASC");
+
+  // Filtered & Sorted Subject Inventory
   const filteredSubjects = useMemo(() => {
-    return subjectList.filter((sub) => {
+    const list = subjectList.filter((sub) => {
       // Search Filter (Code, Title, Year)
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -160,7 +162,20 @@ export const CurriculumMasterProfile: React.FC<CurriculumMasterProfileProps> = (
 
       return true;
     });
-  }, [subjectList, searchQuery, yearFilter, branchFilter]);
+
+    return list.sort((a, b) => {
+      if (sortBy === "CODE_ASC") return a.code.localeCompare(b.code);
+      if (sortBy === "TITLE_ASC") return a.full_name.localeCompare(b.full_name);
+      if (sortBy === "HOURS_DESC") {
+        const hA = (a.lecture_hours || 0) + (a.tutorial_hours || 0) + (a.lab_hours || 0);
+        const hB = (b.lecture_hours || 0) + (b.tutorial_hours || 0) + (b.lab_hours || 0);
+        return hB - hA;
+      }
+      if (sortBy === "SLOT_TYPE") return (a.slot_type || "L").localeCompare(b.slot_type || "L");
+      return 0;
+    });
+  }, [subjectList, searchQuery, yearFilter, branchFilter, sortBy]);
+
 
   // Practical Labs subset
   const labSubjects = useMemo(() => {
@@ -255,6 +270,19 @@ export const CurriculumMasterProfile: React.FC<CurriculumMasterProfileProps> = (
                 <option value="DS">CSE (Data Science)</option>
                 <option value="CS">CSE (Cyber Security)</option>
               </select>
+
+              {/* Sort Selector */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white shrink-0"
+              >
+                <option value="CODE_ASC">Sort: Course Code (A-Z)</option>
+                <option value="TITLE_ASC">Sort: Title (A-Z)</option>
+                <option value="HOURS_DESC">Sort: Hours (High→Low)</option>
+                <option value="SLOT_TYPE">Sort: Slot Type (L/P/T)</option>
+              </select>
+
 
               <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0">
                 <button

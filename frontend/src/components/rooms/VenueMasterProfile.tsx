@@ -124,9 +124,11 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
     setShowEditModal(false);
   };
 
-  // Filtered Room Inventory
+  const [sortBy, setSortBy] = useState<string>("CODE_ASC");
+
+  // Filtered & Sorted Room Inventory
   const filteredRooms = useMemo(() => {
-    return roomList.filter((rm) => {
+    const list = roomList.filter((rm) => {
       // Search Filter (Code, Floor, Block, Capacity)
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -150,7 +152,16 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
 
       return true;
     });
-  }, [roomList, searchQuery, typeFilter, blockFilter]);
+
+    return list.sort((a, b) => {
+      if (sortBy === "CODE_ASC") return a.code.localeCompare(b.code, undefined, { numeric: true });
+      if (sortBy === "CODE_DESC") return b.code.localeCompare(a.code, undefined, { numeric: true });
+      if (sortBy === "CAPACITY_DESC") return (b.capacity || 0) - (a.capacity || 0);
+      if (sortBy === "CAPACITY_ASC") return (a.capacity || 0) - (b.capacity || 0);
+      return 0;
+    });
+  }, [roomList, searchQuery, typeFilter, blockFilter, sortBy]);
+
 
   // High-GPU & Computer Labs subset
   const labRooms = useMemo(() => {
@@ -248,6 +259,19 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
                 <option value="H-Block">H-Block (Divisional)</option>
                 <option value="NB">New Block (NB)</option>
               </select>
+
+              {/* Sort Selector */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white shrink-0"
+              >
+                <option value="CODE_ASC">Sort: Room Code (1→N)</option>
+                <option value="CODE_DESC">Sort: Room Code (N→1)</option>
+                <option value="CAPACITY_DESC">Sort: Capacity (High→Low)</option>
+                <option value="CAPACITY_ASC">Sort: Capacity (Low→High)</option>
+              </select>
+
 
               <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0">
                 <button

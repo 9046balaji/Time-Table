@@ -70,8 +70,16 @@ export default function SchedulePage() {
   const [loadingFacultyTimetable, setLoadingFacultyTimetable] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
+  // Search & Sort states for Schedule Workbench
+  const [gridSearchQuery, setGridSearchQuery] = useState("");
+  const [facultySearchQuery, setFacultySearchQuery] = useState("");
+  const [facultySortBy, setFacultySortBy] = useState<"NAME_ASC" | "HOURS_DESC">("NAME_ASC");
+  const [inspectorSearchQuery, setInspectorSearchQuery] = useState("");
+  const [inspectorSortBy, setInspectorSortBy] = useState<"CODE_ASC" | "CAPACITY_DESC">("CODE_ASC");
+
   // Load versions & faculty list
   useEffect(() => {
+
     timetableApi.getVersions()
       .then(res => {
         const vList = Array.isArray(res.data) && res.data.length > 0 ? res.data : [
@@ -256,11 +264,57 @@ export default function SchedulePage() {
     });
 
     const allKnownRooms = ["601", "602", "603", "604", "605", "606", "607", "608", "609", "610", "611", "612", "613", "614", "615", "616", "617", "618", "619", "AFTF-12", "AFTF-13", "AFTF-14", "AFF-09", "AFF-10"];
-    const vacantRooms = allKnownRooms.filter((r) => !occupiedRooms.has(r));
-    const availableFaculty = facultyList.filter((f) => !occupiedFaculty.has(f.name));
+    const baseVacant = allKnownRooms.filter((r) => !occupiedRooms.has(r));
+    const baseFaculty = facultyList.filter((f) => !occupiedFaculty.has(f.name));
 
-    return { vacantRooms, availableFaculty, occupiedRoomsCount: occupiedRooms.size };
-  }, [cohortAllSlots, inspectDay, inspectPeriod, facultyList]);
+    // Filter & Sort Vacant Rooms
+    let filteredVacant = baseVacant;
+    if (inspectorSearchQuery) {
+      const q = inspectorSearchQuery.toLowerCase();
+      filteredVacant = filteredVacant.filter((r: string) => r.toLowerCase().includes(q));
+    }
+
+    // Filter & Sort Available Faculty
+    let filteredFaculty = baseFaculty;
+    if (inspectorSearchQuery) {
+      const q = inspectorSearchQuery.toLowerCase();
+      filteredFaculty = filteredFaculty.filter((f: Faculty) => f.name.toLowerCase().includes(q) || (f.employee_id || "").toLowerCase().includes(q));
+    }
+
+    return { vacantRooms: filteredVacant, availableFaculty: filteredFaculty, occupiedRoomsCount: occupiedRooms.size };
+
+  }, [cohortAllSlots, inspectDay, inspectPeriod, facultyList, inspectorSearchQuery]);
+
+  // Sorted & Filtered Faculty List for Faculty Schedules View
+  const processedFacultyList = useMemo(() => {
+    let list = facultyList.filter(f => {
+      if (!facultySearchQuery) return true;
+      const q = facultySearchQuery.toLowerCase();
+      return f.name.toLowerCase().includes(q) || (f.employee_id || "").toLowerCase().includes(q);
+    });
+
+    return list.sort((a, b) => {
+      if (facultySortBy === "NAME_ASC") return a.name.localeCompare(b.name);
+      if (facultySortBy === "HOURS_DESC") return (b.current_weekly_hours || 12) - (a.current_weekly_hours || 12);
+      return 0;
+    });
+  }, [facultyList, facultySearchQuery, facultySortBy]);
+
+  // Highlighted Grid Entries based on gridSearchQuery
+  const filteredGridEntries = useMemo(() => {
+    if (!gridSearchQuery) return entries;
+    const q = gridSearchQuery.toLowerCase();
+    return entries.map(e => {
+      const matchSubject = e.subjectCode.toLowerCase().includes(q);
+      const matchRoom = (e.roomCode || "").toLowerCase().includes(q);
+      const matchFaculty = (e.facultyName || "").toLowerCase().includes(q);
+      if (matchSubject || matchRoom || matchFaculty) {
+        return { ...e, hasClash: true, clashReason: `MATCH: Search term "${gridSearchQuery}"` };
+      }
+      return e;
+    });
+  }, [entries, gridSearchQuery]);
+
 
   // Export iCal (.ics) Calendar Feed
   const exportICalFeed = () => {
@@ -453,35 +507,55 @@ export default function SchedulePage() {
       {mode === 'matrix' && (
         <>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Active Section:</label>
-              <select
-                value={selectedSection}
-                onChange={(e) => setSelectedSection(e.target.value)}
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
-              >
-                <optgroup label="B.Tech II Year (AIML)">
-                  <option value="II AIML-A">II AIML-A</option>
-                  <option value="II AIML-B">II AIML-B</option>
-                  <option value="II AIML-C">II AIML-C</option>
-                  <option value="II AIML-D">II AIML-D</option>
-                  <option value="II AIML-E">II AIML-E</option>
-                </optgroup>
-                <optgroup label="B.Tech III Year (AIML)">
-                  <option value="III AIML-A">III AIML-A</option>
-                  <option value="III AIML-B">III AIML-B</option>
-                  <option value="III AIML-C">III AIML-C</option>
-                </optgroup>
-                <optgroup label="B.Tech IV Year (AIML)">
-                  <option value="IV AIML-A">IV AIML-A</option>
-                  <option value="IV AIML-B">IV AIML-B</option>
-                </optgroup>
-                <optgroup label="B.Tech CS / DS">
-                  <option value="II CS-A">II CS-A</option>
-                  <option value="II DS-A">II DS-A</option>
-                </optgroup>
-              </select>
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Active Section:</label>
+                <select
+                  value={selectedSection}
+                  onChange={(e) => setSelectedSection(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
+                >
+                  <optgroup label="B.Tech II Year (AIML)">
+                    <option value="II AIML-A">II AIML-A</option>
+                    <option value="II AIML-B">II AIML-B</option>
+                    <option value="II AIML-C">II AIML-C</option>
+                    <option value="II AIML-D">II AIML-D</option>
+                    <option value="II AIML-E">II AIML-E</option>
+                  </optgroup>
+                  <optgroup label="B.Tech III Year (AIML)">
+                    <option value="III AIML-A">III AIML-A</option>
+                    <option value="III AIML-B">III AIML-B</option>
+                    <option value="III AIML-C">III AIML-C</option>
+                  </optgroup>
+                  <optgroup label="B.Tech IV Year (AIML)">
+                    <option value="IV AIML-A">IV AIML-A</option>
+                    <option value="IV AIML-B">IV AIML-B</option>
+                  </optgroup>
+                  <optgroup label="B.Tech CS / DS">
+                    <option value="II CS-A">II CS-A</option>
+                    <option value="II DS-A">II DS-A</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* Grid Live Search Box */}
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Search subject, room, or faculty..."
+                  value={gridSearchQuery}
+                  onChange={(e) => setGridSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none font-medium"
+                />
+                {gridSearchQuery && (
+                  <button onClick={() => setGridSearchQuery("")} className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold text-xs">
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
+
 
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
               <span>Total Section Slots: {entries.length}</span>
@@ -498,11 +572,12 @@ export default function SchedulePage() {
               ) : (
                 <TimetableGrid
                   sectionName={selectedSection}
-                  entries={entries}
+                  entries={filteredGridEntries}
                   onSlotSwap={handleSlotSwap}
                   showDownloadBtn={true}
                   onDownloadPdf={handleDownloadSinglePdf}
                 />
+
               )}
             </div>
 
@@ -666,24 +741,49 @@ export default function SchedulePage() {
               <p className="text-xs text-slate-500 mt-1">Select a faculty member to view their individual teaching matrix.</p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Faculty Search Input */}
+              <div className="relative w-48">
+                <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Search faculty..."
+                  value={facultySearchQuery}
+                  onChange={(e) => setFacultySearchQuery(e.target.value)}
+                  className="w-full pl-7 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+                />
+              </div>
+
+              {/* Faculty Sort Select */}
+              <select
+                value={facultySortBy}
+                onChange={(e) => setFacultySortBy(e.target.value as any)}
+                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
+              >
+                <option value="NAME_ASC">Sort: Name (A-Z)</option>
+                <option value="HOURS_DESC">Sort: Hours (High→Low)</option>
+              </select>
+
+              {/* Faculty Dropdown */}
               <select
                 value={selectedFacultyId || ""}
                 onChange={(e) => setSelectedFacultyId(Number(e.target.value))}
-                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
+                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white max-w-xs"
               >
-                {facultyList.map((f) => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
+                {processedFacultyList.map((f) => (
+                  <option key={f.id} value={f.id}>{f.name} ({f.employee_id || `VF-${f.id}`})</option>
                 ))}
               </select>
+
               <button
                 onClick={handleDownloadFacultyPdf}
                 disabled={downloadingPdf}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors"
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
               >
                 Download PDF
               </button>
             </div>
+
           </div>
 
           {facultyTimetableData && (
@@ -752,7 +852,25 @@ export default function SchedulePage() {
               </div>
             </div>
 
+            {/* Inspector Search Input */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Search vacant room code or faculty name..."
+                value={inspectorSearchQuery}
+                onChange={(e) => setInspectorSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none font-medium"
+              />
+              {inspectorSearchQuery && (
+                <button onClick={() => setInspectorSearchQuery("")} className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold text-xs">
+                  ✕
+                </button>
+              )}
+            </div>
+
             {/* Vacant Rooms List */}
+
             <div className="space-y-3">
               <h4 className="text-xs font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center justify-between">
                 <span>Vacant Venues ({freeRoomsAndFaculty.vacantRooms.length})</span>
