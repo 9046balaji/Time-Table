@@ -77,8 +77,20 @@ export default function SchedulePage() {
   const [inspectorSearchQuery, setInspectorSearchQuery] = useState("");
   const [inspectorSortBy, setInspectorSortBy] = useState<"CODE_ASC" | "CAPACITY_DESC">("CODE_ASC");
 
-  // Load versions & faculty list
+  // Dynamic Section Filtering & Sorting states
+  const [dbSectionsList, setDbSectionsList] = useState<any[]>([]);
+  const [sectionYearFilter, setSectionYearFilter] = useState<string>("ALL");
+  const [sectionBranchFilter, setSectionBranchFilter] = useState<string>("ALL");
+  const [sectionSortBy, setSectionSortBy] = useState<string>("NAME_ASC");
+
+  // Load versions, faculty list, and sections list
   useEffect(() => {
+    timetableApi.getSections().then(res => {
+      const secs = Array.isArray(res.data) ? res.data : ((res.data as any)?.items || []);
+      setDbSectionsList(secs);
+    }).catch(() => {
+      setDbSectionsList([]);
+    });
 
     timetableApi.getVersions()
       .then(res => {
@@ -102,6 +114,41 @@ export default function SchedulePage() {
       if (facs.length > 0) setSelectedFacultyId(facs[0].id);
     });
   }, []);
+
+  // Filtered & Sorted Sections List
+  const filteredAndSortedSections = useMemo(() => {
+    let list = dbSectionsList.length > 0 ? dbSectionsList : [
+      { id: 1, name: "II AIML-A", year: "II", branch: "AIML" },
+      { id: 2, name: "II AIML-B", year: "II", branch: "AIML" },
+      { id: 3, name: "II AIML-C", year: "II", branch: "AIML" },
+      { id: 4, name: "II AIML-D", year: "II", branch: "AIML" },
+      { id: 5, name: "II AIML-E", year: "II", branch: "AIML" },
+      { id: 6, name: "III AIML-A", year: "III", branch: "AIML" },
+      { id: 7, name: "III AIML-B", year: "III", branch: "AIML" },
+      { id: 8, name: "IV AIML-A", year: "IV", branch: "AIML" },
+      { id: 9, name: "II CS-A", year: "II", branch: "CS" },
+      { id: 10, name: "II DS-A", year: "II", branch: "DS" },
+    ];
+
+    list = list.filter((s) => {
+      const sName = typeof s === 'string' ? s : (s.name || s.section_name || String(s));
+      const sYear = typeof s === 'object' && s.year ? s.year : (sName.includes("II ") ? "II" : sName.includes("III ") ? "III" : sName.includes("IV ") ? "IV" : "");
+      const sBranch = typeof s === 'object' && s.branch ? s.branch : (sName.includes("AIML") ? "AIML" : sName.includes("CS") ? "CS" : sName.includes("DS") ? "DS" : "");
+
+      if (sectionYearFilter !== "ALL" && !sYear.includes(sectionYearFilter)) return false;
+      if (sectionBranchFilter !== "ALL" && !sBranch.includes(sectionBranchFilter)) return false;
+      return true;
+    });
+
+    return list.sort((a, b) => {
+      const nameA = typeof a === 'string' ? a : (a.name || a.section_name || String(a));
+      const nameB = typeof b === 'string' ? b : (b.name || b.section_name || String(b));
+      if (sectionSortBy === "NAME_ASC") return nameA.localeCompare(nameB, undefined, { numeric: true });
+      if (sectionSortBy === "NAME_DESC") return nameB.localeCompare(nameA, undefined, { numeric: true });
+      return 0;
+    });
+  }, [dbSectionsList, sectionYearFilter, sectionBranchFilter, sectionSortBy]);
+
 
   // Fetch primary section slots
   useEffect(() => {
@@ -507,38 +554,62 @@ export default function SchedulePage() {
       {mode === 'matrix' && (
         <>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm gap-4">
-            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Active Section:</label>
+            <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+              {/* Year Filter */}
+              <select
+                value={sectionYearFilter}
+                onChange={(e) => setSectionYearFilter(e.target.value)}
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
+              >
+                <option value="ALL">All Academic Years</option>
+                <option value="II">II Year (Sem I)</option>
+                <option value="III">III Year (Sem I)</option>
+                <option value="IV">IV Year (Sem I)</option>
+              </select>
+
+              {/* Branch Filter */}
+              <select
+                value={sectionBranchFilter}
+                onChange={(e) => setSectionBranchFilter(e.target.value)}
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
+              >
+                <option value="ALL">All Specializations</option>
+                <option value="AIML">CSE (AIML)</option>
+                <option value="CS">CSE (Core & CS)</option>
+                <option value="DS">CSE (Data Science)</option>
+              </select>
+
+              {/* Section Sort */}
+              <select
+                value={sectionSortBy}
+                onChange={(e) => setSectionSortBy(e.target.value)}
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
+              >
+                <option value="NAME_ASC">Sort: Section (A-Z)</option>
+                <option value="NAME_DESC">Sort: Section (Z-A)</option>
+              </select>
+
+              {/* Dynamic Filtered Active Section Selector */}
+              <div className="flex items-center gap-1.5">
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Section:</label>
                 <select
                   value={selectedSection}
                   onChange={(e) => setSelectedSection(e.target.value)}
-                  className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
+                  className="bg-blue-50 dark:bg-blue-950/80 border border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 px-4 py-1.5 rounded-xl text-xs font-black shadow-sm focus:outline-none cursor-pointer"
                 >
-                  <optgroup label="B.Tech II Year (AIML)">
-                    <option value="II AIML-A">II AIML-A</option>
-                    <option value="II AIML-B">II AIML-B</option>
-                    <option value="II AIML-C">II AIML-C</option>
-                    <option value="II AIML-D">II AIML-D</option>
-                    <option value="II AIML-E">II AIML-E</option>
-                  </optgroup>
-                  <optgroup label="B.Tech III Year (AIML)">
-                    <option value="III AIML-A">III AIML-A</option>
-                    <option value="III AIML-B">III AIML-B</option>
-                    <option value="III AIML-C">III AIML-C</option>
-                  </optgroup>
-                  <optgroup label="B.Tech IV Year (AIML)">
-                    <option value="IV AIML-A">IV AIML-A</option>
-                    <option value="IV AIML-B">IV AIML-B</option>
-                  </optgroup>
-                  <optgroup label="B.Tech CS / DS">
-                    <option value="II CS-A">II CS-A</option>
-                    <option value="II DS-A">II DS-A</option>
-                  </optgroup>
+                  {filteredAndSortedSections.map((s, idx) => {
+                    const secName = typeof s === 'string' ? s : (s.name || s.section_name || String(s));
+                    return (
+                      <option key={idx} value={secName}>
+                        {secName}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
               {/* Grid Live Search Box */}
+
               <div className="relative w-full sm:w-64">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
                 <input
