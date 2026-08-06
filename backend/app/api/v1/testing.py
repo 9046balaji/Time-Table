@@ -1,8 +1,9 @@
 import os
 import io
 import re
+import json
 from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from typing import Dict, Any, List, Optional
 from backend.parser.excel_parser import ExcelTimetableParser, normalize_faculty_name
 from backend.solver.conflict_checker import ConflictChecker
@@ -167,3 +168,35 @@ async def export_tested_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+
+@router.get("/json-inspection")
+async def inspect_json_dataset(
+    target: str = Query("demo", description="Target JSON: 'demo', 'v5_all', 'test5_sections', 'test5_faculty', 'test5_rooms', 'test5_entries'")
+):
+    """
+    Endpoint for serving pre-parsed seed and solver output JSON files directly.
+    """
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+    json_map = {
+        "demo": os.path.join(root_dir, "data", "seed", "demo_timetable_seed.json"),
+        "v5_all": os.path.join(root_dir, "data", "seed", "original_v5_all_entries.json"),
+        "test5_sections": os.path.join(root_dir, "data", "test_outputs", "generated_test5_sections.json"),
+        "test5_faculty": os.path.join(root_dir, "data", "test_outputs", "generated_test5_faculty.json"),
+        "test5_rooms": os.path.join(root_dir, "data", "test_outputs", "generated_test5_rooms.json"),
+        "test5_entries": os.path.join(root_dir, "data", "test_outputs", "generated_test5_all_entries.json")
+    }
+
+    fpath = json_map.get(target, json_map["demo"])
+    if not os.path.exists(fpath):
+        raise HTTPException(status_code=404, detail=f"Target JSON file not found: {fpath}")
+
+    with open(fpath, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    return {
+        "target": target,
+        "filename": os.path.basename(fpath),
+        "file_size_bytes": os.path.getsize(fpath),
+        "data": data
+    }
