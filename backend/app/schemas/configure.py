@@ -7,6 +7,8 @@ class FacultyCreate(BaseModel):
     employee_id: Optional[str] = Field(None, description="Unique institutional ID")
     dept_id: Optional[int] = Field(1, description="Department ID")
     designation: str = Field("Assistant Professor", description="Professor | Associate Professor | Assistant Professor")
+    phone: Optional[str] = Field("N/A", description="Contact Phone Number")
+    email: Optional[str] = Field(None, description="Institutional Email Address")
     max_hours_per_week: int = Field(16, ge=1, le=30, description="Weekly hours limit")
     max_daily_classes: int = Field(5, ge=1, le=8, description="Max classes allowed per day")
     is_external: bool = Field(False, description="Industry or external instructor flag")
@@ -21,16 +23,23 @@ class FacultyCreate(BaseModel):
         },
         description="Availability grid: {'MON': [1,2,3...], ...}"
     )
+    subjects_taught: Optional[List[str]] = Field(default_factory=list, description="List of subject codes taught")
+    assigned_sections: Optional[List[str]] = Field(default_factory=list, description="List of section names taught")
+    current_weekly_hours: Optional[int] = Field(0, description="Computed weekly workload hours")
 
 
 class FacultyUpdate(BaseModel):
     name: Optional[str] = None
     employee_id: Optional[str] = None
     designation: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
     max_hours_per_week: Optional[int] = None
     max_daily_classes: Optional[int] = None
     is_external: Optional[bool] = None
     availability: Optional[Dict[str, List[int]]] = None
+    subjects_taught: Optional[List[str]] = None
+    assigned_sections: Optional[List[str]] = None
 
 
 class FacultyResponse(FacultyCreate):
@@ -39,6 +48,7 @@ class FacultyResponse(FacultyCreate):
     updated_at: Optional[Any] = None
 
     model_config = ConfigDict(from_attributes=True)
+
 
 
 class RoomCreate(BaseModel):
