@@ -1,10 +1,12 @@
-import React from "react";
-import { Sparkles, Loader2, CheckCircle2, RefreshCw, Wand2, ShieldAlert, Cpu } from "lucide-react";
+"use client";
+
+import React, { useState } from "react";
+import { Sparkles, Loader2, CheckCircle2, RefreshCw, Wand2, ShieldAlert, Cpu, Sliders, Zap } from "lucide-react";
 import { WizardGenerationResponse } from "@/lib/types";
 
 interface WizardStepSolveProps {
   loading: boolean;
-  onGenerate: () => void;
+  onGenerate: (algorithm?: string, timeout?: number) => void;
   generatedResult: WizardGenerationResponse | null;
   selectedSections: string[];
   maxDailyHours: number;
@@ -17,10 +19,14 @@ export const WizardStepSolve: React.FC<WizardStepSolveProps> = ({
   selectedSections,
   maxDailyHours,
 }) => {
+  const [algorithm, setAlgorithm] = useState<string>("CP-SAT");
+  const [timeoutSeconds, setTimeoutSeconds] = useState<number>(120);
+
   return (
     <div className="space-y-6 text-center py-4">
-      <div className="mx-auto max-w-lg rounded-3xl border border-blue-100 bg-gradient-to-b from-blue-50/50 to-white p-6 shadow-sm">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md">
+      {/* Solver Engine Config Card */}
+      <div className="mx-auto max-w-xl rounded-3xl border border-blue-100 dark:border-slate-800 bg-gradient-to-b from-blue-50/50 to-white dark:from-slate-900 dark:to-slate-900 p-6 shadow-sm space-y-5">
+        <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md">
           {loading ? (
             <Loader2 className="h-8 w-8 animate-spin" />
           ) : generatedResult ? (
@@ -30,60 +36,82 @@ export const WizardStepSolve: React.FC<WizardStepSolveProps> = ({
           )}
         </div>
 
-        <h3 className="text-lg font-bold text-slate-900">
-          {loading
-            ? "OR-Tools CP-SAT Engine Solving..."
-            : generatedResult
-            ? "100% Clash-Free Master Timetable Generated!"
-            : "Ready for High-Speed AI Generation"}
-        </h3>
-        <p className="mt-1 text-xs text-slate-500">
-          {loading
-            ? "Running parallel constraint propagation (8 workers) across sections, rooms, and multi-instructor labs."
-            : generatedResult
-            ? `Successfully generated timetable for ${selectedSections.length} sections (${generatedResult.entries_count} slots) in ${generatedResult.runtime_seconds} seconds!`
-            : `Configured for ${selectedSections.length} target sections with <= ${maxDailyHours}h daily faculty cap.`}
-        </p>
+        <div>
+          <h3 className="text-lg font-black text-slate-900 dark:text-white">
+            {loading
+              ? `${algorithm} Optimization Engine Solving...`
+              : generatedResult
+              ? "100% Clash-Free Master Timetable Generated!"
+              : "Ready for High-Speed AI Generation"}
+          </h3>
+          <p className="mt-1 text-xs font-medium text-slate-500">
+            {loading
+              ? `Running parallel constraint propagation across ${selectedSections.length} sections, rooms, and multi-instructor lab teams.`
+              : generatedResult
+              ? `Successfully generated timetable for ${selectedSections.length} sections (${generatedResult.entries_count} slots) in ${generatedResult.runtime_seconds} seconds!`
+              : `Configured for ${selectedSections.length} target sections with <= ${maxDailyHours}h daily faculty cap.`}
+          </p>
+        </div>
+
+        {/* Algorithm & Timeout Controls */}
+        {!loading && !generatedResult && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs">
+            <div>
+              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Solver Algorithm:</label>
+              <select
+                value={algorithm}
+                onChange={(e) => setAlgorithm(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-white"
+              >
+                <option value="CP-SAT">OR-Tools CP-SAT (Recommended)</option>
+                <option value="GA">Genetic Algorithm (Population Search)</option>
+                <option value="Hybrid">Hybrid CP-SAT + GA (Refinement)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Max Timeout: <span className="text-blue-600">{timeoutSeconds}s</span>
+              </label>
+              <input
+                type="range"
+                min={15}
+                max={300}
+                step={15}
+                value={timeoutSeconds}
+                onChange={(e) => setTimeoutSeconds(Number(e.target.value))}
+                className="w-full mt-2 accent-blue-600 cursor-pointer"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Generate Action Button */}
-        <div className="mt-6">
+        <div>
           <button
-            onClick={onGenerate}
+            onClick={() => onGenerate(algorithm, timeoutSeconds)}
             disabled={loading}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3.5 text-sm font-extrabold text-white shadow-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3.5 text-xs font-black text-white shadow-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all uppercase tracking-wider"
           >
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Solving Timetable (8 Parallel CP-SAT Workers)...
+                Solving Timetable ({algorithm} 8 Parallel Workers)...
               </>
             ) : generatedResult ? (
               <>
-                <RefreshCw className="h-4 w-4" /> Re-Run 0-Clash Solver Engine
+                <RefreshCw className="h-4 w-4" />
+                Re-Run AI Solver Engine
               </>
             ) : (
               <>
-                <Sparkles className="h-4 w-4" /> Generate 0-Clash Master Timetable
+                <Zap className="h-4 w-4 text-amber-300" />
+                Execute AI Solver Engine ({selectedSections.length} Sections)
               </>
             )}
           </button>
         </div>
       </div>
-
-      {/* Generated Timetable Summary Card */}
-      {generatedResult && (
-        <div className="mx-auto max-w-xl text-left rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4">
-          <h4 className="flex items-center gap-2 text-xs font-extrabold text-emerald-900">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Master Timetable Generation Summary
-          </h4>
-          <div className="mt-2 grid grid-cols-2 gap-3 text-xs font-semibold text-emerald-800">
-            <div>• Target Sections: <strong>{selectedSections.length} Sections</strong></div>
-            <div>• Hard Violations: <strong className="text-emerald-700">{generatedResult.hard_violations} (100% Clash-Free)</strong></div>
-            <div>• Total Slots Scheduled: <strong>{generatedResult.entries_count} Slots</strong></div>
-            <div>• Execution Time: <strong>{generatedResult.runtime_seconds} sec</strong></div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
