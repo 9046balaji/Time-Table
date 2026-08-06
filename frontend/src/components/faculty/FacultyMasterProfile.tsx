@@ -236,48 +236,7 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
       {/* SUB-VIEW 1: FACULTY DIRECTORY & ROSTER */}
       {activeSubTab === "roster" && (
         <div className="space-y-6">
-          {/* KPI Header Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-              <div className="p-3 bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-xl">
-                <Users className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Total Faculty Pool</div>
-                <div className="text-xl font-black text-slate-900 dark:text-white mt-0.5">{stats.total} Instructors</div>
-              </div>
-            </div>
 
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-              <div className="p-3 bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 rounded-xl">
-                <Award className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Senior Ranks</div>
-                <div className="text-xl font-black text-slate-900 dark:text-white mt-0.5">{stats.profs} Professors</div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-              <div className="p-3 bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 rounded-xl">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Average Workload</div>
-                <div className="text-xl font-black text-slate-900 dark:text-white mt-0.5">{stats.avgLoad} hrs / week</div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-              <div className="p-3 bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 rounded-xl">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Workload Alerts</div>
-                <div className="text-xl font-black text-amber-600 dark:text-amber-400 mt-0.5">{stats.overloaded} Overloaded</div>
-              </div>
-            </div>
-          </div>
 
           {/* Unified Search & Filter Toolbar */}
           <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
