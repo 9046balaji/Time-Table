@@ -20,7 +20,8 @@ import {
   Clock,
   CheckCircle2,
   Users,
-  Printer
+  Printer,
+  Filter
 } from "lucide-react";
 
 interface SlotDetail {
@@ -74,9 +75,10 @@ const PERIOD_HEADERS = [
 const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
 
 export default function TestingLabPage() {
-  const [selectedDataset, setSelectedDataset] = useState<string>("4th_year");
+  const [selectedDataset, setSelectedDataset] = useState<string>("multi_branch_e2e");
   const [sectionsData, setSectionsData] = useState<SectionData[]>([]);
   const [selectedSecId, setSelectedSecId] = useState<string>("");
+  const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>("ALL");
   const [activeModalSlot, setActiveModalSlot] = useState<SlotDetail | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<"SECTION" | "FACULTY" | "ROOM" | "CONSTRAINTS">("SECTION");
@@ -96,7 +98,7 @@ export default function TestingLabPage() {
           setSectionsData(json.sections);
           setSelectedSecId(json.sections[0].id);
           setMetaStats({
-            totalSlots: json.total_slots || 288,
+            totalSlots: json.total_slots || 360,
             roomClashes: json.room_clashes || 0,
             facultyClashes: json.faculty_clashes || 0
           });
@@ -105,12 +107,14 @@ export default function TestingLabPage() {
         }
       }
     } catch (e) {
-      console.warn("Backend API offline, loading fallback dataset...", e);
+      console.warn("Backend API offline, loading multi-branch dataset...", e);
     }
 
-    // Complete 10-Section Fallback Dataset across MON..SAT
+    // Multi-Branch Fallback Dataset (AIML, CSE Core, DS, CS)
+    const branches = ["CSE (AIML)", "CSE (Core)", "CSE (Data Science)", "CSE (Cyber Security)"];
     const fallbackSections: SectionData[] = Array.from({ length: 10 }, (_, idx) => {
-      const secName = `SECTION-${idx + 1}`;
+      const bName = branches[idx % branches.length];
+      const secName = idx < 3 ? `II AIML-${chr(65+idx)}` : idx < 6 ? `II CSE-${chr(65+idx-3)}` : idx < 8 ? `II DS-${chr(65+idx-6)}` : `II CS-${chr(65+idx-8)}`;
       const allSlots: SlotDetail[] = [];
       
       const subjectsPool = [
@@ -123,6 +127,8 @@ export default function TestingLabPage() {
         { code: "CE(N-110)", title: "Campus Recruitment Training", type: "SPECIAL" as const, room: "N-110 SEMINAR HALL", fac: "CRT Training Team", combined: true },
         { code: "EXPERIENTIAL LEARNING", title: "Project & Self Learning Block", type: "PROJECT" as const, room: "N-407", fac: "Dr. Simhadri Chinna Gopi", phone: "9700330708" }
       ];
+
+      function chr(n: number) { return String.fromCharCode(n); }
 
       DAYS.forEach((day, dIdx) => {
         PERIOD_HEADERS.forEach((h, pIdx) => {
@@ -141,7 +147,7 @@ export default function TestingLabPage() {
             primary_phone: sObj.phone,
             co_faculty: sObj.co || [],
             is_combined: sObj.combined || false,
-            combined_sections: sObj.combined ? [secName, `SECTION-${idx + 2}`] : []
+            combined_sections: sObj.combined ? [secName, `II AIML-B`] : []
           });
         });
       });
@@ -149,8 +155,8 @@ export default function TestingLabPage() {
       return {
         id: `sec_${idx + 1}`,
         name: secName,
-        year_level: "IV Year",
-        branch: "CSE (AIML)",
+        year_level: "II Year",
+        branch: bName,
         class_teacher: {
           name: `Dr. ClassTeacher_${idx + 1}`,
           phone: `970033070${idx}`
@@ -169,9 +175,15 @@ export default function TestingLabPage() {
     fetchTestedData(selectedDataset);
   }, [selectedDataset]);
 
+  // Filtered Sections by Branch
+  const filteredSectionsData = useMemo(() => {
+    if (selectedBranchFilter === "ALL") return sectionsData;
+    return sectionsData.filter((s) => s.branch === selectedBranchFilter);
+  }, [sectionsData, selectedBranchFilter]);
+
   const currentSection = useMemo(() => {
-    return sectionsData.find((s) => s.id === selectedSecId) || sectionsData[0];
-  }, [sectionsData, selectedSecId]);
+    return filteredSectionsData.find((s) => s.id === selectedSecId) || filteredSectionsData[0] || sectionsData[0];
+  }, [filteredSectionsData, sectionsData, selectedSecId]);
 
   const allFacultyList = useMemo(() => {
     const set = new Set<string>();
@@ -229,7 +241,6 @@ export default function TestingLabPage() {
     return map;
   }, [currentSection, searchQuery, slotTypeFilter]);
 
-  // Faculty Grid Map across all 6 Days x 6 Periods
   const facultyGridMap = useMemo(() => {
     const map = new Map<string, { sectionName: string; slot: SlotDetail }>();
     if (!selectedFacultyFilter) return map;
@@ -248,7 +259,6 @@ export default function TestingLabPage() {
     return Array.from(facultyGridMap.values());
   }, [facultyGridMap]);
 
-  // Room Grid Map across all 6 Days x 6 Periods
   const roomGridMap = useMemo(() => {
     const map = new Map<string, { sectionName: string; slot: SlotDetail }>();
     if (!selectedRoomFilter) return map;
@@ -267,7 +277,6 @@ export default function TestingLabPage() {
     return Array.from(roomGridMap.values());
   }, [roomGridMap]);
 
-  // Exporters Handlers
   const triggerExcelExport = () => {
     const url = `http://localhost:8000/api/v1/testing/export/excel?dataset=${selectedDataset}`;
     window.open(url, "_blank");
@@ -293,7 +302,7 @@ export default function TestingLabPage() {
     return (
       <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
         <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-        <span className="font-bold text-sm">Loading 100% Tested Timetable Dataset...</span>
+        <span className="font-bold text-sm">Loading Multi-Branch Tested Timetable Dataset...</span>
       </div>
     );
   }
@@ -309,17 +318,17 @@ export default function TestingLabPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-semibold flex items-center gap-1.5">
-              <FlaskConical className="w-3.5 h-3.5 text-blue-400" /> Tested Dataset Hub
+              <FlaskConical className="w-3.5 h-3.5 text-blue-400" /> Multi-Branch Tested Hub
             </span>
             <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-xs font-semibold flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Focused 10-Section Scope
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Max 5 Secs / Branch Cap
             </span>
           </div>
           <h1 className="text-2xl font-bold mt-2 text-slate-50 tracking-tight">
-            VFSTR ACSE Timetable Testing Dashboard
+            VFSTR ACSE Multi-Branch Tested Timetable Dashboard
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            Explore 100% of tested slots for all 6 days (MON–SAT) across 10 focused sections with live dataset switching, faculty workload inspector, and constraint diagnostics.
+            Displaying multi-branch datasets (CSE AIML, CSE Core, Data Science, Cyber Security) capped at 5 sections per branch for ultra-fast performance.
           </p>
         </div>
 
@@ -334,7 +343,7 @@ export default function TestingLabPage() {
             <div className="text-[10px] text-slate-400 font-medium">Faculty Clashes</div>
           </div>
           <div className="text-center px-3">
-            <div className="text-xl font-extrabold text-blue-400">10</div>
+            <div className="text-xl font-extrabold text-blue-400">{sectionsData.length}</div>
             <div className="text-[10px] text-slate-400 font-medium">Focused Secs</div>
           </div>
         </div>
@@ -352,6 +361,26 @@ export default function TestingLabPage() {
 
           <div className="flex items-center gap-2 overflow-x-auto">
             <button
+              onClick={() => setSelectedDataset("multi_branch_e2e")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                selectedDataset === "multi_branch_e2e"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+              }`}
+            >
+              ⚡ Multi-Branch Cohort (AIML, CSE, DS, CS)
+            </button>
+            <button
+              onClick={() => setSelectedDataset("multi_year_e2e")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                selectedDataset === "multi_year_e2e"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+              }`}
+            >
+              🎓 Multi-Year Cohort (II, III, IV Year)
+            </button>
+            <button
               onClick={() => setSelectedDataset("4th_year")}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 selectedDataset === "4th_year"
@@ -360,16 +389,6 @@ export default function TestingLabPage() {
               }`}
             >
               🌟 4th Year July 17 (10 Sec)
-            </button>
-            <button
-              onClick={() => setSelectedDataset("e2e_test")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                selectedDataset === "e2e_test"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-              }`}
-            >
-              ⚡ E2E Solver Output (10 Sec)
             </button>
             <button
               onClick={() => setSelectedDataset("v5_baseline")}
@@ -386,7 +405,6 @@ export default function TestingLabPage() {
 
         {/* View Mode & Export Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          {/* View Mode Tabs */}
           <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
             <button
               onClick={() => setViewMode("SECTION")}
@@ -453,47 +471,67 @@ export default function TestingLabPage() {
           </div>
         </div>
 
-        {/* Search & Slot Type Filter Bar */}
+        {/* Branch Filter & Search Bar */}
         {viewMode === "SECTION" && (
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-            {/* Search Input */}
-            <div className="relative flex-1 w-full">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                placeholder="Search subject code (PID, BDA, AI...) or faculty name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Slot Type Filter Pills */}
-            <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto">
-              {["ALL", "L", "P", "T", "SPECIAL", "PROJECT"].map((t) => (
+          <div className="space-y-3 pt-1">
+            {/* Branch Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+                <Filter className="w-3.5 h-3.5" /> Branch Filter:
+              </span>
+              {["ALL", "CSE (AIML)", "CSE (Core)", "CSE (Data Science)", "CSE (Cyber Security)"].map((b) => (
                 <button
-                  key={t}
-                  onClick={() => setSlotTypeFilter(t)}
-                  className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all whitespace-nowrap ${
-                    slotTypeFilter === t
-                      ? "bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900"
+                  key={b}
+                  onClick={() => setSelectedBranchFilter(b)}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                    selectedBranchFilter === b
+                      ? "bg-purple-600 text-white shadow-sm"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
                   }`}
                 >
-                  {t === "ALL" ? "All Types" : t === "L" ? "Lecture (L)" : t === "P" ? "Lab (P)" : t === "T" ? "Tutorial (T)" : t}
+                  {b === "ALL" ? "All Branches" : b}
                 </button>
               ))}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <div className="relative flex-1 w-full">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Search subject code (PID, BDA, AI...) or faculty name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto">
+                {["ALL", "L", "P", "T", "SPECIAL", "PROJECT"].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setSlotTypeFilter(t)}
+                    className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all whitespace-nowrap ${
+                      slotTypeFilter === t
+                        ? "bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
+                    }`}
+                  >
+                    {t === "ALL" ? "All Types" : t === "L" ? "Lecture (L)" : t === "P" ? "Lab (P)" : t === "T" ? "Tutorial (T)" : t}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* 10-Section Selector Pills */}
+        {/* Dynamic Section Pills (Capped 5 Sec / Branch) */}
         {viewMode === "SECTION" && (
           <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 border-t border-slate-100 dark:border-slate-800">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
               Select Section:
             </span>
-            {sectionsData.map((sec) => (
+            {filteredSectionsData.map((sec) => (
               <button
                 key={sec.id}
                 onClick={() => setSelectedSecId(sec.id)}
@@ -513,15 +551,14 @@ export default function TestingLabPage() {
       {/* VIEW MODE 1: SECTION GRID VIEW */}
       {viewMode === "SECTION" && (
         <div className="space-y-6">
-          {/* Section Header Card & Class Teacher Banner */}
           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
-                  {currentSection.year_level || currentSection.yearLevel || "IV Year"} • {currentSection.branch}
+                  {currentSection.year_level || currentSection.yearLevel || "II Year"} • {currentSection.branch}
                 </span>
                 <span className="px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-[10px] font-bold">
-                  100% All Days (MON–SAT) Loaded
+                  Max 5 Secs / Branch Capped
                 </span>
               </div>
               <h2 className="text-xl font-black text-slate-900 dark:text-white mt-1">
@@ -529,7 +566,6 @@ export default function TestingLabPage() {
               </h2>
             </div>
 
-            {/* Class Teacher Card */}
             <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
               <div className="p-2 bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-lg">
                 <UserCheck className="w-5 h-5" />
@@ -547,7 +583,6 @@ export default function TestingLabPage() {
             </div>
           </div>
 
-          {/* Timetable Grid Table */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] border-collapse text-xs">
@@ -638,7 +673,6 @@ export default function TestingLabPage() {
             </div>
           </div>
 
-          {/* Course Legend & Staffing Table */}
           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-blue-600" /> Complete Course Legend ({currentSection.name})
@@ -677,7 +711,7 @@ export default function TestingLabPage() {
         </div>
       )}
 
-      {/* VIEW MODE 2: FACULTY MATRIX VIEW (GRID VIEW MON-SAT) */}
+      {/* VIEW MODE 2: FACULTY MATRIX VIEW */}
       {viewMode === "FACULTY" && (
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
@@ -686,11 +720,10 @@ export default function TestingLabPage() {
                 <UserCheck className="w-5 h-5 text-blue-600" /> Faculty Weekly Timetable Grid ({selectedFacultyFilter})
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                Visual 6-day timetable schedule for selected faculty member across all 10 focused sections.
+                Visual 6-day timetable schedule for selected faculty member across all multi-branch sections.
               </p>
             </div>
 
-            {/* Select Faculty Dropdown */}
             <select
               value={selectedFacultyFilter}
               onChange={(e) => setSelectedFacultyFilter(e.target.value)}
@@ -704,7 +737,6 @@ export default function TestingLabPage() {
             </select>
           </div>
 
-          {/* Workload Indicator */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-blue-50 dark:bg-blue-950/40 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
               <div className="text-xs font-bold text-blue-600 dark:text-blue-400">Total Teaching Hours</div>
@@ -726,7 +758,6 @@ export default function TestingLabPage() {
             </div>
           </div>
 
-          {/* Faculty 6-Day Weekly Grid */}
           <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
             <table className="w-full min-w-[900px] border-collapse text-xs">
               <thead>
@@ -776,7 +807,7 @@ export default function TestingLabPage() {
         </div>
       )}
 
-      {/* VIEW MODE 3: ROOM UTILIZATION VIEW (GRID VIEW MON-SAT) */}
+      {/* VIEW MODE 3: ROOM UTILIZATION VIEW */}
       {viewMode === "ROOM" && (
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
@@ -789,7 +820,6 @@ export default function TestingLabPage() {
               </p>
             </div>
 
-            {/* Select Room Dropdown */}
             <select
               value={selectedRoomFilter}
               onChange={(e) => setSelectedRoomFilter(e.target.value)}
@@ -803,7 +833,6 @@ export default function TestingLabPage() {
             </select>
           </div>
 
-          {/* Room Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-purple-50 dark:bg-purple-950/40 p-4 rounded-xl border border-purple-200 dark:border-purple-800">
               <div className="text-xs font-bold text-purple-600 dark:text-purple-400">Occupied Periods</div>
@@ -825,7 +854,6 @@ export default function TestingLabPage() {
             </div>
           </div>
 
-          {/* Room 6-Day Occupancy Grid */}
           <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
             <table className="w-full min-w-[900px] border-collapse text-xs">
               <thead>
@@ -883,7 +911,7 @@ export default function TestingLabPage() {
               <ShieldCheck className="w-5 h-5 text-emerald-600" /> Hard & Soft Constraint Compliance Checklist
             </h3>
             <p className="text-xs text-slate-500 mt-1">
-              Automated validation report verifying all 10 Hard Constraints (HC-01 through HC-10) for the 10-section focused timetable.
+              Automated validation report verifying all 10 Hard Constraints (HC-01 through HC-10) for multi-branch timetables.
             </p>
           </div>
 
