@@ -4,25 +4,16 @@ import React, { useState, useMemo } from "react";
 import {
   BookOpen,
   Search,
-  Filter,
   Plus,
   Edit,
   Trash2,
-  CheckCircle2,
-  AlertTriangle,
-  Layers,
   X,
-  Sparkles,
   Cpu,
-  Grid,
-  List,
-  Calendar,
-  Check,
-  Award,
   Clock,
   Zap,
+  Award,
   Bookmark,
-  FileText
+  CheckCircle2
 } from "lucide-react";
 import { Subject } from "@/lib/types";
 
@@ -33,31 +24,22 @@ interface CurriculumMasterProfileProps {
   onDeleteSubject?: (id: number) => void;
 }
 
-type SubTab = "matrix" | "labs" | "credits";
-
 export const CurriculumMasterProfile: React.FC<CurriculumMasterProfileProps> = ({
   subjectList,
   onAddSubject,
   onUpdateSubject,
   onDeleteSubject
 }) => {
-  // Sub-Tab Navigation
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>("matrix");
-
-  // Roster Controls
   const [searchQuery, setSearchQuery] = useState("");
-  const [yearFilter, setYearFilter] = useState("ALL");
-  const [branchFilter, setBranchFilter] = useState("ALL");
-  const [viewMode, setViewMode] = useState<"CARDS" | "TABLE">("CARDS");
+  const [quickFilter, setQuickFilter] = useState<"ALL" | "LEC" | "LAB" | "GPU">("ALL");
 
-  // Selected Subject for Dossier Drawer Modal
-  const [selectedSubjectId, setSelectedSubjectId] = useState<number>(subjectList[0]?.id || 1);
+  // Selected Subject for Slide-Over Drawer
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
 
-  // Add/Edit Form Modal State
+  // Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Partial<Subject> | null>(null);
 
-  // Form Fields State
   const [formData, setFormData] = useState({
     code: "",
     full_name: "",
@@ -70,10 +52,6 @@ export const CurriculumMasterProfile: React.FC<CurriculumMasterProfileProps> = (
     requires_consecutive: 2,
     gpu_required: false
   });
-
-  const selectedSubject = useMemo(() => {
-    return subjectList.find((s) => s.id === selectedSubjectId) || subjectList[0] || null;
-  }, [subjectList, selectedSubjectId]);
 
   const handleOpenAddModal = () => {
     setEditingSubject(null);
@@ -99,12 +77,12 @@ export const CurriculumMasterProfile: React.FC<CurriculumMasterProfileProps> = (
       full_name: sub.full_name || "",
       year_level: String(sub.year_level || "II Year"),
       branch: sub.branch || "CSE (AIML)",
-      lecture_hours: sub.lecture_hours || 3,
-      tutorial_hours: sub.tutorial_hours || 0,
-      lab_hours: sub.lab_hours || 0,
-      slot_type: sub.slot_type || "L",
-      requires_consecutive: sub.requires_consecutive || 2,
-      gpu_required: sub.gpu_required || false
+      lecture_hours: sub.lecture_hours ?? 3,
+      tutorial_hours: sub.tutorial_hours ?? 0,
+      lab_hours: sub.lab_hours ?? 0,
+      slot_type: sub.slot_type || (sub.is_lab ? "P" : "L"),
+      requires_consecutive: sub.requires_consecutive ?? 2,
+      gpu_required: sub.gpu_required ?? false
     });
     setShowEditModal(true);
   };
@@ -115,13 +93,11 @@ export const CurriculumMasterProfile: React.FC<CurriculumMasterProfileProps> = (
     const payload: Partial<Subject> = {
       code: formData.code,
       full_name: formData.full_name,
-      year_level: formData.year_level,
-      branch: formData.branch,
       lecture_hours: Number(formData.lecture_hours),
       tutorial_hours: Number(formData.tutorial_hours),
       lab_hours: Number(formData.lab_hours),
-      is_lab: isLab,
       slot_type: formData.slot_type,
+      is_lab: isLab,
       requires_consecutive: Number(formData.requires_consecutive),
       gpu_required: formData.gpu_required
     };
@@ -134,487 +110,381 @@ export const CurriculumMasterProfile: React.FC<CurriculumMasterProfileProps> = (
     setShowEditModal(false);
   };
 
-  const [sortBy, setSortBy] = useState<string>("CODE_ASC");
-
-  // Filtered & Sorted Subject Inventory
+  // Filtered Subjects
   const filteredSubjects = useMemo(() => {
-    const list = subjectList.filter((sub) => {
-      // Search Filter (Code, Title, Year)
+    return subjectList.filter((sub) => {
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const matchCode = sub.code.toLowerCase().includes(q);
-        const matchTitle = sub.full_name.toLowerCase().includes(q);
-        if (!matchCode && !matchTitle) return false;
+        const matchName = sub.full_name.toLowerCase().includes(q);
+        if (!matchCode && !matchName) return false;
       }
 
-      // Year Filter
-      const yLvl = String(sub.year_level || "");
-      if (yearFilter !== "ALL") {
-        if (yearFilter === "II" && !yLvl.includes("II") && sub.code.startsWith("22CS") === false) return false;
-        if (yearFilter === "III" && !yLvl.includes("III")) return false;
-        if (yearFilter === "IV" && !yLvl.includes("IV")) return false;
-      }
+      const isLab = sub.is_lab || sub.slot_type === "P" || sub.lab_hours > 0;
+      const isGpu = sub.gpu_required;
 
-      // Branch Filter
-      if (branchFilter !== "ALL" && (sub.branch || "").includes(branchFilter) === false) {
-        return false;
-      }
+      if (quickFilter === "LEC" && isLab) return false;
+      if (quickFilter === "LAB" && !isLab) return false;
+      if (quickFilter === "GPU" && !isGpu) return false;
 
       return true;
     });
-
-    return list.sort((a, b) => {
-      if (sortBy === "CODE_ASC") return a.code.localeCompare(b.code);
-      if (sortBy === "TITLE_ASC") return a.full_name.localeCompare(b.full_name);
-      if (sortBy === "HOURS_DESC") {
-        const hA = (a.lecture_hours || 0) + (a.tutorial_hours || 0) + (a.lab_hours || 0);
-        const hB = (b.lecture_hours || 0) + (b.tutorial_hours || 0) + (b.lab_hours || 0);
-        return hB - hA;
-      }
-      if (sortBy === "SLOT_TYPE") return (a.slot_type || "L").localeCompare(b.slot_type || "L");
-      return 0;
-    });
-  }, [subjectList, searchQuery, yearFilter, branchFilter, sortBy]);
-
-  // Auto-sync selectedSubjectId if current selection is filtered out
-  React.useEffect(() => {
-    if (filteredSubjects.length > 0) {
-      const exists = filteredSubjects.some((s) => s.id === selectedSubjectId);
-      if (!exists) {
-        setSelectedSubjectId(filteredSubjects[0].id);
-      }
-    }
-  }, [filteredSubjects, selectedSubjectId]);
-
-
-  // Practical Labs subset
-  const labSubjects = useMemo(() => {
-    return subjectList.filter((sub) => sub.is_lab || sub.slot_type === "P" || sub.lab_hours > 0 || sub.gpu_required);
-  }, [subjectList]);
+  }, [subjectList, searchQuery, quickFilter]);
 
   return (
     <div className="space-y-6">
 
-      {/* TOP SUB-TAB NAVIGATION SWITCHER */}
-      <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
-          <button
-            onClick={() => setActiveSubTab("matrix")}
-            className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all inline-flex items-center gap-2 shrink-0 ${
-              activeSubTab === "matrix"
-                ? "bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-sm"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <BookOpen className="w-4 h-4" /> Year & Branch Curriculum ({subjectList.length})
-          </button>
-
-          <button
-            onClick={() => setActiveSubTab("labs")}
-            className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all inline-flex items-center gap-2 shrink-0 ${
-              activeSubTab === "labs"
-                ? "bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-sm"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <Cpu className="w-4 h-4" /> Practical Labs & GPU Rules ({labSubjects.length})
-          </button>
-
-          <button
-            onClick={() => setActiveSubTab("credits")}
-            className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all inline-flex items-center gap-2 shrink-0 ${
-              activeSubTab === "credits"
-                ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <Clock className="w-4 h-4" /> L-T-P Credit Rules Audit
-          </button>
+      {/* 1. Header Action Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Curriculum Subjects & Course Registry</h2>
+            <span className="px-2.5 py-0.5 bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 text-xs font-bold rounded-full border border-purple-200 dark:border-purple-800">
+              {subjectList.length} Active Courses
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Click any course card to inspect credit slot breakdown (L-T-P), practical lab span rules, and hardware requirements.
+          </p>
         </div>
 
-        {/* Global Action Button */}
         <button
           onClick={handleOpenAddModal}
-          className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm inline-flex items-center justify-center gap-1.5 shrink-0"
+          className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer"
         >
-          <Plus className="w-4 h-4" /> Add Subject Curriculum
+          <Plus className="w-4 h-4" /> Add Subject
         </button>
       </div>
 
-      {/* SUB-VIEW 1: YEAR & BRANCH CURRICULUM MATRIX */}
-      {activeSubTab === "matrix" && (
-        <div className="space-y-6">
-          {/* Search & Filter Toolbar */}
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="relative flex-1 w-full">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                placeholder="Search subject by Code (22CS406, SFCDS, DL) or Course Title..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto justify-end">
-              <select
-                value={yearFilter}
-                onChange={(e) => setYearFilter(e.target.value)}
-                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white shrink-0"
-              >
-                <option value="ALL">All Academic Years</option>
-                <option value="II">II Year (Sem I)</option>
-                <option value="III">III Year (Sem I)</option>
-                <option value="IV">IV Year (Sem I)</option>
-              </select>
-
-              <select
-                value={branchFilter}
-                onChange={(e) => setBranchFilter(e.target.value)}
-                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white shrink-0"
-              >
-                <option value="ALL">All Branches</option>
-                <option value="AIML">CSE (AIML)</option>
-                <option value="Core">CSE (Core)</option>
-                <option value="DS">CSE (Data Science)</option>
-                <option value="CS">CSE (Cyber Security)</option>
-              </select>
-
-              {/* Sort Selector */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white shrink-0"
-              >
-                <option value="CODE_ASC">Sort: Course Code (A-Z)</option>
-                <option value="TITLE_ASC">Sort: Title (A-Z)</option>
-                <option value="HOURS_DESC">Sort: Hours (High→Low)</option>
-                <option value="SLOT_TYPE">Sort: Slot Type (L/P/T)</option>
-              </select>
-
-
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0">
-                <button
-                  onClick={() => setViewMode("CARDS")}
-                  className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
-                    viewMode === "CARDS" ? "bg-white dark:bg-slate-900 text-purple-600 shadow-sm" : "text-slate-500"
-                  }`}
-                >
-                  <Grid className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode("TABLE")}
-                  className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
-                    viewMode === "TABLE" ? "bg-white dark:bg-slate-900 text-purple-600 shadow-sm" : "text-slate-500"
-                  }`}
-                >
-                  <List className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* CARDS VIEW */}
-          {viewMode === "CARDS" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredSubjects.map((sub) => {
-                const isLab = sub.is_lab || sub.slot_type === "P" || sub.lab_hours > 0;
-                const totHours = (sub.lecture_hours || 0) + (sub.tutorial_hours || 0) + (sub.lab_hours || 0);
-
-                return (
-                  <div
-                    key={sub.id}
-                    className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-2.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-mono text-xs font-black">
-                              {sub.code}
-                            </span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">
-                              {sub.slot_type === "P" ? "Practical Lab" : sub.slot_type === "T" ? "Tutorial" : "Theory Lecture"}
-                            </span>
-                          </div>
-                          <h3 className="text-base font-extrabold text-slate-900 dark:text-white mt-1 leading-snug">
-                            {sub.full_name}
-                          </h3>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleOpenEditModal(sub)}
-                            className="p-1.5 text-slate-400 hover:text-purple-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          {onDeleteSubject && (
-                            <button
-                              onClick={() => onDeleteSubject(sub.id)}
-                              className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* L-T-P Credit Pills */}
-                      <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700/60 text-xs">
-                        <div className="flex-1 text-center border-r border-slate-200 dark:border-slate-700 pr-2">
-                          <span className="text-[10px] font-bold text-slate-400 block">Lecture (L)</span>
-                          <span className="font-black text-slate-900 dark:text-white text-sm">{sub.lecture_hours || 0} hrs</span>
-                        </div>
-                        <div className="flex-1 text-center border-r border-slate-200 dark:border-slate-700 px-2">
-                          <span className="text-[10px] font-bold text-slate-400 block">Tutorial (T)</span>
-                          <span className="font-black text-slate-900 dark:text-white text-sm">{sub.tutorial_hours || 0} hrs</span>
-                        </div>
-                        <div className="flex-1 text-center pl-2">
-                          <span className="text-[10px] font-bold text-slate-400 block">Practical (P)</span>
-                          <span className="font-black text-purple-600 dark:text-purple-400 text-sm">{sub.lab_hours || (isLab ? 2 : 0)} hrs</span>
-                        </div>
-                      </div>
-
-                      {/* Room & Constraint Badges */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {sub.gpu_required && (
-                          <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-[10px] font-extrabold">
-                            ⚡ High-GPU Compute Required
-                          </span>
-                        )}
-                        {isLab && (
-                          <span className="px-2 py-0.5 rounded bg-teal-100 text-teal-800 text-[10px] font-extrabold">
-                            🔒 {sub.requires_consecutive || 2} Consecutive Periods
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setSelectedSubjectId(sub.id)}
-                      className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-all inline-flex items-center justify-center gap-1.5"
-                    >
-                      <BookOpen className="w-3.5 h-3.5" /> View Full Course Dossier
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* TABLE VIEW */}
-          {viewMode === "TABLE" && (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[850px] border-collapse text-xs text-left">
-                  <thead>
-                    <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700">
-                      <th className="p-3">Course Code</th>
-                      <th className="p-3">Course Title</th>
-                      <th className="p-3">L-T-P Hours</th>
-                      <th className="p-3">Slot Type</th>
-                      <th className="p-3">GPU / Lab Rule</th>
-                      <th className="p-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {filteredSubjects.map((sub) => (
-                      <tr key={sub.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                        <td className="p-3 font-mono font-extrabold text-purple-600 dark:text-purple-400 text-sm">{sub.code}</td>
-                        <td className="p-3 font-extrabold text-slate-900 dark:text-slate-100">{sub.full_name}</td>
-                        <td className="p-3 font-bold text-slate-700 dark:text-slate-300">
-                          {sub.lecture_hours || 0}L - {sub.tutorial_hours || 0}T - {sub.lab_hours || (sub.is_lab ? 2 : 0)}P
-                        </td>
-                        <td className="p-3">
-                          <span className="px-2.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-bold text-[10px]">
-                            {sub.slot_type || "L"}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          {sub.gpu_required ? (
-                            <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-extrabold text-[10px]">High-GPU Lab</span>
-                          ) : sub.is_lab ? (
-                            <span className="px-2 py-0.5 rounded bg-teal-100 text-teal-800 font-bold text-[10px]">Computer Lab</span>
-                          ) : (
-                            <span className="text-slate-400 text-[10px]">Classroom</span>
-                          )}
-                        </td>
-                        <td className="p-3 text-right">
-                          <button
-                            onClick={() => setSelectedSubjectId(sub.id)}
-                            className="px-3 py-1 bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 font-bold rounded-lg hover:bg-purple-100 text-[11px]"
-                          >
-                            Dossier
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+      {/* 2. Search & Quick Filters Bar */}
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="relative w-full md:w-96">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by course code or full name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+          />
         </div>
-      )}
 
-      {/* SUB-VIEW 2: PRACTICAL LABS & GPU REQUIREMENTS */}
-      {activeSubTab === "labs" && (
-        <div className="space-y-6">
-          <div className="bg-teal-900/10 border border-teal-300 dark:border-teal-800 p-4 rounded-2xl flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-extrabold text-teal-900 dark:text-teal-200">Practical Labs & High-GPU Compute Course Catalog</h3>
-              <p className="text-xs text-teal-700 dark:text-teal-300 mt-0.5">Courses requiring multi-period consecutive blocks (2–3 periods) and specialized lab venues</p>
-            </div>
-            <span className="px-3 py-1 bg-teal-600 text-white font-extrabold text-xs rounded-xl">{labSubjects.length} Lab Modules</span>
-          </div>
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Filters:</span>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {labSubjects.map((sub) => (
-              <div key={sub.id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-teal-200 dark:border-teal-900/60 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-mono text-xs font-black">
+          <button
+            onClick={() => setQuickFilter("ALL")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              quickFilter === "ALL"
+                ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-sm"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+            }`}
+          >
+            All Courses ({subjectList.length})
+          </button>
+
+          <button
+            onClick={() => setQuickFilter("LEC")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              quickFilter === "LEC"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+            }`}
+          >
+            Lectures Only
+          </button>
+
+          <button
+            onClick={() => setQuickFilter("LAB")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              quickFilter === "LAB"
+                ? "bg-purple-600 text-white shadow-sm"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+            }`}
+          >
+            Practical Labs
+          </button>
+
+          <button
+            onClick={() => setQuickFilter("GPU")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              quickFilter === "GPU"
+                ? "bg-amber-600 text-white shadow-sm"
+                : "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+            }`}
+          >
+            Requires GPU Rig
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Card Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredSubjects.map((sub) => {
+          const isLab = sub.is_lab || sub.slot_type === "P" || sub.lab_hours > 0;
+          const totalHours = (sub.lecture_hours || 0) + (sub.tutorial_hours || 0) + (sub.lab_hours || 0);
+
+          return (
+            <div
+              key={sub.id || sub.code}
+              onClick={() => setSelectedSubject(sub)}
+              className="group bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-lg transition-all cursor-pointer relative flex flex-col justify-between"
+            >
+              <div>
+                {/* Header Tag */}
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-[11px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/80 px-2.5 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800">
                     {sub.code}
                   </span>
-                  <Cpu className="w-5 h-5 text-teal-600" />
+
+                  {sub.gpu_required ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
+                      <Cpu className="w-3 h-3 text-amber-600" /> GPU Required
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      {isLab ? "Practical Lab" : "Lecture Subject"}
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <h4 className="text-base font-extrabold text-slate-900 dark:text-white">{sub.full_name}</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">Requires {sub.requires_consecutive || 2} Consecutive Periods</p>
+
+                <h3 className="font-bold text-slate-900 dark:text-white text-base group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                  {sub.full_name}
+                </h3>
+
+                {/* Credit Breakdown Bar */}
+                <div className="mt-4 flex items-center gap-2 text-xs font-bold">
+                  <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-800">
+                    L: {sub.lecture_hours || 0}h
+                  </span>
+                  <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                    T: {sub.tutorial_hours || 0}h
+                  </span>
+                  <span className="px-2.5 py-1 bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 rounded-lg border border-purple-200 dark:border-purple-800">
+                    P: {sub.lab_hours || 0}h
+                  </span>
+                  <span className="text-slate-500 dark:text-slate-400 text-xs ml-auto">
+                    Total {totalHours} hrs/wk
+                  </span>
                 </div>
               </div>
-            ))}
+
+              {/* Action Hint */}
+              <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-purple-600 dark:text-purple-400 font-bold group-hover:translate-x-0.5 transition-transform">
+                <span>Inspect Syllabus & Lab Rules</span>
+                <span>→</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 4. Slide-Over Curriculum Course Dossier Drawer */}
+      {selectedSubject && (
+        <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 backdrop-blur-sm flex justify-end animate-in fade-in">
+          <div className="w-full max-w-xl bg-white dark:bg-slate-900 h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-200 border-l border-slate-200 dark:border-slate-800">
+            <div className="space-y-6">
+
+              {/* Drawer Top Header */}
+              <div className="flex justify-between items-start pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <span className="text-xs text-purple-600 dark:text-purple-400 font-bold">COURSE CODE {selectedSubject.code}</span>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">{selectedSubject.full_name}</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Department of ACSE • Academic Curriculum</p>
+                </div>
+
+                <button
+                  onClick={() => setSelectedSubject(null)}
+                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* L-T-P Hours Grid */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-4 bg-blue-50 dark:bg-blue-950/40 rounded-2xl border border-blue-100 dark:border-blue-800/60 text-center">
+                  <span className="text-[11px] text-blue-700 dark:text-blue-300 font-bold uppercase">Lecture (L)</span>
+                  <p className="text-xl font-extrabold text-blue-950 dark:text-blue-100 mt-1">
+                    {selectedSubject.lecture_hours || 0} Hours
+                  </p>
+                </div>
+
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-100 dark:border-emerald-800/60 text-center">
+                  <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-bold uppercase">Tutorial (T)</span>
+                  <p className="text-xl font-extrabold text-emerald-950 dark:text-emerald-100 mt-1">
+                    {selectedSubject.tutorial_hours || 0} Hours
+                  </p>
+                </div>
+
+                <div className="p-4 bg-purple-50 dark:bg-purple-950/40 rounded-2xl border border-purple-100 dark:border-purple-800/60 text-center">
+                  <span className="text-[11px] text-purple-700 dark:text-purple-300 font-bold uppercase">Practical (P)</span>
+                  <p className="text-xl font-extrabold text-purple-950 dark:text-purple-100 mt-1">
+                    {selectedSubject.lab_hours || 0} Hours
+                  </p>
+                </div>
+              </div>
+
+              {/* Lab Span Rules & Hardware Requirements */}
+              <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Constraint Solver Rules</h4>
+                
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span className="text-slate-500 dark:text-slate-400">Consecutive Period Block Requirement:</span>
+                  <span className="text-slate-900 dark:text-white font-bold">{selectedSubject.requires_consecutive || 2} Consecutive Periods</span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span className="text-slate-500 dark:text-slate-400">High-GPU Compute Venue Required:</span>
+                  <span className={selectedSubject.gpu_required ? "text-amber-600 dark:text-amber-400 font-bold" : "text-slate-700 dark:text-slate-300 font-bold"}>
+                    {selectedSubject.gpu_required ? "Yes (AFTF-12/13/14)" : "No"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-800 flex gap-3">
+              <button
+                onClick={() => setSelectedSubject(null)}
+                className="flex-1 py-3 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                Close
+              </button>
+
+              <button
+                onClick={() => {
+                  const sub = selectedSubject;
+                  setSelectedSubject(null);
+                  handleOpenEditModal(sub);
+                }}
+                className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer inline-flex items-center justify-center gap-2"
+              >
+                <Edit className="w-4 h-4" /> Edit Course Specs
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* SUB-VIEW 3: CREDIT & SLOT RULES MANAGER */}
-      {activeSubTab === "credits" && (
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-white">L-T-P Credit Distribution Audit</h3>
-          <p className="text-xs text-slate-500">Overview of total weekly hours allocation per course across all semesters</p>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-xs">
-              <thead>
-                <tr className="bg-slate-100 dark:bg-slate-800 font-bold border-b border-slate-200 dark:border-slate-700">
-                  <th className="p-3">Code</th>
-                  <th className="p-3">Course Name</th>
-                  <th className="p-3 text-center">Lecture (L)</th>
-                  <th className="p-3 text-center">Tutorial (T)</th>
-                  <th className="p-3 text-center">Practical (P)</th>
-                  <th className="p-3 text-center">Total Weekly Hours</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {subjectList.map((s) => {
-                  const tot = (s.lecture_hours || 0) + (s.tutorial_hours || 0) + (s.lab_hours || (s.is_lab ? 2 : 0));
-                  return (
-                    <tr key={s.id}>
-                      <td className="p-3 font-mono font-bold text-purple-600">{s.code}</td>
-                      <td className="p-3 font-bold text-slate-900 dark:text-white">{s.full_name}</td>
-                      <td className="p-3 text-center font-bold">{s.lecture_hours || 0}h</td>
-                      <td className="p-3 text-center font-bold">{s.tutorial_hours || 0}h</td>
-                      <td className="p-3 text-center font-bold text-purple-600">{s.lab_hours || (s.is_lab ? 2 : 0)}h</td>
-                      <td className="p-3 text-center font-black text-slate-900 dark:text-white">{tot} Hours/Wk</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ADD / EDIT SUBJECT FORM MODAL */}
+      {/* Add / Edit Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                {editingSubject ? "Edit Subject Curriculum" : "Add New Subject Course"}
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                {editingSubject ? "Edit Course Curriculum" : "Add New Course"}
               </h3>
-              <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-white font-bold">
-                ✕
+              <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveForm} className="space-y-3 text-xs">
-              <div className="grid grid-cols-3 gap-3">
+            <form onSubmit={handleSaveForm} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Subject Code:</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Course Code</label>
                   <input
                     type="text"
                     required
+                    placeholder="e.g. DS, AI, DBMS"
                     value={formData.code}
                     onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                    placeholder="e.g. 22CS406, DL"
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white"
                   />
                 </div>
 
-                <div className="col-span-2">
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Course Full Title:</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    placeholder="e.g. Deep Learning & Neural Networks"
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-bold"
-                  />
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Slot Type</label>
+                  <select
+                    value={formData.slot_type}
+                    onChange={(e) => setFormData({ ...formData, slot_type: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white"
+                  >
+                    <option value="L">L (Lecture)</option>
+                    <option value="P">P (Practical Lab)</option>
+                    <option value="T">T (Tutorial)</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Full Course Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Data Structures & Algorithms"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Lecture (L):</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Lecture (L)</label>
                   <input
                     type="number"
                     min={0}
                     max={6}
                     value={formData.lecture_hours}
                     onChange={(e) => setFormData({ ...formData, lecture_hours: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-xs font-bold text-slate-900 dark:text-white"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tutorial (T):</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tutorial (T)</label>
                   <input
                     type="number"
                     min={0}
-                    max={3}
+                    max={4}
                     value={formData.tutorial_hours}
                     onChange={(e) => setFormData({ ...formData, tutorial_hours: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-xs font-bold text-slate-900 dark:text-white"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Practical (P):</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Practical (P)</label>
                   <input
                     type="number"
                     min={0}
                     max={6}
                     value={formData.lab_hours}
                     onChange={(e) => setFormData({ ...formData, lab_hours: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-xs font-bold text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2">
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="gpu_sub_check"
+                  checked={formData.gpu_required}
+                  onChange={(e) => setFormData({ ...formData, gpu_required: e.target.checked })}
+                  className="rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                />
+                <label htmlFor="gpu_sub_check" className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                  Requires High-GPU Compute Rigs (Deep Learning / Vision)
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 border border-slate-300 text-slate-600 rounded-xl font-bold"
+                  className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300"
                 >
                   Cancel
                 </button>
+
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow-md"
+                  className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md"
                 >
-                  Save Subject Course
+                  Save Course Specs
                 </button>
               </div>
             </form>

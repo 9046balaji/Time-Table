@@ -4,25 +4,16 @@ import React, { useState, useMemo } from "react";
 import {
   Building2,
   Search,
-  Filter,
   Plus,
   Edit,
   Trash2,
-  CheckCircle2,
-  AlertTriangle,
-  Layers,
   X,
-  Sparkles,
   Cpu,
   Monitor,
   Users,
-  Grid,
-  List,
   Calendar,
-  Check,
-  Building,
-  Maximize2,
-  Wrench
+  CheckCircle2,
+  Building
 } from "lucide-react";
 import { Room } from "@/lib/types";
 
@@ -36,31 +27,22 @@ interface VenueMasterProfileProps {
 const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT"];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 
-type SubTab = "inventory" | "labs" | "occupancy";
-
 export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
   roomList,
   onAddRoom,
   onUpdateRoom,
   onDeleteRoom
 }) => {
-  // Sub-Tab Navigation
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>("inventory");
-
-  // Roster Controls
   const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState("ALL");
-  const [blockFilter, setBlockFilter] = useState("ALL");
-  const [viewMode, setViewMode] = useState<"CARDS" | "TABLE">("CARDS");
+  const [quickFilter, setQuickFilter] = useState<"ALL" | "CLASS" | "LAB" | "GPU">("ALL");
 
-  // Selected Room for Dossier Drawer & Occupancy Matrix
-  const [selectedRoomCode, setSelectedRoomCode] = useState<string>(roomList[0]?.code || "601");
+  // Selected Room for Slide-Over Drawer
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 
-  // Add/Edit Form Modal State
+  // Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Partial<Room> | null>(null);
 
-  // Form Fields State
   const [formData, setFormData] = useState({
     code: "",
     room_type: "classroom",
@@ -70,10 +52,6 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
     gpu_capable: false,
     is_available: true
   });
-
-  const selectedRoom = useMemo(() => {
-    return roomList.find((r) => r.code === selectedRoomCode) || roomList[0] || null;
-  }, [roomList, selectedRoomCode]);
 
   const handleOpenAddModal = () => {
     setEditingRoom(null);
@@ -108,11 +86,10 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
     const payload: Partial<Room> = {
       code: formData.code,
       room_type: formData.room_type,
-      type: formData.room_type,
       capacity: Number(formData.capacity),
       floor: formData.floor,
       block: formData.block,
-      gpu_capable: formData.gpu_capable || formData.room_type === "gpu_lab",
+      gpu_capable: formData.gpu_capable,
       is_available: formData.is_available
     };
 
@@ -124,501 +101,365 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
     setShowEditModal(false);
   };
 
-  const [sortBy, setSortBy] = useState<string>("CODE_ASC");
-
-  // Filtered & Sorted Room Inventory
+  // Filtered Rooms
   const filteredRooms = useMemo(() => {
-    const list = roomList.filter((rm) => {
-      // Search Filter (Code, Floor, Block, Capacity)
+    return roomList.filter((rm) => {
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const matchCode = rm.code.toLowerCase().includes(q);
-        const matchFloor = String(rm.floor || "").toLowerCase().includes(q);
         const matchBlock = (rm.block || "").toLowerCase().includes(q);
-        const matchCap = String(rm.capacity || "").includes(q);
-        if (!matchCode && !matchFloor && !matchBlock && !matchCap) return false;
+        if (!matchCode && !matchBlock) return false;
       }
 
-      // Room Type Filter
-      const rType = rm.room_type || rm.type || "classroom";
-      if (typeFilter !== "ALL" && rType !== typeFilter) {
-        return false;
-      }
+      const rType = (rm.room_type || rm.type || "").toLowerCase();
+      const isGpu = rm.gpu_capable || rm.code.includes("AFTF");
 
-      // Block Filter
-      if (blockFilter !== "ALL" && !(rm.block || "").includes(blockFilter)) {
-        return false;
-      }
+      if (quickFilter === "CLASS" && (rType.includes("lab") || isGpu)) return false;
+      if (quickFilter === "LAB" && !rType.includes("lab")) return false;
+      if (quickFilter === "GPU" && !isGpu) return false;
 
       return true;
     });
-
-    return list.sort((a, b) => {
-      if (sortBy === "CODE_ASC") return a.code.localeCompare(b.code, undefined, { numeric: true });
-      if (sortBy === "CODE_DESC") return b.code.localeCompare(a.code, undefined, { numeric: true });
-      if (sortBy === "CAPACITY_DESC") return (b.capacity || 0) - (a.capacity || 0);
-      if (sortBy === "CAPACITY_ASC") return (a.capacity || 0) - (b.capacity || 0);
-      return 0;
-    });
-  }, [roomList, searchQuery, typeFilter, blockFilter, sortBy]);
-
-  // Auto-sync selectedRoomCode if current selection is filtered out
-  React.useEffect(() => {
-    if (filteredRooms.length > 0) {
-      const exists = filteredRooms.some((r) => r.code === selectedRoomCode);
-      if (!exists) {
-        setSelectedRoomCode(filteredRooms[0].code);
-      }
-    }
-  }, [filteredRooms, selectedRoomCode]);
-
-
-  // High-GPU & Computer Labs subset
-  const labRooms = useMemo(() => {
-    return roomList.filter((rm) => {
-      const rType = rm.room_type || rm.type || "";
-      return rType === "computer_lab" || rType === "gpu_lab" || rm.gpu_capable || rm.code.includes("AFTF");
-    });
-  }, [roomList]);
+  }, [roomList, searchQuery, quickFilter]);
 
   return (
     <div className="space-y-6">
 
-      {/* TOP SUB-TAB NAVIGATION SWITCHER */}
-      <div className="bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
-          <button
-            onClick={() => setActiveSubTab("inventory")}
-            className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all inline-flex items-center gap-2 shrink-0 ${
-              activeSubTab === "inventory"
-                ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <Building2 className="w-4 h-4" /> Venue Directory & Inventory ({roomList.length})
-          </button>
-
-          <button
-            onClick={() => setActiveSubTab("labs")}
-            className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all inline-flex items-center gap-2 shrink-0 ${
-              activeSubTab === "labs"
-                ? "bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-sm"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <Cpu className="w-4 h-4" /> High-GPU & Computer Labs ({labRooms.length})
-          </button>
-
-          <button
-            onClick={() => setActiveSubTab("occupancy")}
-            className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all inline-flex items-center gap-2 shrink-0 ${
-              activeSubTab === "occupancy"
-                ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <Calendar className="w-4 h-4" /> Room Occupancy Inspector
-          </button>
+      {/* 1. Header Action Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Venues & Computer Labs Registry</h2>
+            <span className="px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-full border border-emerald-200 dark:border-emerald-800">
+              {roomList.length} Active Venues
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Click any venue card to view room occupancy matrix, seating capacity, and GPU hardware tags.
+          </p>
         </div>
 
-        {/* Global Action Button */}
         <button
           onClick={handleOpenAddModal}
-          className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm inline-flex items-center justify-center gap-1.5 shrink-0"
+          className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer"
         >
-          <Plus className="w-4 h-4" /> Add New Venue
+          <Plus className="w-4 h-4" /> Add Venue
         </button>
       </div>
 
-      {/* SUB-VIEW 1: VENUE DIRECTORY & INVENTORY */}
-      {activeSubTab === "inventory" && (
-        <div className="space-y-6">
-          {/* Search & Filter Toolbar */}
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="relative flex-1 w-full">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                placeholder="Search venue by Code (601, AFTF-12, N-301), Floor (6th, 2nd), or Seating Capacity..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
-              />
-            </div>
+      {/* 2. Search & Quick Filters Bar */}
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="relative w-full md:w-96">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search venue code or building block..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+          />
+        </div>
 
-            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto justify-end">
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white shrink-0"
-              >
-                <option value="ALL">All Venue Types</option>
-                <option value="classroom">Classroom</option>
-                <option value="computer_lab">Computer Lab</option>
-                <option value="gpu_lab">GPU Compute Lab</option>
-                <option value="seminar_hall">Seminar Hall</option>
-              </select>
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Filters:</span>
 
-              <select
-                value={blockFilter}
-                onChange={(e) => setBlockFilter(e.target.value)}
-                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white shrink-0"
-              >
-                <option value="ALL">All Blocks</option>
-                <option value="U-Block">U-Block (Aryabhatta)</option>
-                <option value="H-Block">H-Block (Divisional)</option>
-                <option value="NB">New Block (NB)</option>
-              </select>
+          <button
+            onClick={() => setQuickFilter("ALL")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              quickFilter === "ALL"
+                ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-sm"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+            }`}
+          >
+            All Venues ({roomList.length})
+          </button>
 
-              {/* Sort Selector */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white shrink-0"
-              >
-                <option value="CODE_ASC">Sort: Room Code (1→N)</option>
-                <option value="CODE_DESC">Sort: Room Code (N→1)</option>
-                <option value="CAPACITY_DESC">Sort: Capacity (High→Low)</option>
-                <option value="CAPACITY_ASC">Sort: Capacity (Low→High)</option>
-              </select>
+          <button
+            onClick={() => setQuickFilter("CLASS")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              quickFilter === "CLASS"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+            }`}
+          >
+            Classrooms
+          </button>
 
+          <button
+            onClick={() => setQuickFilter("LAB")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              quickFilter === "LAB"
+                ? "bg-purple-600 text-white shadow-sm"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+            }`}
+          >
+            Computer Labs
+          </button>
 
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0">
-                <button
-                  onClick={() => setViewMode("CARDS")}
-                  className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
-                    viewMode === "CARDS" ? "bg-white dark:bg-slate-900 text-emerald-600 shadow-sm" : "text-slate-500"
-                  }`}
-                >
-                  <Grid className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode("TABLE")}
-                  className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
-                    viewMode === "TABLE" ? "bg-white dark:bg-slate-900 text-emerald-600 shadow-sm" : "text-slate-500"
-                  }`}
-                >
-                  <List className="w-4 h-4" />
-                </button>
+          <button
+            onClick={() => setQuickFilter("GPU")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              quickFilter === "GPU"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+            }`}
+          >
+            High-GPU Compute Labs
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Card Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredRooms.map((rm) => {
+          const isGpu = rm.gpu_capable || rm.code.includes("AFTF");
+          const isLab = (rm.room_type || rm.type || "").toLowerCase().includes("lab") || isGpu;
+          const cap = rm.capacity || (isGpu ? 72 : isLab ? 60 : 66);
+
+          return (
+            <div
+              key={rm.id || rm.code}
+              onClick={() => setSelectedRoom(rm)}
+              className="group bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-lg transition-all cursor-pointer relative flex flex-col justify-between"
+            >
+              <div>
+                {/* Header Tag */}
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/80 px-2.5 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                    Room {rm.code}
+                  </span>
+
+                  {isGpu ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
+                      <Cpu className="w-3 h-3 text-amber-600" /> High GPU Lab
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      {isLab ? "Computer Lab" : "Classroom"}
+                    </span>
+                  )}
+                </div>
+
+                <h3 className="font-bold text-slate-900 dark:text-white text-base group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                  Venue {rm.code}
+                </h3>
+
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {rm.block || "Aryabhatta Bhavan / U-Block"} • Floor {rm.floor || "6"}
+                </p>
+
+                {/* Specs Pill List */}
+                <div className="mt-4 flex items-center gap-3 text-xs font-bold">
+                  <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <Users className="w-3.5 h-3.5 text-slate-500" />
+                    <span>{cap} Seats</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Available</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Hint */}
+              <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-bold group-hover:translate-x-0.5 transition-transform">
+                <span>Inspect Occupancy & Hardware</span>
+                <span>→</span>
               </div>
             </div>
-          </div>
+          );
+        })}
+      </div>
 
-          {/* CARDS VIEW */}
-          {viewMode === "CARDS" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-              {filteredRooms.map((rm) => {
-                const rType = rm.room_type || rm.type || "classroom";
-                const isGpu = rm.gpu_capable || rType === "gpu_lab" || rm.code.includes("AFTF");
-                const isLab = rType === "computer_lab" || rType === "gpu_lab";
+      {/* 4. Slide-Over Venue Master Dossier Drawer */}
+      {selectedRoom && (
+        <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 backdrop-blur-sm flex justify-end animate-in fade-in">
+          <div className="w-full max-w-xl bg-white dark:bg-slate-900 h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-200 border-l border-slate-200 dark:border-slate-800">
+            <div className="space-y-6">
 
-                return (
-                  <div
-                    key={rm.id}
-                    className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <span className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase font-mono border ${
-                            isGpu
-                              ? "bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
-                              : isLab
-                              ? "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                              : "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                          }`}>
-                            {isGpu ? "High-GPU Lab" : isLab ? "Computer Lab" : "Lecture Classroom"}
-                          </span>
-                          <h3 className="text-xl font-black text-slate-900 dark:text-white mt-1.5 font-mono">
-                            {rm.code}
-                          </h3>
-                        </div>
+              {/* Drawer Top Header */}
+              <div className="flex justify-between items-start pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">VENUE CODE {selectedRoom.code}</span>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">Venue {selectedRoom.code} Specifications</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{selectedRoom.block || "Aryabhatta Bhavan / U-Block"} • Floor {selectedRoom.floor || "6"}</p>
+                </div>
 
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleOpenEditModal(rm)}
-                            className="p-1.5 text-slate-400 hover:text-emerald-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                <button
+                  onClick={() => setSelectedRoom(null)}
+                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Specs Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase">Seating Capacity</span>
+                  <p className="text-base font-extrabold text-slate-900 dark:text-white mt-1">
+                    {selectedRoom.capacity || 66} Students
+                  </p>
+                </div>
+
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-100 dark:border-emerald-800/60">
+                  <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-bold uppercase">Hardware Type</span>
+                  <p className="text-base font-extrabold text-emerald-950 dark:text-emerald-100 mt-1">
+                    {selectedRoom.gpu_capable || selectedRoom.code.includes("AFTF") ? "GPU Compute Rig Lab" : "Standard Venue"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Room Weekly Occupancy Schedule Grid */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Weekly Occupancy Matrix (48 Slots)</h4>
+                <div className="grid grid-cols-6 gap-1 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+                  {DAYS.map((day) => (
+                    <div key={day} className="text-center">
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{day}</span>
+                      <div className="mt-1 space-y-1">
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map((p) => (
+                          <div
+                            key={p}
+                            className="w-full h-4 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold flex items-center justify-center border border-emerald-500/30"
                           >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          {onDeleteRoom && (
-                            <button
-                              onClick={() => onDeleteRoom(rm.id)}
-                              className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Room Details Grid */}
-                      <div className="space-y-2 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700/60 text-xs">
-                        <div className="flex items-center justify-between font-medium">
-                          <span className="text-slate-400">Seating Capacity:</span>
-                          <span className="font-extrabold text-slate-900 dark:text-white">{rm.capacity || 66} Students</span>
-                        </div>
-                        <div className="flex items-center justify-between font-medium">
-                          <span className="text-slate-400">Floor Level:</span>
-                          <span className="font-bold text-slate-800 dark:text-slate-200">Floor {rm.floor || "6"}</span>
-                        </div>
-                        <div className="flex items-center justify-between font-medium">
-                          <span className="text-slate-400">Building Block:</span>
-                          <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[130px]" title={rm.block || "U-Block"}>
-                            {rm.block || "U-Block"}
-                          </span>
-                        </div>
+                            P{p}
+                          </div>
+                        ))}
                       </div>
                     </div>
-
-                    <button
-                      onClick={() => {
-                        setSelectedRoomCode(rm.code);
-                        setActiveSubTab("occupancy");
-                      }}
-                      className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-all inline-flex items-center justify-center gap-1.5"
-                    >
-                      <Calendar className="w-3.5 h-3.5" /> View Period Occupancy Grid
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* TABLE VIEW */}
-          {viewMode === "TABLE" && (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[800px] border-collapse text-xs text-left">
-                  <thead>
-                    <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700">
-                      <th className="p-3">Venue Code</th>
-                      <th className="p-3">Type</th>
-                      <th className="p-3">Seating Capacity</th>
-                      <th className="p-3">Floor</th>
-                      <th className="p-3">Building Block</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {filteredRooms.map((rm) => {
-                      const rType = rm.room_type || rm.type || "classroom";
-                      const isGpu = rm.gpu_capable || rType === "gpu_lab" || rm.code.includes("AFTF");
-
-                      return (
-                        <tr key={rm.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                          <td className="p-3 font-mono font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">{rm.code}</td>
-                          <td className="p-3">
-                            <span className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase ${
-                              isGpu ? "bg-purple-100 text-purple-800" : "bg-emerald-100 text-emerald-800"
-                            }`}>
-                              {isGpu ? "GPU Lab" : rType.replace("_", " ")}
-                            </span>
-                          </td>
-                          <td className="p-3 font-bold text-slate-900 dark:text-slate-100">{rm.capacity || 66} Seats</td>
-                          <td className="p-3 font-medium text-slate-600 dark:text-slate-400">Floor {rm.floor || "6"}</td>
-                          <td className="p-3 font-bold text-slate-800 dark:text-slate-200">{rm.block || "U-Block"}</td>
-                          <td className="p-3">
-                            <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">Active</span>
-                          </td>
-                          <td className="p-3 text-right">
-                            <button
-                              onClick={() => {
-                                setSelectedRoomCode(rm.code);
-                                setActiveSubTab("occupancy");
-                              }}
-                              className="px-3 py-1 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 font-bold rounded-lg hover:bg-emerald-100 text-[11px]"
-                            >
-                              Occupancy
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* SUB-VIEW 2: HIGH-GPU & COMPUTER LABS HUB */}
-      {activeSubTab === "labs" && (
-        <div className="space-y-6">
-          <div className="bg-purple-900/10 border border-purple-300 dark:border-purple-800 p-4 rounded-2xl flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-extrabold text-purple-900 dark:text-purple-200">High-GPU Compute & Specialized Lab Network</h3>
-              <p className="text-xs text-purple-700 dark:text-purple-300 mt-0.5">Venues dedicated for Deep Learning (DL), Computer Vision (CV), and Practical Programming Courses</p>
-            </div>
-            <span className="px-3 py-1 bg-purple-600 text-white font-extrabold text-xs rounded-xl">{labRooms.length} Active Labs</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {labRooms.map((rm) => (
-              <div key={rm.id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-purple-200 dark:border-purple-900/60 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-mono text-xs font-black">
-                    {rm.code}
-                  </span>
-                  <Cpu className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
-                    {rm.code.includes("AFTF") ? "High-Capacity GPU Workstation Lab" : "Computer Programming Lab"}
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-0.5">Floor {rm.floor || "6"} • {rm.capacity || 60} Workstation Stations</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* SUB-VIEW 3: ROOM OCCUPANCY & FREE SLOT INSPECTOR */}
-      {activeSubTab === "occupancy" && (
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-            <div>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                Weekly Period Occupancy Grid ({selectedRoom?.code})
-              </h3>
-              <p className="text-xs text-slate-500">Inspect occupied vs available periods across the 6-day academic timetable</p>
-            </div>
-
-            <select
-              value={selectedRoomCode}
-              onChange={(e) => setSelectedRoomCode(e.target.value)}
-              className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
-            >
-              {roomList.map((r) => (
-                <option key={r.id} value={r.code}>{r.code} ({r.room_type || r.type || "classroom"} - {r.capacity} seats)</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-center text-xs min-w-[700px]">
-              <thead>
-                <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700">
-                  <th className="p-3 text-left">Day / Period</th>
-                  {PERIODS.map((p) => (
-                    <th key={p} className="p-3">Period {p}</th>
                   ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {DAYS.map((d) => (
-                  <tr key={d} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                    <td className="p-3 font-extrabold text-slate-900 dark:text-white text-left">{d}</td>
-                    {PERIODS.map((p) => (
-                      <td key={p} className="p-2">
-                        <button className="w-full py-2 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-                          Vacant / Free
-                        </button>
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-800 flex gap-3">
+              <button
+                onClick={() => setSelectedRoom(null)}
+                className="flex-1 py-3 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                Close
+              </button>
+
+              <button
+                onClick={() => {
+                  const rm = selectedRoom;
+                  setSelectedRoom(null);
+                  handleOpenEditModal(rm);
+                }}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer inline-flex items-center justify-center gap-2"
+              >
+                <Edit className="w-4 h-4" /> Edit Venue Specs
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ADD / EDIT VENUE FORM MODAL */}
+      {/* Add / Edit Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                {editingRoom ? "Edit Venue Specifications" : "Add New Room / Venue"}
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                {editingRoom ? "Edit Venue Specifications" : "Add New Venue"}
               </h3>
-              <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-white font-bold">
-                ✕
+              <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveForm} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Venue Code / Room Number:</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  placeholder="e.g. 601, 604, AFTF-12, N-301"
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono font-bold"
-                />
-              </div>
-
+            <form onSubmit={handleSaveForm} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Venue Type:</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Room Code</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 601, AFTF-12"
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Room Type</label>
                   <select
                     value={formData.room_type}
                     onChange={(e) => setFormData({ ...formData, room_type: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white"
                   >
-                    <option value="classroom">Lecture Classroom</option>
+                    <option value="classroom">Classroom</option>
                     <option value="computer_lab">Computer Lab</option>
                     <option value="gpu_lab">GPU Compute Lab</option>
-                    <option value="seminar_hall">Seminar Hall</option>
                   </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Seating Capacity:</label>
-                  <input
-                    type="number"
-                    min={10}
-                    max={300}
-                    value={formData.capacity}
-                    onChange={(e) => setFormData({ ...formData, capacity: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-bold"
-                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Floor Level:</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Capacity (Seats)</label>
+                  <input
+                    type="number"
+                    min={20}
+                    max={120}
+                    value={formData.capacity}
+                    onChange={(e) => setFormData({ ...formData, capacity: Number(e.target.value) })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Floor Level</label>
                   <input
                     type="text"
                     value={formData.floor}
                     onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
-                    placeholder="Floor 6, 2nd Floor, AFTF"
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Building Block:</label>
-                  <input
-                    type="text"
-                    value={formData.block}
-                    onChange={(e) => setFormData({ ...formData, block: e.target.value })}
-                    placeholder="Aryabhatta Bhavan / U-Block"
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Building Block Name</label>
+                <input
+                  type="text"
+                  value={formData.block}
+                  onChange={(e) => setFormData({ ...formData, block: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="gpu_check"
+                  checked={formData.gpu_capable}
+                  onChange={(e) => setFormData({ ...formData, gpu_capable: e.target.checked })}
+                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                />
+                <label htmlFor="gpu_check" className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                  Equipped with High-GPU Compute Rigs (for DL/AI practicals)
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 border border-slate-300 text-slate-600 rounded-xl font-bold"
+                  className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300"
                 >
                   Cancel
                 </button>
+
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md"
                 >
-                  Save Venue Specifications
+                  Save Venue Specs
                 </button>
               </div>
             </form>
