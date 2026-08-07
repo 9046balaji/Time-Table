@@ -197,8 +197,8 @@ class TimetableService:
         new_time_slot_id: int,
         new_room_id: Optional[int] = None
     ) -> Optional[TimetableEntry]:
-        """Update a specific entry slot assignment asynchronously."""
-        stmt = select(TimetableEntry).where(TimetableEntry.id == entry_id)
+        """Update a specific entry slot assignment asynchronously with pessimistic row locking."""
+        stmt = select(TimetableEntry).where(TimetableEntry.id == entry_id).with_for_update()
         res = await db.execute(stmt)
         entry = res.scalar_one_or_none()
         if not entry:

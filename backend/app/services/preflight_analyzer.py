@@ -30,12 +30,16 @@ class PreflightAnalyzer:
         total_theory_demand_hours = 0
         total_lab_demand_hours = 0
         faculty_workload_hours: Dict[str, int] = {}
+        section_demand_hours: Dict[str, int] = {}
 
         for ss in section_subjects:
+            sec_id = str(ss.get("section_id", "default_sec"))
             stype = ss.get("subject_type", "L")
             slots = ss.get("total_slots_needed", 3)
             primary_fac = ss.get("faculty_name", "")
             co_facs = ss.get("co_faculty", [])
+
+            section_demand_hours[sec_id] = section_demand_hours.get(sec_id, 0) + slots
 
             if stype == "P":
                 total_lab_demand_hours += slots
@@ -47,6 +51,17 @@ class PreflightAnalyzer:
             for co in co_facs:
                 if co:
                     faculty_workload_hours[co] = faculty_workload_hours.get(co, 0) + slots
+
+        # Check Section Capacity Cap (Max 40 slots/week per section)
+        overloaded_sections = []
+        for sec_id, total_slots in section_demand_hours.items():
+            if total_slots > 40:
+                overloaded_sections.append(f"Section {sec_id} ({total_slots} slots/week > 40 max cap)")
+
+        if overloaded_sections:
+            msg = f"Section Slot Allocation Deficit: {len(overloaded_sections)} sections exceed 40 slots/week max cap: {', '.join(overloaded_sections[:3])}"
+            warnings.append(msg)
+            bottlenecks.append({"type": "SECTION_SLOT_DEFICIT", "message": msg, "sections": overloaded_sections})
 
         # Check Classroom Capacity Ratio
         classroom_occupancy_pct = round((total_theory_demand_hours / total_classroom_supply_hours * 100), 1) if total_classroom_supply_hours > 0 else 100.0
@@ -80,8 +95,8 @@ class PreflightAnalyzer:
             warnings.append(msg)
             bottlenecks.append({"type": "FACULTY_OVERLOAD", "message": msg, "faculty": overloaded_faculty})
 
-        # Hard feasibility depends only on physical capacity deficits (Classroom/Lab deficit)
-        hard_deficits = [b for b in bottlenecks if b["type"] in ("CLASSROOM_DEFICIT", "LAB_DEFICIT")]
+        # Hard feasibility depends on physical capacity deficits and 40-slot section caps
+        hard_deficits = [b for b in bottlenecks if b["type"] in ("CLASSROOM_DEFICIT", "LAB_DEFICIT", "SECTION_SLOT_DEFICIT")]
         is_feasible = len(hard_deficits) == 0
 
         return {
