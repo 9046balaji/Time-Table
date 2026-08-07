@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Integer, Date, Boolean, ForeignKey, JSON, UniqueConstraint, Index
+from sqlalchemy import Column, String, Text, Integer, Date, Boolean, ForeignKey, JSON, UniqueConstraint, Index, CheckConstraint
 from sqlalchemy.orm import relationship
 from app.models.base import BaseModel
 
@@ -13,6 +13,10 @@ class TimetableVersion(BaseModel):
     solver_run_id = Column(Integer, ForeignKey("solver_runs.id"), nullable=True)
     source = Column(String(20), default="MANUAL", nullable=False)  # "MANUAL", "SOLVER", "IMPORTED"
     notes = Column(Text, nullable=True)
+
+    __table_args__ = (
+        Index('uq_active_version_per_year', 'academic_year_id', unique=True, postgresql_where=(is_current == True)),
+    )
 
     academic_year = relationship("AcademicYear", back_populates="timetable_versions")
     solver_run = relationship("SolverRun", back_populates="timetable_versions")
@@ -39,6 +43,7 @@ class TimetableEntry(BaseModel):
         UniqueConstraint('timetable_version_id', 'section_id', 'time_slot_id', name='uq_entry_section_slot'),
         Index('idx_tt_entries_room_slot', 'timetable_version_id', 'room_id', 'time_slot_id'),
         Index('idx_tt_entries_section_slot', 'timetable_version_id', 'section_id', 'time_slot_id'),
+        CheckConstraint("span_periods BETWEEN 1 AND 4", name="chk_span_periods_range"),
     )
 
     timetable_version = relationship("TimetableVersion", back_populates="entries")
