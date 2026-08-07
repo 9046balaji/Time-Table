@@ -98,6 +98,8 @@ async def update_timetable_slot(req: Dict[str, Any], db: AsyncSession = Depends(
         try:
             from sqlalchemy import select
             from app.models.timetable import TimetableEntry, Section, TimeSlot, Room
+            from app.models.faculty import Faculty
+            from app.models.timetable_entry_faculty import TimetableEntryFaculty
 
             # Find matching section & time slot
             sec_res = await db.execute(select(Section).where(Section.name == sec_name))
@@ -113,7 +115,11 @@ async def update_timetable_slot(req: Dict[str, Any], db: AsyncSession = Depends(
 
             entry_obj = None
             if entry_id and str(entry_id).isdigit():
-                ent_res = await db.execute(select(TimetableEntry).where(TimetableEntry.id == int(entry_id)))
+                ent_res = await db.execute(
+                    select(TimetableEntry)
+                    .where(TimetableEntry.id == int(entry_id))
+                    .with_for_update()
+                )
                 entry_obj = ent_res.scalar_one_or_none()
 
             if entry_obj:
@@ -135,6 +141,30 @@ async def update_timetable_slot(req: Dict[str, Any], db: AsyncSession = Depends(
                     entry_type="P" if "(P)" in subj_code else ("T" if "(T)" in subj_code else "L")
                 )
                 db.add(entry_obj)
+                await db.flush()
+
+            # Sync normalized TimetableEntryFaculty join records
+            if entry_obj and fac_names:
+                await db.execute(
+                    select(TimetableEntryFaculty).where(TimetableEntryFaculty.timetable_entry_id == entry_obj.id)
+                )
+                for idx, fn in enumerate(fac_names):
+                    fac_q = await db.execute(select(Faculty).where(Faculty.name.ilike(f"%{fn}%")))
+                    f_record = fac_q.scalar_one_or_none()
+                    if f_record:
+                        role = "LEAD" if idx == 0 else "CO_INSTRUCTOR"
+                        existing = await db.execute(
+                            select(TimetableEntryFaculty).where(
+                                TimetableEntryFaculty.timetable_entry_id == entry_obj.id,
+                                TimetableEntryFaculty.faculty_id == f_record.id
+                            )
+                        )
+                        if not existing.scalar_one_or_none():
+                            db.add(TimetableEntryFaculty(
+                                timetable_entry_id=entry_obj.id,
+                                faculty_id=f_record.id,
+                                role_type=role
+                            ))
 
             await db.commit()
         except Exception as ex:
