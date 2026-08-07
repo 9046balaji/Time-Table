@@ -410,7 +410,7 @@ export default function TestingLabPage() {
   const ctPhone = currentSection.class_teacher?.phone || currentSection.classTeacher?.phone || "N/A";
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 w-full max-w-full space-y-6">
 
       {/* Top Header Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 p-6 rounded-2xl border border-slate-800 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden">
