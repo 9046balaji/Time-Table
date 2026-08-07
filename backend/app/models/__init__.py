@@ -9,6 +9,7 @@ from app.models.section_subject import SectionSubject
 from app.models.room import Room
 from app.models.time_slot import TimeSlot
 from app.models.timetable import TimetableVersion, TimetableEntry
+from app.models.timetable_entry_faculty import TimetableEntryFaculty
 from app.models.solver_run import SolverRun
 from app.models.clash_report import ClashReport
 from app.models.audit_log import AuditLog
@@ -27,6 +28,7 @@ __all__ = [
     "TimeSlot",
     "TimetableVersion",
     "TimetableEntry",
+    "TimetableEntryFaculty",
     "SolverRun",
     "ClashReport",
     "AuditLog",
