@@ -98,4 +98,5 @@ export const timetableApi = {
   exportSingleFacultyPdf: (facultyId: number, versionId: number = 5) =>
     api.get(`/api/v1/export/pdf/faculty/${facultyId}`, { params: { version_id: versionId }, responseType: 'blob' }),
   syncSmartClass: () => api.post('/api/v1/timetable/sync-master'),
+  updateSlot: (data: any) => api.post('/api/v1/timetable/update-slot', data),
 };
