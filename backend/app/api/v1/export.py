@@ -101,3 +101,14 @@ async def export_room_utilization_report(version_id: int = Query(5), db: AsyncSe
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename=VFSTR_V{version_id}_Room_Utilization_Report.xlsx"}
     )
+
+
+@router.get("/ical/faculty/{faculty_id}")
+async def export_faculty_ical(faculty_id: int, version_id: int = Query(5), db: AsyncSession = Depends(get_db)):
+    """Generate iCal (.ics) calendar file for faculty member schedule sync."""
+    ics_text = await ExportService.generate_ical_export(db, faculty_id=faculty_id, version_id=version_id)
+    return StreamingResponse(
+        io.BytesIO(ics_text.encode("utf-8")),
+        media_type="text/calendar",
+        headers={"Content-Disposition": f"attachment; filename=Faculty_{faculty_id}_Schedule.ics"}
+    )

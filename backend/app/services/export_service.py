@@ -614,3 +614,60 @@ class ExportService:
         buffer = io.BytesIO()
         wb.save(buffer)
         return buffer.getvalue()
+
+    @staticmethod
+    async def generate_ical_export(db: Any = None, faculty_id: int = 1, version_id: int = 5) -> str:
+        """Generate standard iCal (.ics) calendar file for faculty member teaching schedule."""
+        from app.services.timetable_service import TimetableService
+        tt_res = await TimetableService.get_faculty_timetable(db, faculty_id=faculty_id, version_id=version_id)
+        fac_name = tt_res.get("faculty_name", f"Faculty_{faculty_id}")
+        entries = tt_res.get("entries", [])
+
+        day_offsets = {"MON": 0, "TUE": 1, "WED": 2, "THU": 3, "FRI": 4, "SAT": 5}
+        period_times = {
+            1: ("081500", "090500"),
+            2: ("090500", "095500"),
+            3: ("101000", "110000"),
+            4: ("110000", "115000"),
+            5: ("115000", "124000"),
+            6: ("134000", "143000"),
+            7: ("143000", "152000"),
+            8: ("152000", "160500"),
+        }
+
+        ics_lines = [
+            "BEGIN:VCALENDAR",
+            "VERSION:2.0",
+            "PRODID:-//VFSTR ACSE//Timetable Scheduler//EN",
+            "CALSCALE:GREGORIAN",
+            "METHOD:PUBLISH",
+            f"X-WR-CALNAME:{fac_name} Teaching Schedule",
+            "X-WR-TIMEZONE:Asia/Kolkata"
+        ]
+
+        base_date = "20260810"  # Monday start date reference
+
+        for idx, e in enumerate(entries, start=1):
+            day = str(e.get("day", "MON")).upper()
+            period = int(e.get("period", 1))
+            subj = e.get("subject", "Class")
+            sec = e.get("section", "")
+            rm = e.get("room", "")
+
+            offset = day_offsets.get(day, 0)
+            day_str = f"202608{10 + offset:02d}"
+            start_t, end_t = period_times.get(period, ("081500", "090500"))
+
+            ics_lines.extend([
+                "BEGIN:VEVENT",
+                f"UID:vfstr-fac-{faculty_id}-slot-{idx}@vfstr.ac.in",
+                f"SUMMARY:{subj} - {sec} ({rm})",
+                f"DESCRIPTION:VFSTR Teaching Slot: {subj} for Section {sec} at Room {rm}",
+                f"LOCATION:Room {rm}",
+                f"DTSTART;TZID=Asia/Kolkata:{day_str}T{start_t}",
+                f"DTEND;TZID=Asia/Kolkata:{day_str}T{end_t}",
+                "END:VEVENT"
+            ])
+
+        ics_lines.append("END:VCALENDAR")
+        return "\n".join(ics_lines)
