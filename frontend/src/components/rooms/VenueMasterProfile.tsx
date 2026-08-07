@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Building2,
   Search,
@@ -13,9 +13,11 @@ import {
   Users,
   Calendar,
   CheckCircle2,
-  Building
+  Building,
+  Loader2
 } from "lucide-react";
 import { Room } from "@/lib/types";
+import { timetableApi } from "@/lib/api";
 
 interface VenueMasterProfileProps {
   roomList: Room[];
@@ -38,6 +40,8 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
 
   // Selected Room for Slide-Over Drawer
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [roomSchedule, setRoomSchedule] = useState<any[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
 
   // Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
@@ -52,6 +56,22 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
     gpu_capable: false,
     is_available: true
   });
+
+  // Fetch room occupancy schedule whenever selectedRoom changes
+  useEffect(() => {
+    if (selectedRoom && selectedRoom.code) {
+      setLoadingSchedule(true);
+      timetableApi.getRoomTimetable(selectedRoom.code)
+        .then((res) => {
+          const items = Array.isArray(res.data) ? res.data : (res.data as any)?.entries || (res.data as any)?.items || [];
+          setRoomSchedule(items);
+        })
+        .catch(() => setRoomSchedule([]))
+        .finally(() => setLoadingSchedule(false));
+    } else {
+      setRoomSchedule([]);
+    }
+  }, [selectedRoom]);
 
   const handleOpenAddModal = () => {
     setEditingRoom(null);
@@ -121,6 +141,11 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
       return true;
     });
   }, [roomList, searchQuery, quickFilter]);
+
+  // Helper to find room occupied slot
+  const getScheduledSlot = (day: string, period: number) => {
+    return roomSchedule.find((s) => s.day === day && Number(s.period) === period);
+  };
 
   return (
     <div className="space-y-6">
@@ -312,21 +337,42 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
               </div>
 
               {/* Room Weekly Occupancy Schedule Grid */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Weekly Occupancy Matrix (48 Slots)</h4>
-                <div className="grid grid-cols-6 gap-1 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Weekly Occupancy Matrix ({roomSchedule.length} / 48 Slots Occupied)</h4>
+                  {loadingSchedule && <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin" />}
+                </div>
+
+                <div className="grid grid-cols-6 gap-1.5 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
                   {DAYS.map((day) => (
                     <div key={day} className="text-center">
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{day}</span>
-                      <div className="mt-1 space-y-1">
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map((p) => (
-                          <div
-                            key={p}
-                            className="w-full h-4 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold flex items-center justify-center border border-emerald-500/30"
-                          >
-                            P{p}
-                          </div>
-                        ))}
+                      <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1.5">{day}</span>
+                      <div className="space-y-1.5">
+                        {PERIODS.map((p) => {
+                          const slot = getScheduledSlot(day, p);
+                          if (slot) {
+                            return (
+                              <div
+                                key={p}
+                                title={`${slot.subject || "Class"} (${slot.section || ""}) - ${slot.faculty || ""}`}
+                                className="w-full py-1.5 px-1 rounded-lg bg-emerald-600 text-white text-[9px] font-extrabold shadow-sm border border-emerald-700 leading-tight truncate"
+                              >
+                                <span className="block font-black">{slot.subject || `P${p}`}</span>
+                                <span className="block opacity-90 text-[8px] font-medium">{slot.section || ""}</span>
+                                <span className="block opacity-75 text-[7.5px] font-mono">{Array.isArray(slot.faculty) ? slot.faculty[0] : slot.faculty || ""}</span>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div
+                              key={p}
+                              className="w-full py-1.5 px-1 rounded-lg bg-slate-200/60 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 text-[9px] font-semibold flex items-center justify-center border border-slate-300/40 dark:border-slate-600/40"
+                            >
+                              Free
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
