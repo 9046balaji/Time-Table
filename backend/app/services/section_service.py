@@ -62,24 +62,49 @@ class SectionService:
                 res = await db.execute(stmt)
                 db_sections = res.scalars().all()
                 if db_sections:
-                    items = [
-                        {
+                    items = []
+                    for s in db_sections:
+                        s_name = s.name or ""
+                        # Determine branch
+                        if "AIML" in s_name:
+                            b_code = "AIML"
+                        elif "CSBS" in s_name:
+                            b_code = "CSBS"
+                        elif "CS" in s_name:
+                            b_code = "CS"
+                        elif "DS" in s_name:
+                            b_code = "DS"
+                        elif "IOT" in s_name:
+                            b_code = "IOT"
+                        else:
+                            b_code = "AIML"
+                        
+                        # Determine year
+                        if "II " in s_name or s_name.startswith("II"):
+                            y_val = "II"
+                        elif "III " in s_name or s_name.startswith("III"):
+                            y_val = "III"
+                        elif "IV " in s_name or s_name.startswith("IV"):
+                            y_val = "IV"
+                        else:
+                            y_val = str(s.label if hasattr(s, "label") and s.label else "II")
+
+                        items.append({
                             "id": s.id,
                             "name": s.name,
-                            "branch": "AIML",
-                            "year": s.label,
-                            "strength": s.strength
-                        }
-                        for s in db_sections
-                    ]
-            except Exception:
-                pass
+                            "branch": b_code,
+                            "year": y_val,
+                            "year_level": y_val,
+                            "strength": getattr(s, "strength", 60)
+                        })
+            except Exception as ex:
+                print(f"[SectionService DB Error] {ex}")
 
         filtered = items
-        if branch:
-            filtered = [s for s in filtered if s["branch"] == branch]
-        if year:
-            filtered = [s for s in filtered if str(s["year"]) == str(year) or s.get("year") == year]
+        if branch and branch != "ALL":
+            filtered = [s for s in filtered if branch in s["branch"] or s["branch"] in branch]
+        if year and year != "ALL":
+            filtered = [s for s in filtered if str(year) in str(s["year"]) or str(s["year"]) in str(year)]
 
         return {
             "total": len(items),
