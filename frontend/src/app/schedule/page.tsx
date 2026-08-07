@@ -20,7 +20,11 @@ import {
   Undo2,
   FileSpreadsheet,
   Printer,
-  X
+  X,
+  Maximize2,
+  Minimize2,
+  PanelRightOpen,
+  PanelRightClose
 } from "lucide-react";
 import { TimetableGrid, SlotEntry } from "@/components/timetable/TimetableGrid";
 import { timetableApi } from "@/lib/api";
@@ -39,6 +43,7 @@ export default function SchedulePage() {
   const [compareEntries, setCompareEntries] = useState<SlotEntry[]>([]);
   const [cohortAllSlots, setCohortAllSlots] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSidePanelCollapsed, setIsSidePanelCollapsed] = useState(false);
 
   // Versions tracking
   const [versions, setVersions] = useState<any[]>([]);
@@ -117,7 +122,7 @@ export default function SchedulePage() {
 
   // Filtered & Sorted Sections List
   const filteredAndSortedSections = useMemo(() => {
-    let list = dbSectionsList.length > 0 ? dbSectionsList : [
+    const defaultCatalog = [
       { id: 1, name: "II AIML-A", year: "II", branch: "AIML" },
       { id: 2, name: "II AIML-B", year: "II", branch: "AIML" },
       { id: 3, name: "II AIML-C", year: "II", branch: "AIML" },
@@ -125,22 +130,65 @@ export default function SchedulePage() {
       { id: 5, name: "II AIML-E", year: "II", branch: "AIML" },
       { id: 6, name: "III AIML-A", year: "III", branch: "AIML" },
       { id: 7, name: "III AIML-B", year: "III", branch: "AIML" },
-      { id: 8, name: "IV AIML-A", year: "IV", branch: "AIML" },
-      { id: 9, name: "II CS-A", year: "II", branch: "CS" },
-      { id: 10, name: "II DS-A", year: "II", branch: "DS" },
+      { id: 8, name: "III AIML-C", year: "III", branch: "AIML" },
+      { id: 9, name: "IV AIML-A", year: "IV", branch: "AIML" },
+      { id: 10, name: "IV AIML-B", year: "IV", branch: "AIML" },
+      { id: 11, name: "II CS-A", year: "II", branch: "CS" },
+      { id: 12, name: "II CS-B", year: "II", branch: "CS" },
+      { id: 13, name: "III CS", year: "III", branch: "CS" },
+      { id: 14, name: "IV CS", year: "IV", branch: "CS" },
+      { id: 15, name: "II DS-A", year: "II", branch: "DS" },
+      { id: 16, name: "II DS-B", year: "II", branch: "DS" },
+      { id: 17, name: "III DS-A", year: "III", branch: "DS" },
+      { id: 18, name: "IV DS", year: "IV", branch: "DS" },
+      { id: 19, name: "II CSBS", year: "II", branch: "CSBS" },
+      { id: 20, name: "III CSBS", year: "III", branch: "CSBS" },
+      { id: 21, name: "IV CSBS", year: "IV", branch: "CSBS" },
     ];
 
-    list = list.filter((s) => {
-      const sName = typeof s === 'string' ? s : (s.name || s.section_name || String(s));
-      const sYear = typeof s === 'object' && s.year ? s.year : (sName.includes("II ") ? "II" : sName.includes("III ") ? "III" : sName.includes("IV ") ? "IV" : "");
-      const sBranch = typeof s === 'object' && s.branch ? s.branch : (sName.includes("AIML") ? "AIML" : sName.includes("CS") ? "CS" : sName.includes("DS") ? "DS" : "");
+    let rawList = dbSectionsList.length > 0 ? dbSectionsList : defaultCatalog;
 
-      if (sectionYearFilter !== "ALL" && !sYear.includes(sectionYearFilter)) return false;
-      if (sectionBranchFilter !== "ALL" && !sBranch.includes(sectionBranchFilter)) return false;
+    let filtered = rawList.filter((s) => {
+      const sName = typeof s === 'string' ? s : (s.name || s.section_name || String(s));
+      
+      let sYear = typeof s === 'object' && (s.year_level || s.year || s.label) ? String(s.year_level || s.year || s.label) : "";
+      if (!sYear || sYear === "undefined") {
+        if (sName.includes("II ") || sName.startsWith("II")) sYear = "II";
+        else if (sName.includes("III ") || sName.startsWith("III")) sYear = "III";
+        else if (sName.includes("IV ") || sName.startsWith("IV")) sYear = "IV";
+        else sYear = "II";
+      } else if (sYear === "2") sYear = "II";
+      else if (sYear === "3") sYear = "III";
+      else if (sYear === "4") sYear = "IV";
+
+      let sBranch = typeof s === 'object' && s.branch ? String(s.branch) : "";
+      if (!sBranch || sBranch === "undefined") {
+        if (sName.includes("AIML")) sBranch = "AIML";
+        else if (sName.includes("CSBS")) sBranch = "CSBS";
+        else if (sName.includes("CS")) sBranch = "CS";
+        else if (sName.includes("DS")) sBranch = "DS";
+        else if (sName.includes("IOT")) sBranch = "IOT";
+        else sBranch = "AIML";
+      }
+
+      if (sectionYearFilter !== "ALL" && !sYear.includes(sectionYearFilter) && !sName.includes(sectionYearFilter)) return false;
+      if (sectionBranchFilter !== "ALL" && !sBranch.includes(sectionBranchFilter) && !sName.includes(sectionBranchFilter)) return false;
       return true;
     });
 
-    return list.sort((a, b) => {
+    if (filtered.length === 0) {
+      filtered = rawList.filter((s) => {
+        const sName = typeof s === 'string' ? s : (s.name || s.section_name || String(s));
+        if (sectionYearFilter !== "ALL" && !sName.includes(sectionYearFilter)) return false;
+        return true;
+      });
+    }
+
+    if (filtered.length === 0) {
+      filtered = defaultCatalog;
+    }
+
+    return filtered.sort((a, b) => {
       const nameA = typeof a === 'string' ? a : (a.name || a.section_name || String(a));
       const nameB = typeof b === 'string' ? b : (b.name || b.section_name || String(b));
       if (sectionSortBy === "NAME_ASC") return nameA.localeCompare(nameB, undefined, { numeric: true });
@@ -148,6 +196,20 @@ export default function SchedulePage() {
       return 0;
     });
   }, [dbSectionsList, sectionYearFilter, sectionBranchFilter, sectionSortBy]);
+
+  // Auto-sync selectedSection & compareSection if current selection is filtered out
+  useEffect(() => {
+    if (filteredAndSortedSections.length > 0) {
+      const secNames = filteredAndSortedSections.map((s) => typeof s === 'string' ? s : (s.name || s.section_name || String(s)));
+      if (!secNames.includes(selectedSection)) {
+        setSelectedSection(secNames[0]);
+      }
+      if (!secNames.includes(compareSection)) {
+        setCompareSection(secNames[Math.min(1, secNames.length - 1)]);
+      }
+    }
+  }, [filteredAndSortedSections, selectedSection, compareSection]);
+
 
 
   // Fetch primary section slots
@@ -180,6 +242,7 @@ export default function SchedulePage() {
               roomCode: String(s.room || s.room_code || ''),
               facultyName: facStr,
               facultyNames: facList,
+              sectionName: String(s.section || s.section_name || ''),
               subjectType: subjStr.includes('(P)') ? 'P' : (subjStr.includes('(T)') ? 'T' : 'L'),
               spanPeriods: subjStr.includes('(P)') ? 2 : 1,
               hasClash: Boolean(s.has_clash),
@@ -212,6 +275,7 @@ export default function SchedulePage() {
               subjectCode: subjStr,
               roomCode: String(s.room || s.room_code || ''),
               facultyName: facStr,
+              sectionName: String(s.section || s.section_name || ''),
               subjectType: subjStr.includes('(P)') ? 'P' : (subjStr.includes('(T)') ? 'T' : 'L'),
               spanPeriods: subjStr.includes('(P)') ? 2 : 1,
               hasClash: Boolean(s.has_clash),
@@ -347,20 +411,60 @@ export default function SchedulePage() {
     });
   }, [facultyList, facultySearchQuery, facultySortBy]);
 
-  // Highlighted Grid Entries based on gridSearchQuery
-  const filteredGridEntries = useMemo(() => {
-    if (!gridSearchQuery) return entries;
-    const q = gridSearchQuery.toLowerCase();
-    return entries.map(e => {
-      const matchSubject = e.subjectCode.toLowerCase().includes(q);
-      const matchRoom = (e.roomCode || "").toLowerCase().includes(q);
-      const matchFaculty = (e.facultyName || "").toLowerCase().includes(q);
-      if (matchSubject || matchRoom || matchFaculty) {
-        return { ...e, hasClash: true, clashReason: `MATCH: Search term "${gridSearchQuery}"` };
+  // Auto-sync selectedFacultyId if current selection is filtered out
+  useEffect(() => {
+    if (processedFacultyList.length > 0) {
+      const exists = processedFacultyList.some((f) => f.id === selectedFacultyId);
+      if (!exists) {
+        setSelectedFacultyId(processedFacultyList[0].id);
       }
-      return e;
+    }
+  }, [processedFacultyList, selectedFacultyId]);
+
+  // Active faculty object & entries fallback calculation
+  const activeFacultyObject = useMemo(() => {
+    return facultyList.find(f => f.id === selectedFacultyId) || processedFacultyList[0] || null;
+  }, [facultyList, processedFacultyList, selectedFacultyId]);
+
+  const facultyGridEntries = useMemo((): SlotEntry[] => {
+    let raw = facultyTimetableData?.entries || facultyTimetableData?.slots || [];
+
+    if ((!raw || raw.length === 0) && activeFacultyObject && cohortAllSlots.length > 0) {
+      const facNameClean = activeFacultyObject.name.replace(/^(Dr|Mr|Ms|Prof)\.?\s*/i, '').trim().toLowerCase();
+      const tokens = facNameClean.split(/\s+/).filter(t => t.length >= 3);
+
+      raw = cohortAllSlots.filter(s => {
+        const sFac = String(s.faculty || s.faculty_names || '').toLowerCase();
+        if (!sFac) return false;
+        if (sFac.includes(facNameClean) || facNameClean.includes(sFac)) return true;
+        return tokens.some(t => sFac.includes(t));
+      });
+    }
+
+    return (raw || []).map((e: any, idx: number) => {
+      const subjStr = String(e.subject || e.subject_code || "LECTURE");
+      const roomStr = String(e.room || e.room_code || "");
+      const secStr = String(e.section || e.section_name || "");
+      const facNameStr = activeFacultyObject?.name || facultyTimetableData?.faculty_name || "Faculty";
+
+      let subType: SlotEntry['subjectType'] = "L";
+      if (subjStr.includes("(P)")) subType = "P";
+      else if (subjStr.includes("(T)")) subType = "T";
+      else if (subjStr.includes("LIBRARY")) subType = "LIBRARY";
+
+      return {
+        id: String(e.id || `fac_${idx}`),
+        day: e.day,
+        period: Number(e.period),
+        subjectCode: subjStr,
+        roomCode: roomStr,
+        sectionName: secStr,
+        subjectType: subType,
+        spanPeriods: subType === "P" ? 2 : 1,
+        facultyName: facNameStr,
+      };
     });
-  }, [entries, gridSearchQuery]);
+  }, [facultyTimetableData, cohortAllSlots, activeFacultyObject]);
 
 
   // Export iCal (.ics) Calendar Feed
@@ -550,46 +654,46 @@ export default function SchedulePage() {
         </div>
       </div>
 
-      {/* MODE 1: SINGLE SECTION MATRIX GRID */}
-      {mode === 'matrix' && (
-        <>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm gap-4">
-            <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-              {/* Year Filter */}
-              <select
-                value={sectionYearFilter}
-                onChange={(e) => setSectionYearFilter(e.target.value)}
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
-              >
-                <option value="ALL">All Academic Years</option>
-                <option value="II">II Year (Sem I)</option>
-                <option value="III">III Year (Sem I)</option>
-                <option value="IV">IV Year (Sem I)</option>
-              </select>
+      {/* SHARED SECTION FILTERING & SORTING BAR FOR MATRIX AND COMPARE MODES */}
+      {(mode === 'matrix' || mode === 'compare') && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm gap-4">
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+            {/* Year Filter */}
+            <select
+              value={sectionYearFilter}
+              onChange={(e) => setSectionYearFilter(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">All Academic Years</option>
+              <option value="II">II Year (Sem I)</option>
+              <option value="III">III Year (Sem I)</option>
+              <option value="IV">IV Year (Sem I)</option>
+            </select>
 
-              {/* Branch Filter */}
-              <select
-                value={sectionBranchFilter}
-                onChange={(e) => setSectionBranchFilter(e.target.value)}
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
-              >
-                <option value="ALL">All Specializations</option>
-                <option value="AIML">CSE (AIML)</option>
-                <option value="CS">CSE (Core & CS)</option>
-                <option value="DS">CSE (Data Science)</option>
-              </select>
+            {/* Branch Filter */}
+            <select
+              value={sectionBranchFilter}
+              onChange={(e) => setSectionBranchFilter(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">All Specializations</option>
+              <option value="AIML">CSE (AIML)</option>
+              <option value="CS">CSE (Core & CS)</option>
+              <option value="DS">CSE (Data Science)</option>
+              <option value="CSBS">CSE (CSBS)</option>
+            </select>
 
-              {/* Section Sort */}
-              <select
-                value={sectionSortBy}
-                onChange={(e) => setSectionSortBy(e.target.value)}
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
-              >
-                <option value="NAME_ASC">Sort: Section (A-Z)</option>
-                <option value="NAME_DESC">Sort: Section (Z-A)</option>
-              </select>
+            {/* Section Sort */}
+            <select
+              value={sectionSortBy}
+              onChange={(e) => setSectionSortBy(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
+            >
+              <option value="NAME_ASC">Sort: Section (A-Z)</option>
+              <option value="NAME_DESC">Sort: Section (Z-A)</option>
+            </select>
 
-              {/* Dynamic Filtered Active Section Selector */}
+            {mode === 'matrix' && (
               <div className="flex items-center gap-1.5">
                 <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Section:</label>
                 <select
@@ -607,52 +711,121 @@ export default function SchedulePage() {
                   })}
                 </select>
               </div>
+            )}
 
-              {/* Grid Live Search Box */}
-
-              <div className="relative w-full sm:w-64">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Search subject, room, or faculty..."
-                  value={gridSearchQuery}
-                  onChange={(e) => setGridSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none font-medium"
-                />
-                {gridSearchQuery && (
-                  <button onClick={() => setGridSearchQuery("")} className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold text-xs">
-                    ✕
-                  </button>
-                )}
-              </div>
-            </div>
-
-
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-              <span>Total Section Slots: {entries.length}</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-3">
-              {loading ? (
-                <div className="w-full h-80 rounded-2xl border border-slate-200 bg-white flex flex-col items-center justify-center text-slate-400 gap-2">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                  <p className="text-xs font-medium">Loading {selectedSection} Schedule...</p>
+            {mode === 'compare' && (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Section A:</label>
+                  <select
+                    value={selectedSection}
+                    onChange={(e) => setSelectedSection(e.target.value)}
+                    className="bg-blue-50 dark:bg-blue-950/80 border border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm focus:outline-none cursor-pointer"
+                  >
+                    {filteredAndSortedSections.map((s, idx) => {
+                      const secName = typeof s === 'string' ? s : (s.name || s.section_name || String(s));
+                      return (
+                        <option key={idx} value={secName}>
+                          {secName}
+                        </option>
+                      );
+                    })}
+                  </select>
                 </div>
-              ) : (
-                <TimetableGrid
-                  sectionName={selectedSection}
-                  entries={filteredGridEntries}
-                  onSlotSwap={handleSlotSwap}
-                  showDownloadBtn={true}
-                  onDownloadPdf={handleDownloadSinglePdf}
-                />
 
+                <span className="text-xs font-extrabold text-purple-600 dark:text-purple-400">VS</span>
+
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Section B:</label>
+                  <select
+                    value={compareSection}
+                    onChange={(e) => setCompareSection(e.target.value)}
+                    className="bg-purple-50 dark:bg-purple-950/80 border border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-100 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm focus:outline-none cursor-pointer"
+                  >
+                    {filteredAndSortedSections.map((s, idx) => {
+                      const secName = typeof s === 'string' ? s : (s.name || s.section_name || String(s));
+                      return (
+                        <option key={idx} value={secName}>
+                          {secName}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Grid Live Search Box */}
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Search subject, room, or faculty..."
+                value={gridSearchQuery}
+                onChange={(e) => setGridSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none font-medium"
+              />
+              {gridSearchQuery && (
+                <button onClick={() => setGridSearchQuery("")} className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold text-xs">
+                  ✕
+                </button>
               )}
             </div>
 
-            <div className="space-y-4">
+            {/* Expand / Collapse Side Panel Button */}
+            {mode === 'matrix' && (
+              <button
+                onClick={() => setIsSidePanelCollapsed(prev => !prev)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer border ${
+                  isSidePanelCollapsed
+                    ? "bg-purple-600 text-white border-purple-500 hover:bg-purple-700"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-200"
+                }`}
+                title={isSidePanelCollapsed ? "Show Metrics & Solver Panel" : "Expand Timetable Grid to 100% Full Screen Width"}
+              >
+                {isSidePanelCollapsed ? (
+                  <>
+                    <PanelRightOpen className="w-3.5 h-3.5 text-purple-200" /> Show Metrics
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3.5 h-3.5 text-blue-600" /> Full Width Grid
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+            <span>Available Sections: {filteredAndSortedSections.length}</span>
+          </div>
+        </div>
+      )}
+
+      {/* MODE 1: SINGLE SECTION MATRIX GRID */}
+      {mode === 'matrix' && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className={isSidePanelCollapsed ? "lg:col-span-4 transition-all duration-300" : "lg:col-span-3 transition-all duration-300"}>
+            {loading ? (
+              <div className="w-full h-80 rounded-2xl border border-slate-200 bg-white flex flex-col items-center justify-center text-slate-400 gap-2">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <p className="text-xs font-medium">Loading {selectedSection} Schedule...</p>
+              </div>
+            ) : (
+              <TimetableGrid
+                sectionName={selectedSection}
+                entries={entries}
+                onSlotSwap={handleSlotSwap}
+                showDownloadBtn={true}
+                onDownloadPdf={handleDownloadSinglePdf}
+                isFullWidth={isSidePanelCollapsed}
+                onToggleFullWidth={() => setIsSidePanelCollapsed(prev => !prev)}
+              />
+            )}
+          </div>
+
+          {!isSidePanelCollapsed && (
+            <div className="space-y-4 transition-all duration-300">
               {/* Section Quick Stats */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
                 <h3 className="font-bold text-xs text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
@@ -705,51 +878,13 @@ export default function SchedulePage() {
                 </button>
               </div>
             </div>
-          </div>
-        </>
+          )}
+        </div>
       )}
 
       {/* MODE 2: SIDE-BY-SIDE SECTION COMPARISON */}
       {mode === 'compare' && (
         <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div>
-                <label className="text-xs font-bold text-slate-500 block">Section A:</label>
-                <select
-                  value={selectedSection}
-                  onChange={(e) => setSelectedSection(e.target.value)}
-                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
-                >
-                  <option value="II AIML-A">II AIML-A</option>
-                  <option value="II AIML-B">II AIML-B</option>
-                  <option value="II AIML-C">II AIML-C</option>
-                  <option value="III AIML-A">III AIML-A</option>
-                </select>
-              </div>
-
-              <span className="text-xs font-extrabold text-purple-600 dark:text-purple-400">VS</span>
-
-              <div>
-                <label className="text-xs font-bold text-slate-500 block">Section B:</label>
-                <select
-                  value={compareSection}
-                  onChange={(e) => setCompareSection(e.target.value)}
-                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
-                >
-                  <option value="II AIML-B">II AIML-B</option>
-                  <option value="II AIML-A">II AIML-A</option>
-                  <option value="II AIML-C">II AIML-C</option>
-                  <option value="III AIML-B">III AIML-B</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="text-xs font-bold text-slate-500">
-              Comparing {selectedSection} vs {compareSection}
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-2">
               <h3 className="text-sm font-extrabold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
@@ -789,11 +924,11 @@ export default function SchedulePage() {
 
           <div className="space-y-8">
             {stackSections.map((secName) => {
-              const secEntries = entries.filter((e) => e.sectionName === secName || selectedSection === secName);
+              const secEntries = entries.filter((e) => e.sectionName === secName);
               return (
                 <div key={secName} className="space-y-2">
                   <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 px-1">{secName}</h3>
-                  <TimetableGrid sectionName={secName} entries={secEntries.length > 0 ? secEntries : entries} />
+                  <TimetableGrid sectionName={secName} entries={secEntries} />
                 </div>
               );
             })}
@@ -857,19 +992,10 @@ export default function SchedulePage() {
 
           </div>
 
-          {facultyTimetableData && (
+          {activeFacultyObject && (
             <TimetableGrid
-              sectionName={`${facultyTimetableData.faculty_name || facultyTimetableData.name} Schedule`}
-              entries={(facultyTimetableData.entries || []).map((e: any, idx: number) => ({
-                id: String(e.id || idx),
-                day: e.day,
-                period: e.period,
-                subjectCode: e.subject || e.subject_code || "LECTURE",
-                roomCode: e.room || e.room_code || "",
-                sectionName: e.section || e.section_name || "",
-                subjectType: (e.subject || "").includes("(P)") ? "P" : (e.subject || "").includes("(T)") ? "T" : "L",
-                facultyName: facultyTimetableData.faculty_name || facultyTimetableData.name || ""
-              }))}
+              sectionName={`${activeFacultyObject.name} Schedule`}
+              entries={facultyGridEntries}
             />
           )}
         </div>
