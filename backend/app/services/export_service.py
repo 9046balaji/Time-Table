@@ -557,3 +557,60 @@ class ExportService:
             "active_rooms_mapped": 35,
             "message": "Master schedule synchronized successfully with SmartClass AI camera nodes across all 35 rooms."
         }
+
+    @staticmethod
+    async def generate_room_utilization_excel(db: Any = None, version_id: int = 5) -> bytes:
+        """Generate room utilization Excel report across all rooms and 48 weekly time slots."""
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from app.services.timetable_service import TimetableService
+
+        tt_res = await TimetableService.get_version_timetable(db, version_id=version_id, section_name="ALL")
+        entries = tt_res.get("entries", [])
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Room Utilization Matrix"
+
+        # Headers
+        ws.append(["VFSTR ACSE Room Utilization & Occupancy Report (Version V" + str(version_id) + ")"])
+        ws.merge_cells("A1:I1")
+        ws["A1"].font = Font(name="Calibri", size=14, bold=True, color="FFFFFF")
+        ws["A1"].fill = PatternFill(start_color="1E3A8A", fill_type="solid")
+        ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+
+        ws.append(["Room Code", "Room Type", "Capacity", "Occupied Slots / Week", "Utilization %", "MON Slots", "TUE Slots", "WED Slots", "THU/FRI/SAT Slots"])
+        header_fill = PatternFill(start_color="334155", fill_type="solid")
+        header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+
+        for col in range(1, 10):
+            cell = ws.cell(row=2, column=col)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+
+        # Map rooms
+        all_rooms = ["601", "602", "603", "604", "605", "606", "607", "608", "609", "610", "611", "612", "613", "614", "615", "616", "617", "618", "619", "AFTF-12", "AFTF-13", "AFTF-14", "AFF-09", "AFF-10"]
+        room_stats: Dict[str, Any] = {r: {"total": 0, "mon": 0, "tue": 0, "wed": 0, "other": 0} for r in all_rooms}
+
+        for e in entries:
+            rm = str(e.get("room", "")).strip()
+            day = str(e.get("day", "")).strip().upper()
+            if rm in room_stats:
+                room_stats[rm]["total"] += 1
+                if day == "MON": room_stats[rm]["mon"] += 1
+                elif day == "TUE": room_stats[rm]["tue"] += 1
+                elif day == "WED": room_stats[rm]["wed"] += 1
+                else: room_stats[rm]["other"] += 1
+
+        for idx, rm in enumerate(all_rooms, start=3):
+            st = room_stats[rm]
+            rtype = "Computer Lab" if ("604" in rm or "AFTF" in rm or "611" in rm or "612" in rm) else "Classroom"
+            cap = 72 if "AFTF" in rm else (60 if "Lab" in rtype else 66)
+            util_pct = round((st["total"] / 48.0) * 100, 1)
+
+            ws.append([rm, rtype, cap, st["total"], f"{util_pct}%", st["mon"], st["tue"], st["wed"], st["other"]])
+
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        return buffer.getvalue()
