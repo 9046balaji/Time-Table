@@ -1,7 +1,9 @@
 from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from app.models.timetable import TimetableVersion, TimetableEntry
+from app.models.timetable_entry_faculty import TimetableEntryFaculty
 from app.models.section import Section
 from app.models.room import Room
 from app.models.time_slot import TimeSlot
@@ -15,35 +17,45 @@ class TimetableService:
         version_id: int = 5,
         section_name: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Fetch timetable entries from DB asynchronously for a given version."""
+        """Fetch timetable entries from DB asynchronously with high-performance selectinload eager loading."""
         result = []
         if db is not None:
             try:
-                stmt = select(TimetableEntry, Section, TimeSlot, Room)\
-                    .outerjoin(Section, TimetableEntry.section_id == Section.id)\
-                    .outerjoin(TimeSlot, TimetableEntry.time_slot_id == TimeSlot.id)\
-                    .outerjoin(Room, TimetableEntry.room_id == Room.id)\
+                stmt = select(TimetableEntry)\
+                    .options(
+                        selectinload(TimetableEntry.section),
+                        selectinload(TimetableEntry.time_slot),
+                        selectinload(TimetableEntry.room),
+                        selectinload(TimetableEntry.subject),
+                        selectinload(TimetableEntry.faculty_assignments).selectinload(TimetableEntryFaculty.faculty)
+                    )\
                     .where(TimetableEntry.timetable_version_id == version_id)
 
                 if section_name and section_name.upper() != "ALL":
-                    stmt = stmt.where(Section.name == section_name)
+                    stmt = stmt.join(Section, TimetableEntry.section_id == Section.id)\
+                               .where(Section.name == section_name)
 
                 res = await db.execute(stmt)
-                rows = res.all()
-                for e, sec, ts, rm in rows:
-                    sec_name = sec.name if sec else "II AIML-A"
-                    day_val = ts.day if ts else "MON"
-                    period_val = ts.period if ts else 1
-                    room_val = rm.code if rm else (e.raw_room_text or "")
+                entries = res.scalars().all()
+
+                for e in entries:
+                    sec_name = e.section.name if e.section else "II AIML-A"
+                    day_val = e.time_slot.day if e.time_slot else "MON"
+                    period_val = e.time_slot.period if e.time_slot else 1
+                    room_val = e.room.code if e.room else (e.raw_room_text or "")
                     
+                    fac_names = [fa.faculty.name for fa in e.faculty_assignments if fa.faculty]
+                    if not fac_names and e.raw_faculty_text:
+                        fac_names = e.raw_faculty_text.split(", ")
+
                     result.append({
                         "id": e.id,
                         "section": sec_name,
                         "day": day_val,
                         "period": period_val,
-                        "subject": e.raw_subject_text or "DS",
+                        "subject": e.subject.code if e.subject else (e.raw_subject_text or "DS"),
                         "room": room_val,
-                        "faculty": e.raw_faculty_text.split(", ") if e.raw_faculty_text else [],
+                        "faculty": fac_names,
                         "entry_type": e.entry_type or "L",
                         "span_periods": e.span_periods or 1
                     })
@@ -101,27 +113,34 @@ class TimetableService:
                     if fac_obj:
                         target_name = fac_obj.name
 
-                stmt = select(TimetableEntry, Section, TimeSlot, Room)\
-                    .outerjoin(Section, TimetableEntry.section_id == Section.id)\
-                    .outerjoin(TimeSlot, TimetableEntry.time_slot_id == TimeSlot.id)\
-                    .outerjoin(Room, TimetableEntry.room_id == Room.id)\
+                stmt = select(TimetableEntry)\
+                    .options(
+                        selectinload(TimetableEntry.section),
+                        selectinload(TimetableEntry.time_slot),
+                        selectinload(TimetableEntry.room),
+                        selectinload(TimetableEntry.subject),
+                        selectinload(TimetableEntry.faculty_assignments).selectinload(TimetableEntryFaculty.faculty)
+                    )\
                     .where(TimetableEntry.timetable_version_id == version_id)
 
                 res = await db.execute(stmt)
-                rows = res.all()
-                for e, sec, ts, rm in rows:
+                entries = res.scalars().all()
+                for e in entries:
                     raw_fac = e.raw_faculty_text or ""
+                    fac_names = [fa.faculty.name for fa in e.faculty_assignments if fa.faculty]
                     is_match = (faculty_id and e.faculty_ids and faculty_id in e.faculty_ids) or \
-                               is_fac_match(target_name, raw_fac)
+                               any(fa.faculty_id == faculty_id for fa in e.faculty_assignments) or \
+                               is_fac_match(target_name, raw_fac) or \
+                               any(is_fac_match(target_name, fn) for fn in fac_names)
                     if is_match:
                         result.append({
                             "id": e.id,
-                            "section": sec.name if sec else "II AIML-A",
-                            "day": ts.day if ts else "MON",
-                            "period": ts.period if ts else 1,
-                            "subject": e.raw_subject_text or "",
-                            "room": rm.code if rm else (e.raw_room_text or ""),
-                            "faculty": raw_fac.split(", "),
+                            "section": e.section.name if e.section else "II AIML-A",
+                            "day": e.time_slot.day if e.time_slot else "MON",
+                            "period": e.time_slot.period if e.time_slot else 1,
+                            "subject": e.subject.code if e.subject else (e.raw_subject_text or ""),
+                            "room": e.room.code if e.room else (e.raw_room_text or ""),
+                            "faculty": fac_names if fac_names else raw_fac.split(", "),
                             "entry_type": e.entry_type or "L"
                         })
             except Exception as ex:
