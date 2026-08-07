@@ -1,7 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Download, FileSpreadsheet, FileText, Printer, Cpu, CheckCircle2, Loader2, Sparkles, UserCheck, Layers, LayoutGrid, Award } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Printer,
+  Cpu,
+  CheckCircle2,
+  Loader2,
+  Sparkles,
+  UserCheck,
+  Layers,
+  LayoutGrid,
+  Award,
+  FileCode,
+  Building2,
+  Search,
+  AlertCircle
+} from 'lucide-react';
 import { timetableApi } from '@/lib/api';
 import { Faculty } from '@/lib/types';
 
@@ -12,6 +29,8 @@ export default function ExportPage() {
   const [downloadingSectionPdfs, setDownloadingSectionPdfs] = useState(false);
   const [downloadingFacultyPdfs, setDownloadingFacultyPdfs] = useState(false);
   const [downloadingSingleFacultyPdf, setDownloadingSingleFacultyPdf] = useState(false);
+  const [downloadingJson, setDownloadingJson] = useState(false);
+  const [downloadingRoomUtilization, setDownloadingRoomUtilization] = useState(false);
   const [syncingSmartClass, setSyncingSmartClass] = useState(false);
   const [syncResult, setSyncResult] = useState<any>(null);
 
@@ -23,6 +42,7 @@ export default function ExportPage() {
 
   const [facultyList, setFacultyList] = useState<Faculty[]>([]);
   const [selectedFacultyId, setSelectedFacultyId] = useState<number | null>(null);
+  const [facultySearchQuery, setFacultySearchQuery] = useState("");
 
   useEffect(() => {
     timetableApi.getVersions()
@@ -85,6 +105,12 @@ export default function ExportPage() {
       });
   }, []);
 
+  const filteredFacultyList = useMemo(() => {
+    if (!facultySearchQuery) return facultyList;
+    const q = facultySearchQuery.toLowerCase();
+    return facultyList.filter(f => f.name.toLowerCase().includes(q) || (f.designation || '').toLowerCase().includes(q));
+  }, [facultyList, facultySearchQuery]);
+
   const handleExportExcel = async () => {
     setDownloadingExcel(true);
     try {
@@ -96,9 +122,10 @@ export default function ExportPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      setSyncResult({ message: `Downloaded Master Excel workbook for Version V${selectedVersionId}.`, synced_at: new Date().toLocaleTimeString() });
+      setSyncResult({ status: 'SUCCESS', message: `Downloaded Master Excel workbook for Version V${selectedVersionId}.`, synced_at: new Date().toLocaleTimeString() });
     } catch (err) {
       console.error('Failed to export Excel', err);
+      setSyncResult({ status: 'ERROR', message: 'Failed to download Master Excel workbook.', synced_at: new Date().toLocaleTimeString() });
     } finally {
       setDownloadingExcel(false);
     }
@@ -117,9 +144,10 @@ export default function ExportPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      setSyncResult({ message: `Downloaded Cohort Consolidated Excel (${cohortObj?.label || selectedCohortKey}) for Version V${selectedVersionId}.`, synced_at: new Date().toLocaleTimeString() });
+      setSyncResult({ status: 'SUCCESS', message: `Downloaded Cohort Consolidated Excel (${cohortObj?.label || selectedCohortKey}) for Version V${selectedVersionId}.`, synced_at: new Date().toLocaleTimeString() });
     } catch (err) {
       console.error('Failed to export Cohort Excel', err);
+      setSyncResult({ status: 'ERROR', message: 'Failed to download Cohort Excel workbook.', synced_at: new Date().toLocaleTimeString() });
     } finally {
       setDownloadingCohortExcel(false);
     }
@@ -136,9 +164,10 @@ export default function ExportPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      setSyncResult({ message: `Downloaded Minors & Honors Department Master Allocation Sheet for Version V${selectedVersionId}.`, synced_at: new Date().toLocaleTimeString() });
+      setSyncResult({ status: 'SUCCESS', message: `Downloaded Minors & Honors Department Master Allocation Sheet for Version V${selectedVersionId}.`, synced_at: new Date().toLocaleTimeString() });
     } catch (err) {
       console.error('Failed to export Minors/Honors Excel', err);
+      setSyncResult({ status: 'ERROR', message: 'Failed to download Minors & Honors Excel sheet.', synced_at: new Date().toLocaleTimeString() });
     } finally {
       setDownloadingMinorsHonors(false);
     }
@@ -155,9 +184,10 @@ export default function ExportPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      setSyncResult({ message: `Downloaded printable section PDF schedules for Version V${selectedVersionId}.`, synced_at: new Date().toLocaleTimeString() });
+      setSyncResult({ status: 'SUCCESS', message: `Downloaded printable section PDF schedules for Version V${selectedVersionId}.`, synced_at: new Date().toLocaleTimeString() });
     } catch (err) {
       console.error('Failed to export Section PDFs', err);
+      setSyncResult({ status: 'ERROR', message: 'Failed to export Section PDFs.', synced_at: new Date().toLocaleTimeString() });
     } finally {
       setDownloadingSectionPdfs(false);
     }
@@ -174,9 +204,10 @@ export default function ExportPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      setSyncResult({ message: `Downloaded master faculty weekly teaching schedule PDFs for Version V${selectedVersionId}.`, synced_at: new Date().toLocaleTimeString() });
+      setSyncResult({ status: 'SUCCESS', message: `Downloaded master faculty weekly teaching schedule PDFs for Version V${selectedVersionId}.`, synced_at: new Date().toLocaleTimeString() });
     } catch (err) {
       console.error('Failed to export Faculty PDFs', err);
+      setSyncResult({ status: 'ERROR', message: 'Failed to export Faculty PDF booklet.', synced_at: new Date().toLocaleTimeString() });
     } finally {
       setDownloadingFacultyPdfs(false);
     }
@@ -196,11 +227,54 @@ export default function ExportPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      setSyncResult({ message: `Downloaded individual PDF schedule for ${facObj?.name || 'Faculty Member'} (V${selectedVersionId}).`, synced_at: new Date().toLocaleTimeString() });
+      setSyncResult({ status: 'SUCCESS', message: `Downloaded individual PDF schedule for ${facObj?.name || 'Faculty Member'} (V${selectedVersionId}).`, synced_at: new Date().toLocaleTimeString() });
     } catch (err) {
       console.error('Failed to export Single Faculty PDF', err);
+      setSyncResult({ status: 'ERROR', message: 'Failed to export individual faculty PDF.', synced_at: new Date().toLocaleTimeString() });
     } finally {
       setDownloadingSingleFacultyPdf(false);
+    }
+  };
+
+  const handleExportJson = async () => {
+    setDownloadingJson(true);
+    try {
+      const res = await timetableApi.exportJson(selectedVersionId);
+      const jsonStr = JSON.stringify(res.data, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `VFSTR_V${selectedVersionId}_Master_Timetable.json`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setSyncResult({ status: 'SUCCESS', message: `Exported raw JSON structure for Version V${selectedVersionId}.`, synced_at: new Date().toLocaleTimeString() });
+    } catch (err) {
+      console.error('Failed to export JSON', err);
+      setSyncResult({ status: 'ERROR', message: 'Failed to export JSON timetable structure.', synced_at: new Date().toLocaleTimeString() });
+    } finally {
+      setDownloadingJson(false);
+    }
+  };
+
+  const handleExportRoomUtilization = async () => {
+    setDownloadingRoomUtilization(true);
+    try {
+      const response = await timetableApi.exportRoomUtilization(selectedVersionId);
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `VFSTR_V${selectedVersionId}_Room_Utilization_Report.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setSyncResult({ status: 'SUCCESS', message: `Downloaded Room Utilization Matrix for Version V${selectedVersionId}.`, synced_at: new Date().toLocaleTimeString() });
+    } catch (err) {
+      console.error('Failed to export Room Utilization Report', err);
+      setSyncResult({ status: 'ERROR', message: 'Failed to generate Room Utilization Report.', synced_at: new Date().toLocaleTimeString() });
+    } finally {
+      setDownloadingRoomUtilization(false);
     }
   };
 
@@ -208,9 +282,10 @@ export default function ExportPage() {
     setSyncingSmartClass(true);
     try {
       const res = await timetableApi.syncSmartClass();
-      setSyncResult(res.data);
+      setSyncResult({ ...res.data, status: 'SUCCESS' });
     } catch (err) {
       console.error('Failed to sync SmartClass', err);
+      setSyncResult({ status: 'ERROR', message: 'Failed to connect to SmartClass camera nodes.', synced_at: new Date().toLocaleTimeString() });
     } finally {
       setSyncingSmartClass(false);
     }
@@ -223,24 +298,24 @@ export default function ExportPage() {
   return (
     <div className="space-y-6 w-full max-w-full pb-12">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Multi-Version & Cohort Timetable Export Center</h1>
-        <p className="text-sm text-slate-500">
-          Download Year & Branch Cohort Excel files with Combined Master View sheets, Minors/Honors master allocation sheets, section PDFs, or sync to SmartClass AI camera nodes.
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Multi-Version & Cohort Timetable Export Center</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Download Year & Branch Cohort Excel workbooks, Minors/Honors allocation sheets, Section/Faculty PDFs, JSON structures, or sync to SmartClass AI camera nodes.
         </p>
       </div>
 
       {/* Version Selector Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl border border-blue-200">
+          <div className="p-2.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 rounded-xl border border-blue-200 dark:border-blue-800/60">
             <Layers className="w-5 h-5" />
           </div>
           <div>
-            <label className="text-xs font-bold text-slate-700 block">Database Timetable Version:</label>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Database Timetable Version Track:</label>
             <select
               value={selectedVersionId}
               onChange={(e) => setSelectedVersionId(Number(e.target.value))}
-              className="bg-slate-50 border border-slate-300 text-slate-900 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer mt-0.5"
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-4 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer mt-0.5"
             >
               {versions.map(v => (
                 <option key={v.id} value={v.id}>
@@ -252,8 +327,8 @@ export default function ExportPage() {
         </div>
 
         {selectedVersionObj && (
-          <div className="text-xs text-slate-600 font-semibold bg-slate-50 px-4 py-2 rounded-xl border border-slate-200">
-            <span className="text-blue-700 font-bold">Active Selection:</span> Version {selectedVersionObj.version_label} ({selectedVersionObj.effective_date}) • {selectedVersionObj.notes}
+          <div className="text-xs text-slate-600 dark:text-slate-300 font-semibold bg-slate-50 dark:bg-slate-800/60 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800">
+            <span className="text-blue-700 dark:text-blue-400 font-bold">Active Selection:</span> Version {selectedVersionObj.version_label} ({selectedVersionObj.effective_date}) • {selectedVersionObj.notes}
           </div>
         )}
       </div>
@@ -295,12 +370,20 @@ export default function ExportPage() {
       </div>
 
       {syncResult && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-sm animate-in fade-in">
+        <div className={`p-4 rounded-xl border text-xs font-semibold flex items-center justify-between shadow-sm animate-in fade-in ${
+          syncResult.status === 'ERROR'
+            ? 'bg-red-50 dark:bg-red-950/60 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
+            : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+        }`}>
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            {syncResult.status === 'ERROR' ? (
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            )}
             <span>{syncResult.message}</span>
           </div>
-          <span className="text-[11px] text-emerald-600 font-mono">{syncResult.synced_at}</span>
+          <span className="text-[11px] font-mono opacity-80">{syncResult.synced_at}</span>
         </div>
       )}
 
@@ -384,12 +467,24 @@ export default function ExportPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3">
+            {/* Faculty Search Filter */}
+            <div className="relative w-full sm:w-44">
+              <Search className="w-3.5 h-3.5 text-purple-300 absolute left-2.5 top-3" />
+              <input
+                type="text"
+                placeholder="Search faculty..."
+                value={facultySearchQuery}
+                onChange={(e) => setFacultySearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 bg-purple-950/60 border border-purple-400/40 rounded-xl text-xs font-bold text-white placeholder-purple-300 focus:outline-none"
+              />
+            </div>
+
             <select
               value={selectedFacultyId || ''}
               onChange={(e) => setSelectedFacultyId(Number(e.target.value))}
-              className="bg-white text-slate-900 text-xs font-bold px-4 py-2.5 rounded-xl border border-purple-300 focus:outline-none cursor-pointer w-full sm:w-auto"
+              className="bg-white text-slate-900 text-xs font-bold px-4 py-2.5 rounded-xl border border-purple-300 focus:outline-none cursor-pointer w-full sm:w-auto max-w-xs"
             >
-              {facultyList.map(f => (
+              {filteredFacultyList.map(f => (
                 <option key={f.id} value={f.id}>{f.name} ({f.designation})</option>
               ))}
             </select>
@@ -409,64 +504,105 @@ export default function ExportPage() {
       {/* Export Options Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Department Master Excel Export */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
           <div>
-            <div className="p-3 bg-emerald-50 rounded-xl w-fit mb-4 border border-emerald-100">
-              <FileSpreadsheet className="w-6 h-6 text-emerald-600" />
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 rounded-xl w-fit mb-4 border border-emerald-100 dark:border-emerald-800">
+              <FileSpreadsheet className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <h3 className="font-bold text-slate-900 text-base mb-2">Master Department Excel (.xlsx - V{selectedVersionId})</h3>
-            <p className="text-xs text-slate-500 mb-6">
+            <h3 className="font-bold text-slate-900 dark:text-white text-base mb-2">Master Department Excel (.xlsx - V{selectedVersionId})</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
               Full department workbook containing 40+ individual section tabs (`II AIML-A`, `III CS`), room codes in cells, and faculty legend below each table.
             </p>
           </div>
           <button
             onClick={handleExportExcel}
             disabled={downloadingExcel}
-            className="w-full inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full inline-flex items-center justify-center gap-2 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50"
           >
             {downloadingExcel ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Download Master Excel (V{selectedVersionId})
           </button>
         </div>
 
         {/* Section PDFs */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
           <div>
-            <div className="p-3 bg-blue-50 rounded-xl w-fit mb-4 border border-blue-100">
-              <FileText className="w-6 h-6 text-blue-600" />
+            <div className="p-3 bg-blue-50 dark:bg-blue-950/60 rounded-xl w-fit mb-4 border border-blue-100 dark:border-blue-800">
+              <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 className="font-bold text-slate-900 text-base mb-2">Printable Section PDFs (V{selectedVersionId})</h3>
-            <p className="text-xs text-slate-500 mb-6">
+            <h3 className="font-bold text-slate-900 dark:text-white text-base mb-2">Printable Section PDFs (V{selectedVersionId})</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
               Generates 40+ single-page A4 printable PDF schedules with rich subject, room, and faculty details for classroom notice boards.
             </p>
           </div>
           <button
             onClick={handleExportSectionPdfs}
             disabled={downloadingSectionPdfs}
-            className="w-full inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full inline-flex items-center justify-center gap-2 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50"
           >
             {downloadingSectionPdfs ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Generate Section PDFs (V{selectedVersionId})
           </button>
         </div>
 
         {/* Master Faculty Schedules Booklet */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
           <div>
-            <div className="p-3 bg-purple-50 rounded-xl w-fit mb-4 border border-purple-100">
-              <Printer className="w-6 h-6 text-purple-600" />
+            <div className="p-3 bg-purple-50 dark:bg-purple-950/60 rounded-xl w-fit mb-4 border border-purple-100 dark:border-purple-800">
+              <Printer className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
-            <h3 className="font-bold text-slate-900 text-base mb-2">Faculty Booklet (V{selectedVersionId})</h3>
-            <p className="text-xs text-slate-500 mb-6">
+            <h3 className="font-bold text-slate-900 dark:text-white text-base mb-2">Faculty Booklet (V{selectedVersionId})</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
               Full department 80+ page master PDF booklet containing individual teaching schedule pages for all faculty members.
             </p>
           </div>
           <button
             onClick={handleExportFacultyPdfs}
             disabled={downloadingFacultyPdfs}
-            className="w-full inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full inline-flex items-center justify-center gap-2 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50"
           >
             {downloadingFacultyPdfs ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />} Export Faculty Booklet (V{selectedVersionId})
           </button>
         </div>
+
+        {/* Raw JSON Structure Export */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+          <div>
+            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/60 rounded-xl w-fit mb-4 border border-indigo-100 dark:border-indigo-800">
+              <FileCode className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h3 className="font-bold text-slate-900 dark:text-white text-base mb-2">Raw JSON Structure (.json - V{selectedVersionId})</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+              Export raw JSON timetable structure matching TimetableEntry Pydantic schemas for external API integrations and automated mobile apps.
+            </p>
+          </div>
+          <button
+            onClick={handleExportJson}
+            disabled={downloadingJson}
+            className="w-full inline-flex items-center justify-center gap-2 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50"
+          >
+            {downloadingJson ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Export Raw JSON (V{selectedVersionId})
+          </button>
+        </div>
+
+        {/* Room Utilization Matrix Report */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+          <div>
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/60 rounded-xl w-fit mb-4 border border-amber-100 dark:border-amber-800">
+              <Building2 className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h3 className="font-bold text-slate-900 dark:text-white text-base mb-2">Room Utilization Report (.xlsx - V{selectedVersionId})</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+              Generate room occupancy and utilization percentage matrix across all 35 computer labs and lecture classrooms for campus administration.
+            </p>
+          </div>
+          <button
+            onClick={handleExportRoomUtilization}
+            disabled={downloadingRoomUtilization}
+            className="w-full inline-flex items-center justify-center gap-2 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50"
+          >
+            {downloadingRoomUtilization ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Download Room Report (V{selectedVersionId})
+          </button>
+        </div>
+
       </div>
     </div>
   );
