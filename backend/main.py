@@ -24,12 +24,17 @@ async def lifespan(app: FastAPI):
     yield
 
 
+from app.core.exceptions import DomainException, rfc7807_domain_exception_handler
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan
 )
+
+app.add_exception_handler(DomainException, rfc7807_domain_exception_handler)
 
 # CORS configuration with explicit origins when allow_credentials=True
 app.add_middleware(
