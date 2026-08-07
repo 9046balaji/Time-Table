@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Calendar, Upload, Settings, Download, Cpu, FlaskConical } from 'lucide-react';
+import { LayoutDashboard, Calendar, Upload, Settings, Download, Cpu, FlaskConical, User } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: '/import', label: 'Import Excel', icon: Upload },
   { href: '/configure', label: 'Data Management', icon: Settings },
   { href: '/export', label: 'Export Options', icon: Download },
+  { href: '/settings', label: 'System Settings', icon: User },
 ];
 
 interface SidebarProps {

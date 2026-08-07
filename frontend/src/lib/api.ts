@@ -104,4 +104,5 @@ export const timetableApi = {
   exportJson: (versionId: number = 5) => api.get(`/api/v1/export/json?version_id=${versionId}`),
   exportRoomUtilization: (versionId: number = 5) =>
     api.get(`/api/v1/export/room-utilization?version_id=${versionId}`, { responseType: 'blob' }),
+  getTelemetryMetrics: () => api.get('/api/v1/telemetry/metrics'),
 };
