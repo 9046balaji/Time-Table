@@ -176,6 +176,16 @@ export const CurriculumMasterProfile: React.FC<CurriculumMasterProfileProps> = (
     });
   }, [subjectList, searchQuery, yearFilter, branchFilter, sortBy]);
 
+  // Auto-sync selectedSubjectId if current selection is filtered out
+  React.useEffect(() => {
+    if (filteredSubjects.length > 0) {
+      const exists = filteredSubjects.some((s) => s.id === selectedSubjectId);
+      if (!exists) {
+        setSelectedSubjectId(filteredSubjects[0].id);
+      }
+    }
+  }, [filteredSubjects, selectedSubjectId]);
+
 
   // Practical Labs subset
   const labSubjects = useMemo(() => {
