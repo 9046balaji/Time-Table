@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Users,
   Search,
@@ -20,9 +20,11 @@ import {
   Shield,
   FileText,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 import { Faculty, Subject, Section } from "@/lib/types";
+import { timetableApi } from "@/lib/api";
 
 interface FacultyMasterProfileProps {
   facultyList: Faculty[];
@@ -50,6 +52,8 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
 
   // Selected Faculty for Slide-Over Drawer
   const [selectedFaculty, setSelectedFaculty] = useState<Faculty | null>(null);
+  const [facultySchedule, setFacultySchedule] = useState<any[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
 
   // Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
@@ -66,6 +70,22 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
     is_external: false,
     subjects_taught_str: ""
   });
+
+  // Fetch teaching schedule whenever selectedFaculty changes
+  useEffect(() => {
+    if (selectedFaculty && selectedFaculty.id) {
+      setLoadingSchedule(true);
+      timetableApi.getFacultyTimetable(selectedFaculty.id)
+        .then((res) => {
+          const items = Array.isArray(res.data) ? res.data : (res.data as any)?.entries || (res.data as any)?.items || [];
+          setFacultySchedule(items);
+        })
+        .catch(() => setFacultySchedule([]))
+        .finally(() => setLoadingSchedule(false));
+    } else {
+      setFacultySchedule([]);
+    }
+  }, [selectedFaculty]);
 
   const handleOpenAddModal = () => {
     setEditingFaculty(null);
@@ -158,6 +178,11 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
       });
   }, [facultyList, searchQuery, quickFilter, sortBy]);
 
+  // Helper to find scheduled teaching slot for selected faculty
+  const getScheduledSlot = (day: string, period: number) => {
+    return facultySchedule.find((s) => s.day === day && Number(s.period) === period);
+  };
+
   return (
     <div className="space-y-6">
 
@@ -171,7 +196,7 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Click any instructor card to open their Slide-Over Dossier, teaching schedule, and availability grid.
+            Click any instructor card to open their Slide-Over Dossier, active teaching schedule, and availability grid.
           </p>
         </div>
 
@@ -198,7 +223,7 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
 
         <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Filters:</span>
-          
+
           <button
             onClick={() => setQuickFilter("ALL")}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
@@ -337,7 +362,7 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
         <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 backdrop-blur-sm flex justify-end animate-in fade-in">
           <div className="w-full max-w-xl bg-white dark:bg-slate-900 h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-200 border-l border-slate-200 dark:border-slate-800">
             <div className="space-y-6">
-              
+
               {/* Drawer Top Header */}
               <div className="flex justify-between items-start pb-4 border-b border-slate-200 dark:border-slate-800">
                 <div>
@@ -357,14 +382,14 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
               <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
                 <div className="flex justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
                   <span>Weekly Teaching Workload</span>
-                  <span>{(selectedFaculty.current_weekly_hours ?? selectedFaculty.hours_this_week ?? 12)} / {(selectedFaculty.max_hours_per_week ?? 16)} Hours</span>
+                  <span>{facultySchedule.length || (selectedFaculty.current_weekly_hours ?? selectedFaculty.hours_this_week ?? 12)} / {(selectedFaculty.max_hours_per_week ?? 16)} Hours</span>
                 </div>
                 <div className="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full ${
-                      (selectedFaculty.current_weekly_hours ?? 12) > (selectedFaculty.max_hours_per_week ?? 16) ? "bg-red-500" : "bg-emerald-500"
+                      (facultySchedule.length || 12) > (selectedFaculty.max_hours_per_week ?? 16) ? "bg-red-500" : "bg-blue-600"
                     }`}
-                    style={{ width: `${Math.min((((selectedFaculty.current_weekly_hours ?? 12) / (selectedFaculty.max_hours_per_week ?? 16)) * 100), 100)}%` }}
+                    style={{ width: `${Math.min((((facultySchedule.length || 12) / (selectedFaculty.max_hours_per_week ?? 16)) * 100), 100)}%` }}
                   />
                 </div>
               </div>
@@ -398,27 +423,49 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
                 </div>
               </div>
 
-              {/* Interactive Weekly Availability Matrix Preview */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Weekly Available Periods</h4>
-                <div className="grid grid-cols-6 gap-1 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+              {/* Actual Assigned Weekly Teaching Schedule Grid */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Teaching Schedule & Assigned Periods</h4>
+                  {loadingSchedule && <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin" />}
+                </div>
+
+                <div className="grid grid-cols-6 gap-1.5 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
                   {DAYS.map((day) => (
                     <div key={day} className="text-center">
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{day}</span>
-                      <div className="mt-1 space-y-1">
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map((p) => (
-                          <div
-                            key={p}
-                            className="w-full h-4 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold flex items-center justify-center border border-emerald-500/30"
-                          >
-                            P{p}
-                          </div>
-                        ))}
+                      <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1.5">{day}</span>
+                      <div className="space-y-1.5">
+                        {PERIODS.map((p) => {
+                          const slot = getScheduledSlot(day, p);
+                          if (slot) {
+                            return (
+                              <div
+                                key={p}
+                                title={`${slot.subject || "Teaching Slot"} (${slot.section || ""}) - Room ${slot.room || ""}`}
+                                className="w-full py-1.5 px-1 rounded-lg bg-blue-600 text-white text-[9px] font-extrabold shadow-sm border border-blue-700 leading-tight truncate"
+                              >
+                                <span className="block font-black">{slot.subject || `P${p}`}</span>
+                                <span className="block opacity-90 text-[8px] font-medium">{slot.section || ""}</span>
+                                <span className="block opacity-75 text-[7.5px] font-mono">{slot.room || ""}</span>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div
+                              key={p}
+                              className="w-full py-1.5 px-1 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[9px] font-semibold flex items-center justify-center border border-emerald-500/25"
+                            >
+                              Free
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
+
             </div>
 
             {/* Footer Buttons */}
