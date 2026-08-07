@@ -174,6 +174,23 @@ class TimetableService:
         }
 
     @staticmethod
+    async def get_room_timetable(db: Any = None, room_code: str = "601", version_id: int = 5) -> Dict[str, Any]:
+        """Fetch weekly occupancy schedule for a specific venue/room code."""
+        all_tt = await TimetableService.get_version_timetable(db, version_id=version_id, section_name="ALL")
+        entries = all_tt.get("entries", [])
+        matched = [
+            e for e in entries
+            if str(e.get("room", "")).strip().upper() == str(room_code).strip().upper()
+        ]
+        return {
+            "room_code": room_code,
+            "occupied_slots": len(matched),
+            "total_weekly_slots": 48,
+            "utilization_pct": round((len(matched) / 48.0) * 100, 1),
+            "entries": matched
+        }
+
+    @staticmethod
     async def update_entry_slot(
         db: AsyncSession,
         entry_id: int,
