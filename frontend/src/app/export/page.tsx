@@ -221,7 +221,7 @@ export default function ExportPage() {
   const selectedCohortObj = cohortGroups.find(c => c.key === selectedCohortKey);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 w-full max-w-full pb-12">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Multi-Version & Cohort Timetable Export Center</h1>
         <p className="text-sm text-slate-500">
