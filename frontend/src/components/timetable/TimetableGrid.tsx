@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Maximize2, Minimize2 } from "lucide-react";
 
 export interface SlotEntry {
   id: string;
@@ -25,6 +25,8 @@ interface TimetableGridProps {
   onSlotSwap?: (draggedEntryId: string, targetDay: string, targetPeriod: number) => void;
   showDownloadBtn?: boolean;
   onDownloadPdf?: () => void;
+  isFullWidth?: boolean;
+  onToggleFullWidth?: () => void;
 }
 
 const PERIODS = [
@@ -116,6 +118,8 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
   onSlotSwap,
   showDownloadBtn,
   onDownloadPdf,
+  isFullWidth,
+  onToggleFullWidth,
 }) => {
   const [draggedSlotId, setDraggedSlotId] = useState<string | null>(null);
 
@@ -168,17 +172,23 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
   };
 
   return (
-    <div className="w-full overflow-x-auto rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm transition-colors print:shadow-none print:border-slate-400">
+    <div className="w-full overflow-x-auto rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm transition-all print:shadow-none print:border-slate-400">
 
       {/* Academic Year + Section Banner */}
-      <div className="text-center pt-3 pb-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-        <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 tracking-wide">
-          Academic year 2026-27 (I Semester)
-        </div>
-        <div className="mt-1.5 flex items-center justify-center gap-3">
-          <div className="bg-purple-200 dark:bg-purple-900/70 border border-purple-400 dark:border-purple-700 text-purple-950 dark:text-purple-100 font-extrabold text-sm py-1.5 px-8 inline-block rounded-md shadow-sm uppercase tracking-widest">
-            {sectionName}
+      <div className="pt-3 pb-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4">
+        <div className="w-24"></div>
+        <div className="flex-1 text-center">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 tracking-wide">
+            Academic year 2026-27 (I Semester)
           </div>
+          <div className="mt-1.5 flex items-center justify-center gap-3">
+            <div className="bg-purple-200 dark:bg-purple-900/70 border border-purple-400 dark:border-purple-700 text-purple-950 dark:text-purple-100 font-extrabold text-sm py-1.5 px-8 inline-block rounded-md shadow-sm uppercase tracking-widest">
+              {sectionName}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 w-24 justify-end">
           {showDownloadBtn && onDownloadPdf && (
             <button
               onClick={onDownloadPdf}
@@ -186,6 +196,16 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
               className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 dark:text-blue-300 hover:underline cursor-pointer px-2 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
             >
               <Download className="w-3.5 h-3.5" /> PDF
+            </button>
+          )}
+
+          {onToggleFullWidth && (
+            <button
+              onClick={onToggleFullWidth}
+              title={isFullWidth ? "Collapse Grid View" : "Expand Timetable Grid to Full Screen Width"}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-2 py-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+            >
+              {isFullWidth ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             </button>
           )}
         </div>
