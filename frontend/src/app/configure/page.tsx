@@ -309,7 +309,7 @@ export default function ConfigurePage() {
   }, [subjectList, searchQuery]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 w-full max-w-full pb-12">
       {/* Toast Notification Banner */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-xl border text-xs font-bold transition-all ${
