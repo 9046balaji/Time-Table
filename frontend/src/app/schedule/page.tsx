@@ -27,6 +27,7 @@ import {
   PanelRightClose
 } from "lucide-react";
 import { TimetableGrid, SlotEntry } from "@/components/timetable/TimetableGrid";
+import { SlotEditorModal } from "@/components/timetable/SlotEditorModal";
 import { timetableApi } from "@/lib/api";
 import { Faculty } from "@/lib/types";
 import { useSolver } from "@/hooks/useSolver";
@@ -44,6 +45,12 @@ export default function SchedulePage() {
   const [cohortAllSlots, setCohortAllSlots] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSidePanelCollapsed, setIsSidePanelCollapsed] = useState(false);
+
+  // Slot Editor Modal State
+  const [editingSlot, setEditingSlot] = useState<SlotEntry | null>(null);
+  const [isSlotEditorOpen, setIsSlotEditorOpen] = useState(false);
+  const [roomList, setRoomList] = useState<any[]>([]);
+  const [subjectList, setSubjectList] = useState<any[]>([]);
 
   // Versions tracking
   const [versions, setVersions] = useState<any[]>([]);
@@ -118,6 +125,16 @@ export default function SchedulePage() {
       setFacultyList(facs);
       if (facs.length > 0) setSelectedFacultyId(facs[0].id);
     });
+
+    timetableApi.getRooms().then(res => {
+      const rms = Array.isArray(res.data) ? res.data : ((res.data as any)?.items || []);
+      setRoomList(rms);
+    }).catch(() => setRoomList([]));
+
+    timetableApi.getSubjects().then(res => {
+      const subs = Array.isArray(res.data) ? res.data : ((res.data as any)?.items || []);
+      setSubjectList(subs);
+    }).catch(() => setSubjectList([]));
   }, []);
 
   // Filtered & Sorted Sections List
@@ -420,6 +437,63 @@ export default function SchedulePage() {
       }
     }
   }, [processedFacultyList, selectedFacultyId]);
+  // Interactive Cell Click & Slot Editor Handlers
+  const handleCellClick = (slot: SlotEntry) => {
+    setEditingSlot(slot);
+    setIsSlotEditorOpen(true);
+  };
+
+  const handleSaveSlotModal = async (updatedData: any) => {
+    try {
+      await timetableApi.updateSlot(updatedData);
+      setToastMessage(`Updated slot for ${updatedData.section_name} on ${updatedData.day} Period ${updatedData.period}`);
+      setTimeout(() => setToastMessage(null), 4000);
+
+      // Refresh slots
+      const targetSecName = mode === 'stack' ? 'ALL' : selectedSection;
+      const res = await timetableApi.getTimetable(selectedVersionId, targetSecName);
+      const rawSlots = res.data.slots || res.data.entries || [];
+      setCohortAllSlots(rawSlots);
+      const mapped: SlotEntry[] = rawSlots.map((s: any, idx: number) => {
+        const facList: string[] = Array.isArray(s.faculty)
+          ? s.faculty.map((f: any) => String(f))
+          : (Array.isArray(s.faculty_names)
+              ? s.faculty_names.map((f: any) => String(f))
+              : (typeof s.faculty === 'string' && s.faculty ? [s.faculty] : []));
+
+        const facStr: string = typeof s.faculty === 'string'
+          ? s.faculty
+          : (facList.length > 0 ? facList.join(', ') : '');
+
+        const subjStr: string = String(s.subject || s.subject_code || 'LECTURE');
+
+        return {
+          id: String(s.id || idx),
+          day: s.day,
+          period: s.period,
+          subjectCode: subjStr,
+          roomCode: String(s.room || s.room_code || ''),
+          facultyName: facStr,
+          facultyNames: facList,
+          sectionName: String(s.section || s.section_name || ''),
+          subjectType: subjStr.includes('(P)') ? 'P' : (subjStr.includes('(T)') ? 'T' : 'L'),
+          spanPeriods: subjStr.includes('(P)') ? 2 : 1,
+          hasClash: Boolean(s.has_clash),
+          clashReason: String(s.clash_reason || ''),
+        };
+      });
+      setEntries(mapped);
+    } catch (err) {
+      console.error("Failed to update slot:", err);
+    }
+  };
+
+  const handleDeleteSlotModal = async (entryId: string) => {
+    setEntries(prev => prev.filter(e => e.id !== entryId));
+    setCohortAllSlots(prev => prev.filter(e => String(e.id) !== String(entryId)));
+    setToastMessage("Slot assignment cleared.");
+    setTimeout(() => setToastMessage(null), 4000);
+  };
 
   // Active faculty object & entries fallback calculation
   const activeFacultyObject = useMemo(() => {
@@ -816,6 +890,7 @@ export default function SchedulePage() {
                 sectionName={selectedSection}
                 entries={entries}
                 onSlotSwap={handleSlotSwap}
+                onCellClick={handleCellClick}
                 showDownloadBtn={true}
                 onDownloadPdf={handleDownloadSinglePdf}
                 isFullWidth={isSidePanelCollapsed}
@@ -890,14 +965,14 @@ export default function SchedulePage() {
               <h3 className="text-sm font-extrabold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
                 <Grid className="w-4 h-4" /> {selectedSection} Schedule
               </h3>
-              <TimetableGrid sectionName={selectedSection} entries={entries} />
+              <TimetableGrid sectionName={selectedSection} entries={entries} onCellClick={handleCellClick} />
             </div>
 
             <div className="space-y-2">
               <h3 className="text-sm font-extrabold text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
                 <Grid className="w-4 h-4" /> {compareSection} Schedule
               </h3>
-              <TimetableGrid sectionName={compareSection} entries={compareEntries} />
+              <TimetableGrid sectionName={compareSection} entries={compareEntries} onCellClick={handleCellClick} />
             </div>
           </div>
         </div>
@@ -928,7 +1003,7 @@ export default function SchedulePage() {
               return (
                 <div key={secName} className="space-y-2">
                   <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 px-1">{secName}</h3>
-                  <TimetableGrid sectionName={secName} entries={secEntries} />
+                  <TimetableGrid sectionName={secName} entries={secEntries} onCellClick={handleCellClick} />
                 </div>
               );
             })}
@@ -996,6 +1071,7 @@ export default function SchedulePage() {
             <TimetableGrid
               sectionName={`${activeFacultyObject.name} Schedule`}
               entries={facultyGridEntries}
+              onCellClick={handleCellClick}
             />
           )}
         </div>
@@ -1108,6 +1184,21 @@ export default function SchedulePage() {
           </div>
         </div>
       )}
+
+      {/* INTERACTIVE SLOT EDITOR MODAL */}
+      <SlotEditorModal
+        isOpen={isSlotEditorOpen}
+        onClose={() => setIsSlotEditorOpen(false)}
+        slot={editingSlot}
+        versionId={selectedVersionId}
+        sectionsList={filteredAndSortedSections}
+        facultyList={facultyList}
+        roomList={roomList}
+        subjectList={subjectList}
+        cohortAllSlots={cohortAllSlots}
+        onSaveSlot={handleSaveSlotModal}
+        onDeleteSlot={handleDeleteSlotModal}
+      />
 
     </div>
   );
