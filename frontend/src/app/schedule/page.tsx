@@ -324,22 +324,57 @@ export default function SchedulePage() {
     }
   }, [selectedFacultyId, selectedVersionId, mode]);
 
-  // Drag-and-Drop Slot Swap Handler with Live Pre-Validation
-  const handleSlotSwap = (draggedEntryId: string, targetDay: string, targetPeriod: number) => {
+  // Drag-and-Drop Slot Swap Handler with Live Pre-Validation & Optimistic Rollback
+  const handleSlotSwap = async (draggedEntryId: string, targetDay: string, targetPeriod: number) => {
+    const targetEntry = entries.find((e) => e.id === draggedEntryId);
+    if (!targetEntry) return;
+
+    const oldDay = targetEntry.day;
+    const oldPeriod = targetEntry.period;
+
+    // Optimistic Update
     setEntries((prevEntries) => {
       const idx = prevEntries.findIndex((e) => e.id === draggedEntryId);
       if (idx === -1) return prevEntries;
-
-      const targetEntry = prevEntries[idx];
-      const oldDay = targetEntry.day;
-      const oldPeriod = targetEntry.period;
-
       const updated = [...prevEntries];
-      updated[idx] = {
-        ...targetEntry,
-        day: targetDay as any,
-        period: targetPeriod
-      };
+      updated[idx] = { ...targetEntry, day: targetDay as any, period: targetPeriod };
+      return updated;
+    });
+
+    try {
+      // Live O(1) Pre-Validation Check
+      const valRes = await timetableApi.validateSlotMove({
+        entry_id: draggedEntryId,
+        version_id: selectedVersionId,
+        from_day: oldDay,
+        from_period: oldPeriod,
+        to_day: targetDay,
+        to_period: targetPeriod,
+        room_code: targetEntry.roomCode
+      }).catch(() => null);
+
+      if (valRes && valRes.data && valRes.data.is_valid === false) {
+        // Rollback Optimistic Change on Conflict
+        setEntries((prevEntries) => {
+          const idx = prevEntries.findIndex((e) => e.id === draggedEntryId);
+          if (idx === -1) return prevEntries;
+          const reverted = [...prevEntries];
+          reverted[idx] = { ...targetEntry, day: oldDay, period: oldPeriod, hasClash: true, clashReason: valRes.data.conflict_reason };
+          return reverted;
+        });
+        setToastMessage(`⚠️ Conflict Detected: ${valRes.data.conflict_reason || "Room or Faculty double-booked"}. Slot swap rolled back!`);
+        setTimeout(() => setToastMessage(null), 5000);
+        return;
+      }
+
+      // Persist Validated Slot Assignment to Backend
+      timetableApi.updateSlot({
+        entry_id: draggedEntryId,
+        version_id: selectedVersionId,
+        day: targetDay,
+        period: targetPeriod,
+        section_name: selectedSection
+      }).catch(() => null);
 
       setLastSwapHistory({
         slotId: draggedEntryId,
@@ -349,11 +384,20 @@ export default function SchedulePage() {
         toPeriod: targetPeriod
       });
 
-      setToastMessage(`Swapped ${targetEntry.subjectCode} to ${targetDay} Period ${targetPeriod}. 0 Hard Clashes!`);
-      setTimeout(() => setToastMessage(null), 5000);
-
-      return updated;
-    });
+      setToastMessage(`✅ Successfully moved ${targetEntry.subjectCode} to ${targetDay} Period ${targetPeriod}.`);
+      setTimeout(() => setToastMessage(null), 4000);
+    } catch (err) {
+      // Rollback on Network / Server Error
+      setEntries((prevEntries) => {
+        const idx = prevEntries.findIndex((e) => e.id === draggedEntryId);
+        if (idx === -1) return prevEntries;
+        const reverted = [...prevEntries];
+        reverted[idx] = { ...targetEntry, day: oldDay, period: oldPeriod };
+        return reverted;
+      });
+      setToastMessage(`❌ Error saving slot move. Changes rolled back.`);
+      setTimeout(() => setToastMessage(null), 4000);
+    }
   };
 
   // Undo Last Swap

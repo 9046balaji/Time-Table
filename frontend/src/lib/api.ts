@@ -9,7 +9,7 @@ import {
   TimetableGenerationRequest,
   WizardGenerationResponse,
   DragDropSwapRequest,
-  ValidationResult
+  ValidationMoveResult
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -67,7 +67,7 @@ export const timetableApi = {
     api.get(`/api/v1/timetable/version/${versionId}`, { params: { section_name: sectionName } }),
   validate: (versionId: number = 5) => api.get<ValidationReport>(`/api/v1/validate/${versionId}`),
   validateSlotMove: (req: DragDropSwapRequest) =>
-    api.post<ValidationResult>('/api/v1/timetable/validate-move', req),
+    api.post<ValidationMoveResult>('/api/v1/timetable/validate-move', req),
   updateSlotAssignment: (entryId: string | number, newTimeSlotId: number, newRoomId?: number) =>
     api.patch(`/api/v1/timetable/entries/${entryId}`, { new_time_slot_id: newTimeSlotId, new_room_id: newRoomId }),
   importExcel: (file: File) => {

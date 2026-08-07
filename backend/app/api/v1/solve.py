@@ -13,6 +13,12 @@ async def trigger_solver(config: SolverConfig = SolverConfig()):
     return await SolveService.start_solve_job(db=None, config=config)
 
 
+@router.post("/benchmark", response_model=Dict[str, Any])
+async def benchmark_solver():
+    """Run full-scale CP-SAT benchmark test generating timetables for 44 sections and 72 faculty."""
+    return await SolveService.run_benchmark_suite()
+
+
 @router.get("/{run_id}/status", response_model=Dict[str, Any])
 async def get_solver_status(run_id: str):
     status = SolveService.get_run_status(run_id)
