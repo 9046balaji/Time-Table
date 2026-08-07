@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Integer, Date, Boolean, ForeignKey, JSON, UniqueConstraint
+from sqlalchemy import Column, String, Text, Integer, Date, Boolean, ForeignKey, JSON, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from app.models.base import BaseModel
 
@@ -24,9 +24,9 @@ class TimetableEntry(BaseModel):
 
     timetable_version_id = Column(Integer, ForeignKey("timetable_versions.id"), nullable=False)
     section_id = Column(Integer, ForeignKey("sections.id"), nullable=False)
-    subject_id = Column(Integer, ForeignKey("subjects.id"), nullable=True)
-    room_id = Column(Integer, ForeignKey("rooms.id"), nullable=True)
-    time_slot_id = Column(Integer, ForeignKey("time_slots.id"), nullable=False)
+    subject_id = Column(Integer, ForeignKey("subjects.id"), nullable=True, index=True)
+    room_id = Column(Integer, ForeignKey("rooms.id"), nullable=True, index=True)
+    time_slot_id = Column(Integer, ForeignKey("time_slots.id"), nullable=False, index=True)
     faculty_ids = Column(JSON, nullable=True)  # List[int]: [lead_id, co1_id, co2_id]
     entry_type = Column(String(20), default="L", nullable=False)
     # Values: "L", "T", "P", "LIBRARY", "IIC", "SL_EL", "OE", "CRT", "IDP", "M_H", "PROJECT", "BREAK", "LUNCH"
@@ -37,6 +37,8 @@ class TimetableEntry(BaseModel):
 
     __table_args__ = (
         UniqueConstraint('timetable_version_id', 'section_id', 'time_slot_id', name='uq_entry_section_slot'),
+        Index('idx_tt_entries_room_slot', 'timetable_version_id', 'room_id', 'time_slot_id'),
+        Index('idx_tt_entries_section_slot', 'timetable_version_id', 'section_id', 'time_slot_id'),
     )
 
     timetable_version = relationship("TimetableVersion", back_populates="entries")
@@ -44,3 +46,4 @@ class TimetableEntry(BaseModel):
     subject = relationship("Subject", back_populates="timetable_entries")
     room = relationship("Room", back_populates="timetable_entries")
     time_slot = relationship("TimeSlot", back_populates="timetable_entries")
+    faculty_assignments = relationship("TimetableEntryFaculty", back_populates="timetable_entry", cascade="all, delete-orphan")
