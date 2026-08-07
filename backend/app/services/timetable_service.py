@@ -194,3 +194,17 @@ class TimetableService:
         await db.commit()
         await db.refresh(entry)
         return entry
+
+    @staticmethod
+    async def bulk_create_timetable_entries(
+        db: AsyncSession,
+        entries_data: List[Dict[str, Any]]
+    ) -> int:
+        """High-performance batch bulk insert using SQLAlchemy insert execution."""
+        if not db or not entries_data:
+            return 0
+        from sqlalchemy import insert
+        stmt = insert(TimetableEntry)
+        await db.execute(stmt, entries_data)
+        await db.commit()
+        return len(entries_data)
