@@ -45,6 +45,15 @@ async def get_faculty_timetable(
 ):
     return await TimetableService.get_faculty_timetable(db, faculty_id=faculty_id, version_id=version_id)
 
+
+@router.get("/room/{room_code}", response_model=Dict[str, Any])
+async def get_room_timetable(
+    room_code: str,
+    version_id: int = Query(5),
+    db: AsyncSession = Depends(get_db)
+):
+    return await TimetableService.get_room_timetable(db, room_code=room_code, version_id=version_id)
+
 @router.post("/validate-move", response_model=Dict[str, Any])
 async def validate_slot_move(req: Dict[str, Any], db: AsyncSession = Depends(get_db)):
     """
