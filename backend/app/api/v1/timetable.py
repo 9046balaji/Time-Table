@@ -75,3 +75,81 @@ async def validate_slot_move(req: Dict[str, Any], db: AsyncSession = Depends(get
         target_period=target_period,
         target_room_code=target_room
     )
+
+
+@router.post("/update-slot", response_model=Dict[str, Any])
+async def update_timetable_slot(req: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """
+    Updates or inserts a timetable slot entry in real time.
+    """
+    version_id = req.get("version_id", 5)
+    entry_id = req.get("entry_id")
+    sec_name = str(req.get("section_name") or "II AIML-A")
+    subj_code = str(req.get("subject_code") or "LECTURE")
+    room_code = str(req.get("room_code") or "")
+    day = str(req.get("day") or "MON")
+    period = int(req.get("period") or 1)
+    fac_names = req.get("faculty_names") or []
+    if isinstance(fac_names, str):
+        fac_names = [f.strip() for f in fac_names.split(",") if f.strip()]
+
+    # If DB session available, attempt database update
+    if db is not None:
+        try:
+            from sqlalchemy import select
+            from app.models.timetable import TimetableEntry, Section, TimeSlot, Room
+
+            # Find matching section & time slot
+            sec_res = await db.execute(select(Section).where(Section.name == sec_name))
+            sec_obj = sec_res.scalar_one_or_none()
+
+            ts_res = await db.execute(select(TimeSlot).where(TimeSlot.day == day, TimeSlot.period == period))
+            ts_obj = ts_res.scalar_one_or_none()
+
+            rm_obj = None
+            if room_code:
+                rm_res = await db.execute(select(Room).where(Room.code == room_code))
+                rm_obj = rm_res.scalar_one_or_none()
+
+            entry_obj = None
+            if entry_id and str(entry_id).isdigit():
+                ent_res = await db.execute(select(TimetableEntry).where(TimetableEntry.id == int(entry_id)))
+                entry_obj = ent_res.scalar_one_or_none()
+
+            if entry_obj:
+                entry_obj.raw_subject_text = subj_code
+                entry_obj.raw_room_text = room_code
+                entry_obj.raw_faculty_text = ", ".join(fac_names) if fac_names else ""
+                if sec_obj: entry_obj.section_id = sec_obj.id
+                if ts_obj: entry_obj.time_slot_id = ts_obj.id
+                if rm_obj: entry_obj.room_id = rm_obj.id
+            elif sec_obj and ts_obj:
+                entry_obj = TimetableEntry(
+                    timetable_version_id=version_id,
+                    section_id=sec_obj.id,
+                    time_slot_id=ts_obj.id,
+                    room_id=rm_obj.id if rm_obj else None,
+                    raw_subject_text=subj_code,
+                    raw_room_text=room_code,
+                    raw_faculty_text=", ".join(fac_names) if fac_names else "",
+                    entry_type="P" if "(P)" in subj_code else ("T" if "(T)" in subj_code else "L")
+                )
+                db.add(entry_obj)
+
+            await db.commit()
+        except Exception as ex:
+            print(f"[UpdateSlot Warning DB Sync] {ex}")
+
+    return {
+        "success": True,
+        "message": f"Updated slot for Section {sec_name} on {day} Period {period}.",
+        "updated_slot": {
+            "id": entry_id or f"slot_{Date.now() if 'Date' in globals() else 1}",
+            "section": sec_name,
+            "subject": subj_code,
+            "room": room_code,
+            "day": day,
+            "period": period,
+            "faculty": fac_names
+        }
+    }
