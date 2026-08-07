@@ -13,9 +13,9 @@ class SectionSubject(BaseModel):
     tutorial_slots_needed = Column(Integer, default=0, nullable=False)
     lab_slots_needed = Column(Integer, default=0, nullable=False)
     
-    lecture_faculty_id = Column(Integer, ForeignKey("faculty.id"), nullable=True)
-    tutorial_faculty_id = Column(Integer, ForeignKey("faculty.id"), nullable=True)
-    lab_lead_faculty_id = Column(Integer, ForeignKey("faculty.id"), nullable=True)
+    lecture_faculty_id = Column(Integer, ForeignKey("faculty.id"), nullable=True, index=True)
+    tutorial_faculty_id = Column(Integer, ForeignKey("faculty.id"), nullable=True, index=True)
+    lab_lead_faculty_id = Column(Integer, ForeignKey("faculty.id"), nullable=True, index=True)
     lab_co_faculty_ids = Column(JSON, nullable=True)  # List[int] of co-faculty IDs
     
     lab_consecutive_override = Column(Integer, nullable=True)
