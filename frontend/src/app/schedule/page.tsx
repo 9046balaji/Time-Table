@@ -612,7 +612,7 @@ export default function SchedulePage() {
   const stackSections = cohortSectionsMap[selectedCohort] || cohortSectionsMap["II_AIML"];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 w-full max-w-full pb-12">
 
       {/* Floating Toast Notification */}
       {toastMessage && (
