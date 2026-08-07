@@ -80,6 +80,19 @@ class TimetableService:
         target_name = faculty_name or ""
         fac_obj = None
 
+        import re
+
+        def is_fac_match(t_name: str, r_fac: str) -> bool:
+            if not t_name or not r_fac:
+                return False
+            t_clean = re.sub(r'^(Dr|Mr|Ms|Prof)\.?\s*', '', t_name, flags=re.IGNORECASE).strip().lower()
+            r_clean = re.sub(r'^(Dr|Mr|Ms|Prof)\.?\s*', '', r_fac, flags=re.IGNORECASE).strip().lower()
+            if t_clean in r_clean or r_clean in t_clean:
+                return True
+            t_toks = [tok for tok in re.split(r'[\s\.,_-]+', t_clean) if len(tok) >= 3]
+            r_toks = [tok for tok in re.split(r'[\s\.,_-]+', r_clean) if len(tok) >= 3]
+            return any(tt in r_clean or any(tt in rt for rt in r_toks) for tt in t_toks)
+
         if db is not None:
             try:
                 if faculty_id:
@@ -99,7 +112,7 @@ class TimetableService:
                 for e, sec, ts, rm in rows:
                     raw_fac = e.raw_faculty_text or ""
                     is_match = (faculty_id and e.faculty_ids and faculty_id in e.faculty_ids) or \
-                               (target_name and target_name.lower() in raw_fac.lower())
+                               is_fac_match(target_name, raw_fac)
                     if is_match:
                         result.append({
                             "id": e.id,
@@ -125,7 +138,7 @@ class TimetableService:
 
             for e in seed.get("entries", []):
                 fac_list = e.get("faculty", [])
-                if target_name and any(target_name.lower() in f.lower() or f.lower() in target_name.lower() for f in fac_list):
+                if target_name and any(is_fac_match(target_name, str(f)) for f in fac_list):
                     result.append(e)
 
         max_hours = fac_obj.max_hours_per_week if fac_obj else 16
