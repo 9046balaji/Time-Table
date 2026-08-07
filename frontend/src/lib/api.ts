@@ -95,6 +95,8 @@ export const timetableApi = {
     api.post(`/api/v1/export/pdf/faculty?version_id=${versionId}`, {}, { responseType: 'blob' }),
   getFacultyTimetable: (facultyId: number, versionId: number = 5) =>
     api.get(`/api/v1/timetable/faculty/${facultyId}`, { params: { version_id: versionId } }),
+  getRoomTimetable: (roomCode: string, versionId: number = 5) =>
+    api.get(`/api/v1/timetable/room/${roomCode}`, { params: { version_id: versionId } }),
   exportSingleFacultyPdf: (facultyId: number, versionId: number = 5) =>
     api.get(`/api/v1/export/pdf/faculty/${facultyId}`, { params: { version_id: versionId }, responseType: 'blob' }),
   syncSmartClass: () => api.post('/api/v1/timetable/sync-master'),
