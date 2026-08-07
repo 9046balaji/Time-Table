@@ -23,6 +23,7 @@ import {
   Printer,
   Filter
 } from "lucide-react";
+import { TimetableGrid, SlotEntry } from "@/components/timetable/TimetableGrid";
 
 interface SlotDetail {
   id: string;
@@ -276,6 +277,104 @@ export default function TestingLabPage() {
   const roomSlotsList = useMemo(() => {
     return Array.from(roomGridMap.values());
   }, [roomGridMap]);
+
+  // Mapped SlotEntry[] for TimetableGrid in Section View
+  const sectionGridEntries: SlotEntry[] = useMemo(() => {
+    if (!currentSection || !currentSection.slots) return [];
+    return currentSection.slots.map((s: any, idx: number) => {
+      const subjStr = String(s.subject_code || s.subjectCode || s.subject || 'LECTURE');
+      const roomStr = String(s.room_code || s.roomCode || s.room || '');
+      const facStr = String(s.primary_faculty || s.primaryFaculty || s.faculty || '');
+      const subTypeRaw = String(s.subject_type || s.subjectType || 'L');
+
+      let subType: SlotEntry['subjectType'] = 'L';
+      if (subTypeRaw === 'P' || subjStr.includes('(P)')) subType = 'P';
+      else if (subTypeRaw === 'T' || subjStr.includes('(T)')) subType = 'T';
+      else if (subjStr.includes('LIBRARY')) subType = 'LIBRARY';
+      else if (subjStr.includes('HONORS') || subjStr.includes('MINOR')) subType = 'MINORS_HONORS';
+      else if (subTypeRaw === 'SPECIAL' || subjStr.includes('SPECIAL')) subType = 'CRT';
+
+      return {
+        id: String(s.id || `${currentSection.name}_${s.day}_${s.period}_${idx}`),
+        day: s.day as any,
+        period: Number(s.period),
+        subjectCode: subjStr,
+        roomCode: roomStr,
+        facultyName: facStr,
+        sectionName: currentSection.name,
+        subjectType: subType,
+        spanPeriods: subType === 'P' ? 2 : 1,
+        hasClash: Boolean(s.has_clash || s.hasClash),
+        clashReason: s.clash_reason || s.clashReason || '',
+      };
+    });
+  }, [currentSection]);
+
+  // Mapped SlotEntry[] for TimetableGrid in Faculty View
+  const facultyGridEntries: SlotEntry[] = useMemo(() => {
+    if (!selectedFacultyFilter) return [];
+    const entriesList: SlotEntry[] = [];
+    sectionsData.forEach((sec) => {
+      sec.slots.forEach((s: any, idx: number) => {
+        const fac = s.primary_faculty || s.primaryFaculty;
+        if (fac === selectedFacultyFilter) {
+          const subjStr = String(s.subject_code || s.subjectCode || 'LECTURE');
+          const roomStr = String(s.room_code || s.roomCode || '');
+          const subTypeRaw = String(s.subject_type || s.subjectType || 'L');
+
+          let subType: SlotEntry['subjectType'] = 'L';
+          if (subTypeRaw === 'P' || subjStr.includes('(P)')) subType = 'P';
+          else if (subTypeRaw === 'T' || subjStr.includes('(T)')) subType = 'T';
+
+          entriesList.push({
+            id: String(s.id || `fac_${selectedFacultyFilter}_${s.day}_${s.period}_${idx}`),
+            day: s.day as any,
+            period: Number(s.period),
+            subjectCode: subjStr,
+            roomCode: roomStr,
+            facultyName: selectedFacultyFilter,
+            sectionName: sec.name,
+            subjectType: subType,
+            spanPeriods: subType === 'P' ? 2 : 1,
+          });
+        }
+      });
+    });
+    return entriesList;
+  }, [sectionsData, selectedFacultyFilter]);
+
+  // Mapped SlotEntry[] for TimetableGrid in Room View
+  const roomGridEntries: SlotEntry[] = useMemo(() => {
+    if (!selectedRoomFilter) return [];
+    const entriesList: SlotEntry[] = [];
+    sectionsData.forEach((sec) => {
+      sec.slots.forEach((s: any, idx: number) => {
+        const rm = s.room_code || s.roomCode;
+        if (rm === selectedRoomFilter) {
+          const subjStr = String(s.subject_code || s.subjectCode || 'LECTURE');
+          const facStr = String(s.primary_faculty || s.primaryFaculty || '');
+          const subTypeRaw = String(s.subject_type || s.subjectType || 'L');
+
+          let subType: SlotEntry['subjectType'] = 'L';
+          if (subTypeRaw === 'P' || subjStr.includes('(P)')) subType = 'P';
+          else if (subTypeRaw === 'T' || subjStr.includes('(T)')) subType = 'T';
+
+          entriesList.push({
+            id: String(s.id || `rm_${selectedRoomFilter}_${s.day}_${s.period}_${idx}`),
+            day: s.day as any,
+            period: Number(s.period),
+            subjectCode: subjStr,
+            roomCode: selectedRoomFilter,
+            facultyName: facStr,
+            sectionName: sec.name,
+            subjectType: subType,
+            spanPeriods: subType === 'P' ? 2 : 1,
+          });
+        }
+      });
+    });
+    return entriesList;
+  }, [sectionsData, selectedRoomFilter]);
 
   const triggerExcelExport = () => {
     const url = `http://localhost:8000/api/v1/testing/export/excel?dataset=${selectedDataset}`;
@@ -583,131 +682,12 @@ export default function TestingLabPage() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700">
-                    <th className="p-3 text-left w-20 border-r border-slate-200 dark:border-slate-700">Day</th>
-                    {PERIOD_HEADERS.map((h) => (
-                      <th
-                        key={h.p}
-                        className={`p-3 text-center border-r border-slate-200 dark:border-slate-700 ${
-                          h.isBlock ? "bg-amber-500/10 text-amber-900 dark:text-amber-300" : ""
-                        }`}
-                      >
-                        {h.label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {DAYS.map((day) => (
-                    <tr key={day} className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                      <td className="p-3 font-extrabold text-slate-900 dark:text-slate-100 border-r border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40">
-                        {day}
-                      </td>
-
-                      {PERIOD_HEADERS.map((h) => {
-                        const slot = slotMap.get(`${day}_${h.p}`);
-                        if (!slot) {
-                          return (
-                            <td key={h.p} className="p-3 text-center border-r border-slate-200 dark:border-slate-800 text-slate-300 dark:text-slate-700 font-mono">
-                              -
-                            </td>
-                          );
-                        }
-
-                        const subCode = slot.subject_code || slot.subjectCode || "Class";
-                        const roomCode = slot.room_code || slot.roomCode || "N-301";
-                        const isInherited = slot.is_inherited_room ?? slot.isInheritedRoom;
-                        const facName = slot.primary_faculty || slot.primaryFaculty || "Faculty";
-                        const subType = slot.subject_type || slot.subjectType || "L";
-
-                        return (
-                          <td
-                            key={h.p}
-                            onClick={() => setActiveModalSlot(slot)}
-                            className={`p-2.5 border-r border-slate-200 dark:border-slate-800 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md ${
-                              subType === "P"
-                                ? "bg-violet-50 dark:bg-violet-950/40 border-l-4 border-l-violet-500"
-                                : subType === "T"
-                                ? "bg-emerald-50 dark:bg-emerald-950/40 border-l-4 border-l-emerald-500"
-                                : subType === "SPECIAL"
-                                ? "bg-amber-50 dark:bg-amber-950/40 border-l-4 border-l-amber-500"
-                                : subType === "PROJECT"
-                                ? "bg-indigo-50 dark:bg-indigo-950/40 border-l-4 border-l-indigo-500"
-                                : "bg-blue-50/60 dark:bg-blue-950/30 border-l-4 border-l-blue-500"
-                            }`}
-                          >
-                            <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center justify-between gap-1">
-                              <span className="truncate">{subCode}</span>
-                              {(slot.is_combined || slot.isCombined) && (
-                                <span className="px-1 py-0.5 rounded bg-amber-500 text-white font-black text-[9px] shrink-0">
-                                  COMBINED
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-1 mt-1 text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                              <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
-                              <span>Room: {roomCode}</span>
-                              {isInherited && (
-                                <span className="text-[9px] text-slate-400 font-normal" title="Inherited from column header default">
-                                  (hdr)
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-1 flex items-center gap-1">
-                              <UserCheck className="w-3 h-3 text-blue-500 shrink-0" />
-                              <span className="truncate">{facName}</span>
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-blue-600" /> Complete Course Legend ({currentSection.name})
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead>
-                  <tr className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
-                    <th className="p-2.5 rounded-l-lg">Course Code & Title</th>
-                    <th className="p-2.5">Primary Instructor</th>
-                    <th className="p-2.5">Co-Instructors / TAs</th>
-                    <th className="p-2.5 rounded-r-lg text-right">Contact Phone</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {currentSection.slots.map((s, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                      <td className="p-2.5 font-bold text-slate-900 dark:text-slate-100">
-                        {s.subject_code || s.subjectCode} - {s.subject_title || s.subjectTitle}
-                      </td>
-                      <td className="p-2.5 text-slate-700 dark:text-slate-300">{s.primary_faculty || s.primaryFaculty}</td>
-                      <td className="p-2.5 text-slate-500 dark:text-slate-400">
-                        {(s.co_faculty || s.coFaculty) && (s.co_faculty || s.coFaculty)!.length > 0
-                          ? (s.co_faculty || s.coFaculty)!.map((f) => f.name).join(", ")
-                          : "None (Single Instructor)"}
-                      </td>
-                      <td className="p-2.5 text-right font-mono text-blue-600 dark:text-blue-400 font-bold">
-                        {s.primary_phone || s.primaryPhone || "N/A"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <TimetableGrid
+            sectionName={currentSection.name}
+            entries={sectionGridEntries}
+            showDownloadBtn={true}
+            onDownloadPdf={triggerPDFExport}
+          />
         </div>
       )}
 
@@ -758,52 +738,10 @@ export default function TestingLabPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
-            <table className="w-full min-w-[900px] border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700">
-                  <th className="p-3 text-left w-20 border-r border-slate-200 dark:border-slate-700">Day</th>
-                  {PERIOD_HEADERS.map((h) => (
-                    <th key={h.p} className="p-3 text-center border-r border-slate-200 dark:border-slate-700">
-                      {h.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {DAYS.map((day) => (
-                  <tr key={day} className="border-b border-slate-200 dark:border-slate-800">
-                    <td className="p-3 font-extrabold text-slate-900 dark:text-slate-100 border-r border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40">
-                      {day}
-                    </td>
-                    {PERIOD_HEADERS.map((h) => {
-                      const match = facultyGridMap.get(`${day}_${h.p}`);
-                      if (!match) {
-                        return (
-                          <td key={h.p} className="p-3 text-center border-r border-slate-200 dark:border-slate-800 text-slate-300 dark:text-slate-700 font-mono">
-                            FREE
-                          </td>
-                        );
-                      }
-                      return (
-                        <td key={h.p} className="p-2.5 border-r border-slate-200 dark:border-slate-800 bg-blue-50/80 dark:bg-blue-950/60 border-l-4 border-l-blue-600">
-                          <div className="font-extrabold text-blue-900 dark:text-blue-100">
-                            {match.sectionName}
-                          </div>
-                          <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                            {match.slot.subject_code || match.slot.subjectCode}
-                          </div>
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                            Room {match.slot.room_code || match.slot.roomCode}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <TimetableGrid
+            sectionName={`${selectedFacultyFilter} Schedule`}
+            entries={facultyGridEntries}
+          />
         </div>
       )}
 
@@ -854,52 +792,10 @@ export default function TestingLabPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
-            <table className="w-full min-w-[900px] border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700">
-                  <th className="p-3 text-left w-20 border-r border-slate-200 dark:border-slate-700">Day</th>
-                  {PERIOD_HEADERS.map((h) => (
-                    <th key={h.p} className="p-3 text-center border-r border-slate-200 dark:border-slate-700">
-                      {h.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {DAYS.map((day) => (
-                  <tr key={day} className="border-b border-slate-200 dark:border-slate-800">
-                    <td className="p-3 font-extrabold text-slate-900 dark:text-slate-100 border-r border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40">
-                      {day}
-                    </td>
-                    {PERIOD_HEADERS.map((h) => {
-                      const match = roomGridMap.get(`${day}_${h.p}`);
-                      if (!match) {
-                        return (
-                          <td key={h.p} className="p-3 text-center border-r border-slate-200 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50/30">
-                            VACANT
-                          </td>
-                        );
-                      }
-                      return (
-                        <td key={h.p} className="p-2.5 border-r border-slate-200 dark:border-slate-800 bg-purple-50/80 dark:bg-purple-950/60 border-l-4 border-l-purple-600">
-                          <div className="font-extrabold text-purple-900 dark:text-purple-100">
-                            {match.sectionName}
-                          </div>
-                          <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                            {match.slot.subject_code || match.slot.subjectCode}
-                          </div>
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                            {match.slot.primary_faculty || match.slot.primaryFaculty}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <TimetableGrid
+            sectionName={`Room ${selectedRoomFilter} Utilization`}
+            entries={roomGridEntries}
+          />
         </div>
       )}
 
