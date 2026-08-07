@@ -140,11 +140,12 @@ async def update_timetable_slot(req: Dict[str, Any], db: AsyncSession = Depends(
         except Exception as ex:
             print(f"[UpdateSlot Warning DB Sync] {ex}")
 
+    import time
     return {
         "success": True,
         "message": f"Updated slot for Section {sec_name} on {day} Period {period}.",
         "updated_slot": {
-            "id": entry_id or f"slot_{Date.now() if 'Date' in globals() else 1}",
+            "id": entry_id or f"slot_{int(time.time() * 1000)}",
             "section": sec_name,
             "subject": subj_code,
             "room": room_code,
