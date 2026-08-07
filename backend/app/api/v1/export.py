@@ -83,3 +83,21 @@ async def export_single_faculty_pdf(faculty_id: int, version_id: int = Query(5),
 @router.post("/sync-master")
 async def sync_master_timetable_to_smartclass():
     return await ExportService.sync_smartclass_nodes()
+
+
+@router.get("/json")
+async def export_json_timetable(version_id: int = Query(5), db: AsyncSession = Depends(get_db)):
+    """Export complete raw JSON structure of timetable entries for API integrations."""
+    from app.services.timetable_service import TimetableService
+    return await TimetableService.get_version_timetable(db, version_id=version_id, section_name="ALL")
+
+
+@router.get("/room-utilization")
+async def export_room_utilization_report(version_id: int = Query(5), db: AsyncSession = Depends(get_db)):
+    """Generate room utilization matrix across all 35 rooms and 48 slots/week."""
+    content = await ExportService.generate_room_utilization_excel(db, version_id=version_id)
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=VFSTR_V{version_id}_Room_Utilization_Report.xlsx"}
+    )
