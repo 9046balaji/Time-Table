@@ -281,9 +281,23 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                         onDragStart={(ev) => entry && handleDragStart(ev, entry)}
                         onDragOver={handleDragOver}
                         onDrop={(ev) => handleDrop(ev, day, periodId)}
-                        onClick={() => entry && onCellClick?.(entry)}
-                        className={`border border-slate-300 dark:border-slate-600 text-center transition-colors cursor-pointer h-[68px] align-middle p-0.5 ${slotBg(entry)}`}
-                        title={entry?.hasClash ? `CLASH: ${entry.clashReason}` : facFull ? `${entry?.subjectCode} - ${facFull}` : undefined}
+                        onClick={() => {
+                          if (entry) {
+                            onCellClick?.(entry);
+                          } else {
+                            onCellClick?.({
+                              id: "",
+                              day: day as any,
+                              period: periodId,
+                              subjectCode: "",
+                              roomCode: "",
+                              sectionName: sectionName,
+                              subjectType: "L"
+                            });
+                          }
+                        }}
+                        className={`border border-slate-300 dark:border-slate-600 text-center transition-colors cursor-pointer h-[68px] align-middle p-0.5 ${slotBg(entry)} hover:border-blue-500 hover:ring-1 hover:ring-blue-500`}
+                        title={entry?.hasClash ? `CLASH: ${entry.clashReason}` : facFull ? `${entry?.subjectCode} - ${facFull}` : `Click to assign slot for ${day} Period ${periodId}`}
                       >
                         {entry ? (
                           <div className="flex flex-col items-center justify-center h-full gap-0.5 px-0.5">
