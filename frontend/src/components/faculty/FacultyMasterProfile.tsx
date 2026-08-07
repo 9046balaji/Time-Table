@@ -193,6 +193,16 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
     });
   }, [facultyList, searchQuery, designationFilter, workloadFilter, sortBy]);
 
+  // Auto-sync selectedFacultyId if current selection is filtered out
+  React.useEffect(() => {
+    if (filteredFaculty.length > 0) {
+      const exists = filteredFaculty.some((f) => f.id === selectedFacultyId);
+      if (!exists) {
+        setSelectedFacultyId(filteredFaculty[0].id);
+      }
+    }
+  }, [filteredFaculty, selectedFacultyId]);
+
 
   // Overall Stats
   const stats = useMemo(() => {
