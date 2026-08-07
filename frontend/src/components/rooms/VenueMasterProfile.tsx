@@ -162,6 +162,16 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
     });
   }, [roomList, searchQuery, typeFilter, blockFilter, sortBy]);
 
+  // Auto-sync selectedRoomCode if current selection is filtered out
+  React.useEffect(() => {
+    if (filteredRooms.length > 0) {
+      const exists = filteredRooms.some((r) => r.code === selectedRoomCode);
+      if (!exists) {
+        setSelectedRoomCode(filteredRooms[0].code);
+      }
+    }
+  }, [filteredRooms, selectedRoomCode]);
+
 
   // High-GPU & Computer Labs subset
   const labRooms = useMemo(() => {
