@@ -96,7 +96,7 @@ export default function DashboardPage() {
   }, [selectedDataset]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 w-full max-w-full pb-12">
 
       {/* Top Header Banner */}
       <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden">
