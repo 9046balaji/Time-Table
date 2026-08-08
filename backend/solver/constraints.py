@@ -70,3 +70,19 @@ class ConstraintRules:
     @staticmethod
     def check_continuous_teaching_limit(consecutive_periods_count: int, max_consecutive: int = 4) -> bool:
         return consecutive_periods_count <= max_consecutive
+
+    # HC-11: Faculty Rank Workload Cap Validation (Professor <= 12h, Assoc Prof <= 14h, Asst Prof <= 16h)
+    @staticmethod
+    def check_faculty_rank_workload_cap(weekly_hours: int, rank: str = "Assistant Professor") -> bool:
+        max_h = ConstraintRules.get_max_faculty_hours(rank)
+        return weekly_hours <= max_h
+
+    # HC-12: Minors/Honors Global Slot Protection
+    # Friday/Saturday periods 7-8 reserved for global Minors/Honors; no section regular classes allowed
+    @staticmethod
+    def check_minors_honors_slot_protection(day: str, period: int, subject_code: str) -> bool:
+        is_global_slot = (day.upper() in ["FRI", "FRIDAY", "SAT", "SATURDAY"]) and (period in [7, 8])
+        if is_global_slot and "MINOR" not in subject_code.upper() and "HONOR" not in subject_code.upper():
+            return False
+        return True
+

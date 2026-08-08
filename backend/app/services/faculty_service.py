@@ -6,13 +6,23 @@ from app.models.faculty import Faculty
 
 class FacultyService:
     @staticmethod
-    async def get_all_faculty(db: Optional[AsyncSession], dept_id: Optional[int] = None) -> Dict[str, Any]:
+    async def get_all_faculty(
+        db: Optional[AsyncSession],
+        dept_id: Optional[int] = None,
+        designation: Optional[str] = None,
+        search: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Fetch all faculty members with workload stats from DB asynchronously."""
         if db is not None:
             try:
                 stmt = select(Faculty)
                 if dept_id:
                     stmt = stmt.where(Faculty.dept_id == dept_id)
+                if designation:
+                    stmt = stmt.where(Faculty.designation == designation)
+                if search:
+                    stmt = stmt.where(Faculty.name.ilike(f"%{search}%"))
+
                 res = await db.execute(stmt)
                 faculty_members = res.scalars().all()
                 if faculty_members:
@@ -30,6 +40,7 @@ class FacultyService:
                     return {"total": len(items), "count": len(items), "items": items}
             except Exception:
                 pass
+
 
         default_faculty = [
             {"id": 1, "name": "Dr. P. Kalpana", "designation": "Professor", "max_hours": 12, "hours_this_week": 10},

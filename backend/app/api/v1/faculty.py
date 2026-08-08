@@ -10,6 +10,9 @@ router = APIRouter()
 @router.get("", response_model=Dict[str, Any])
 async def list_faculty(
     dept_id: Optional[int] = Query(None, description="Filter by department ID"),
+    designation: Optional[str] = Query(None, description="Filter by rank/designation"),
+    search: Optional[str] = Query(None, description="Search by faculty name"),
     db: AsyncSession = Depends(get_db)
 ):
-    return await FacultyService.get_all_faculty(db=db, dept_id=dept_id)
+    return await FacultyService.get_all_faculty(db=db, dept_id=dept_id, designation=designation, search=search)
+
