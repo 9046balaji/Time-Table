@@ -12,17 +12,38 @@ import {
   ValidationMoveResult
 } from './types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export function getApiBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.startsWith('http')) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return 'http://localhost:8000';
+}
+
+export function getWsBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_WS_URL && process.env.NEXT_PUBLIC_WS_URL.startsWith('ws')) {
+    return process.env.NEXT_PUBLIC_WS_URL.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${window.location.host}`;
+  }
+  return 'ws://localhost:8000';
+}
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Attach Authorization Bearer token to mutating requests if available
+// Dynamic Base URL Interceptor
 api.interceptors.request.use((config) => {
+  if (!config.baseURL || config.baseURL === 'http://localhost:8000') {
+    config.baseURL = getApiBaseUrl();
+  }
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token');
     if (token && config.headers) {
@@ -31,6 +52,8 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+
 
 export const timetableApi = {
   getSections: () => api.get<{ total: number; count: number; items: Section[] }>('/api/v1/sections'),

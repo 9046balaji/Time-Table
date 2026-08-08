@@ -23,6 +23,7 @@ import {
   Printer,
   Filter
 } from "lucide-react";
+import { timetableApi, getApiBaseUrl } from "@/lib/api";
 import { TimetableGrid, SlotEntry } from "@/components/timetable/TimetableGrid";
 
 interface SlotDetail {
@@ -92,7 +93,9 @@ export default function TestingLabPage() {
   const fetchTestedData = async (datasetKey: string) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/testing/tested-data?dataset=${datasetKey}&max_sections=10`);
+      const apiBase = getApiBaseUrl();
+      const res = await fetch(`${apiBase}/api/v1/testing/tested-data?dataset=${datasetKey}&max_sections=10`);
+
       if (res.ok) {
         const json = await res.json();
         if (json.sections && json.sections.length > 0) {
@@ -377,9 +380,11 @@ export default function TestingLabPage() {
   }, [sectionsData, selectedRoomFilter]);
 
   const triggerExcelExport = () => {
-    const url = `http://localhost:8000/api/v1/testing/export/excel?dataset=${selectedDataset}`;
+    const apiBase = getApiBaseUrl();
+    const url = `${apiBase}/api/v1/testing/export/excel?dataset=${selectedDataset}`;
     window.open(url, "_blank");
   };
+
 
   const triggerPDFExport = () => {
     window.print();

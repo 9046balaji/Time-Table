@@ -41,7 +41,8 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",
               "img-src 'self' data: blob:",
-              "connect-src 'self' http://localhost:8000 ws://localhost:8000 https://timetable.vignan.ac.in wss://timetable.vignan.ac.in",
+              "connect-src 'self' ws: wss: http: https:",
+
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",

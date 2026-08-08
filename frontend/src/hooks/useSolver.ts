@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { getApiBaseUrl, getWsBaseUrl } from '@/lib/api';
 
 export interface SolverProgressState {
   isSolving: boolean;
@@ -45,7 +46,7 @@ export function useSolver() {
     }));
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiBase = getApiBaseUrl();
       const res = await axios.post(`${apiBase}/api/v1/solve`, { algorithm });
       const runId = res.data?.run_id || 'run_1';
 
@@ -55,9 +56,10 @@ export function useSolver() {
         message: `Task ${runId} queued. Connecting to real-time progress stream...`,
       }));
 
-      const wsBase = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+      const wsBase = getWsBaseUrl();
       const wsUrl = `${wsBase}/api/v1/solve/${runId}/stream`;
       const ws = new WebSocket(wsUrl);
+
       wsRef.current = ws;
 
       ws.onmessage = (event) => {

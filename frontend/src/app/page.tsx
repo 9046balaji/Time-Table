@@ -26,7 +26,8 @@ import {
 } from 'lucide-react';
 import { BuildingBlockChart } from '@/components/analytics/BuildingBlockChart';
 import { ClashAnalyticsChart } from '@/components/analytics/ClashAnalyticsChart';
-import { timetableApi } from '@/lib/api';
+import { timetableApi, getApiBaseUrl } from '@/lib/api';
+
 
 
 export default function DashboardPage() {
@@ -48,16 +49,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // Fetch live telemetry metrics from backend DB
-    fetch('http://localhost:8000/api/v1/telemetry/metrics')
+    const apiBase = getApiBaseUrl();
+    fetch(`${apiBase}/api/v1/telemetry/metrics`)
       .then(res => res.json())
       .then(data => {
         const dbStats = data.database || {};
         setStats(prev => ({
           ...prev,
           sectionsCount: dbStats.total_sections || 60,
-          facultyCount: dbStats.total_faculty || 116,
-          roomsCount: dbStats.total_rooms || 40,
-          totalSlots: dbStats.total_entries || 3558,
+          facultyCount: dbStats.total_faculty || 162,
+          roomsCount: dbStats.total_rooms || 45,
+          totalSlots: dbStats.total_entries || 2785,
           loading: false,
         }));
       })
@@ -69,7 +71,9 @@ export default function DashboardPage() {
 
   // Fetch benchmark dataset statistics when dataset changes
   useEffect(() => {
-    fetch(`http://localhost:8000/api/v1/testing/tested-data?dataset=${selectedDataset}`)
+    const apiBase = getApiBaseUrl();
+    fetch(`${apiBase}/api/v1/testing/tested-data?dataset=${selectedDataset}`)
+
       .then(res => res.json())
       .then(data => {
         setTestedData(data);
