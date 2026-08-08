@@ -448,201 +448,144 @@ export default function TestingLabPage() {
         </div>
       </div>
 
-      {/* Dataset Selection Bar & Exporters */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 print:hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+      {/* Refactored 2-Row Consolidated Control Bar */}
+      <div className="w-full space-y-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm print:hidden">
+
+        {/* ── ROW 1: CONTEXT & EXPORTS (Global Scope) ────────────────────────────────── */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+
+          {/* Dataset Selector (Single Clean Dropdown) */}
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              Select Tested Dataset:
-            </span>
+            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+            <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider shrink-0">Dataset:</span>
+            <select
+              value={selectedDataset}
+              onChange={(e) => setSelectedDataset(e.target.value)}
+              className="bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 text-xs font-bold px-3 py-1.5 rounded-lg border border-indigo-200/80 dark:border-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer transition-all"
+            >
+              <option value="multi_branch_e2e">⚡ Multi-Branch Cohort (AIML, CSE, DS, CS)</option>
+              <option value="multi_year_e2e">🎓 Multi-Year Cohort (II, III, IV Year)</option>
+              <option value="4th_year">🌟 4th Year July 17 (10 Sec)</option>
+              <option value="v5_baseline">🏛️ V5 Baseline (10 Sec)</option>
+            </select>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <button
-              onClick={() => setSelectedDataset("multi_branch_e2e")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                selectedDataset === "multi_branch_e2e"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-              }`}
-            >
-              ⚡ Multi-Branch Cohort (AIML, CSE, DS, CS)
-            </button>
-            <button
-              onClick={() => setSelectedDataset("multi_year_e2e")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                selectedDataset === "multi_year_e2e"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-              }`}
-            >
-              🎓 Multi-Year Cohort (II, III, IV Year)
-            </button>
-            <button
-              onClick={() => setSelectedDataset("4th_year")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                selectedDataset === "4th_year"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-              }`}
-            >
-              🌟 4th Year July 17 (10 Sec)
-            </button>
-            <button
-              onClick={() => setSelectedDataset("v5_baseline")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                selectedDataset === "v5_baseline"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-              }`}
-            >
-              🏛️ V5 Baseline (10 Sec)
-            </button>
-          </div>
-        </div>
-
-        {/* View Mode & Export Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-            <button
-              onClick={() => setViewMode("SECTION")}
-              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
-                viewMode === "SECTION"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" /> Section Grid
-            </button>
-            <button
-              onClick={() => setViewMode("FACULTY")}
-              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
-                viewMode === "FACULTY"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
-              }`}
-            >
-              <UserCheck className="w-3.5 h-3.5" /> Faculty Matrix
-            </button>
-            <button
-              onClick={() => setViewMode("ROOM")}
-              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
-                viewMode === "ROOM"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" /> Room Utilization
-            </button>
-            <button
-              onClick={() => setViewMode("CONSTRAINTS")}
-              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
-                viewMode === "CONSTRAINTS"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5" /> Constraint Audit
-            </button>
+          {/* View Switcher Tabs (Segmented Control) */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 overflow-x-auto">
+            {[
+              { id: "SECTION", label: "Section Grid", icon: Layers },
+              { id: "FACULTY", label: "Faculty Matrix", icon: UserCheck },
+              { id: "ROOM", label: "Room Utilization", icon: Building2 },
+              { id: "CONSTRAINTS", label: "Constraint Audit", icon: ShieldCheck },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = viewMode === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setViewMode(tab.id as any)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                    isActive
+                      ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                      : "hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Export Suite Buttons */}
+          {/* Unified Export Group */}
           <div className="flex items-center gap-2">
             <button
               onClick={exportJSONPayload}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all"
             >
-              <FileCode className="w-3.5 h-3.5 text-amber-600" /> Export JSON
+              <FileCode className="w-3.5 h-3.5 text-amber-500" /> Export JSON
             </button>
             <button
               onClick={triggerPDFExport}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all"
             >
-              <Printer className="w-3.5 h-3.5 text-blue-600" /> Print / PDF
+              <Printer className="w-3.5 h-3.5 text-indigo-500" /> Print / PDF
             </button>
             <button
               onClick={triggerExcelExport}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm"
             >
               <Download className="w-3.5 h-3.5" /> Export Excel
             </button>
           </div>
         </div>
 
-        {/* Branch Filter & Search Bar */}
+        {/* ── ROW 2: INLINE FILTER TOOLBAR (SECTION Mode) ─────────────────────────────────── */}
         {viewMode === "SECTION" && (
-          <div className="space-y-3 pt-1">
-            {/* Branch Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
-                <Filter className="w-3.5 h-3.5" /> Branch Filter:
-              </span>
-              {["ALL", "CSE (AIML)", "CSE (Core)", "CSE (Data Science)", "CSE (Cyber Security)"].map((b) => (
-                <button
-                  key={b}
-                  onClick={() => setSelectedBranchFilter(b)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                    selectedBranchFilter === b
-                      ? "bg-purple-600 text-white shadow-sm"
-                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
-                  }`}
-                >
-                  {b === "ALL" ? "All Branches" : b}
-                </button>
-              ))}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search subject code (PID, BDA...) or faculty..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              />
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-3">
-              <div className="relative flex-1 w-full">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Search subject code (PID, BDA, AI...) or faculty name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto">
-                {["ALL", "L", "P", "T", "SPECIAL", "PROJECT"].map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setSlotTypeFilter(t)}
-                    className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all whitespace-nowrap ${
-                      slotTypeFilter === t
-                        ? "bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
-                    }`}
-                  >
-                    {t === "ALL" ? "All Types" : t === "L" ? "Lecture (L)" : t === "P" ? "Lab (P)" : t === "T" ? "Tutorial (T)" : t}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Dynamic Section Pills (Capped 5 Sec / Branch) */}
-        {viewMode === "SECTION" && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 border-t border-slate-100 dark:border-slate-800">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
-              Select Section:
-            </span>
-            {filteredSectionsData.map((sec) => (
-              <button
-                key={sec.id}
-                onClick={() => setSelectedSecId(sec.id)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                  selectedSecId === sec.id
-                    ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-400/50"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                }`}
+            {/* Branch Filter */}
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg">
+              <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="text-[11px] font-medium text-slate-400 shrink-0">Branch:</span>
+              <select
+                value={selectedBranchFilter}
+                onChange={(e) => setSelectedBranchFilter(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
               >
-                {sec.name}
-              </button>
-            ))}
+                <option value="ALL">All Branches</option>
+                <option value="CSE (AIML)">CSE (AIML)</option>
+                <option value="CSE (Core)">CSE (Core)</option>
+                <option value="CSE (Data Science)">CSE (Data Science)</option>
+                <option value="CSE (Cyber Security)">CSE (Cyber Security)</option>
+              </select>
+            </div>
+
+            {/* Section Selector */}
+            <div className="flex items-center gap-1.5 bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800 px-2.5 py-1.5 rounded-lg">
+              <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 shrink-0">Section:</span>
+              <select
+                value={selectedSecId}
+                onChange={(e) => setSelectedSecId(e.target.value)}
+                className="bg-transparent text-xs font-extrabold text-indigo-700 dark:text-indigo-300 focus:outline-none cursor-pointer"
+              >
+                {filteredSectionsData.map((sec) => (
+                  <option key={sec.id} value={sec.id} className="text-slate-900 bg-white dark:bg-slate-900 dark:text-white">
+                    {sec.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Slot Type Filter */}
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg">
+              <span className="text-[11px] font-medium text-slate-400 shrink-0">Type:</span>
+              <select
+                value={slotTypeFilter}
+                onChange={(e) => setSlotTypeFilter(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              >
+                <option value="ALL">All Slot Types</option>
+                <option value="L">Lecture (L)</option>
+                <option value="P">Lab (P)</option>
+                <option value="T">Tutorial (T)</option>
+                <option value="SPECIAL">Special</option>
+                <option value="PROJECT">Project</option>
+              </select>
+            </div>
+
           </div>
         )}
       </div>
