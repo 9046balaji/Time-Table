@@ -24,7 +24,10 @@ import {
   Zap,
   Activity
 } from 'lucide-react';
+import { BuildingBlockChart } from '@/components/analytics/BuildingBlockChart';
+import { ClashAnalyticsChart } from '@/components/analytics/ClashAnalyticsChart';
 import { timetableApi } from '@/lib/api';
+
 
 export default function DashboardPage() {
   const [selectedDataset, setSelectedDataset] = useState<'4th_year' | 'multi_branch_e2e' | 'v5_baseline'>('4th_year');
@@ -175,8 +178,16 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Visual Analytics & Distribution Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ClashAnalyticsChart />
+        <BuildingBlockChart />
+      </div>
+
+
       {/* Dataset Benchmark Selector & Conflict Report */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
 
         {/* Conflict Report Card with Dataset Selector */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between space-y-6">

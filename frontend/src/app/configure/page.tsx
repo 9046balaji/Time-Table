@@ -12,6 +12,9 @@ import { Faculty, Room, Subject, Section } from '@/lib/types';
 import { FacultyMasterProfile } from '@/components/faculty/FacultyMasterProfile';
 import { VenueMasterProfile } from '@/components/rooms/VenueMasterProfile';
 import { CurriculumMasterProfile } from '@/components/subjects/CurriculumMasterProfile';
+import { FacultyWorkloadChart } from '@/components/analytics/FacultyWorkloadChart';
+import { BuildingBlockChart } from '@/components/analytics/BuildingBlockChart';
+
 
 type TabType = 'faculty' | 'rooms' | 'subjects' | 'sections';
 
@@ -164,81 +167,89 @@ export default function ConfigurePage() {
 
       {/* TAB 1: COMPREHENSIVE FACULTY MASTER PROFILER HUB */}
       {activeTab === 'faculty' && (
-        <FacultyMasterProfile
-          facultyList={facultyList}
-          subjectList={subjectList}
-          sectionList={sectionList}
-          onAddFaculty={async (newFac) => {
-            try {
-              const res = await timetableApi.createFaculty(newFac);
-              setFacultyList((prev) => [...prev, res.data || ({ ...newFac, id: Date.now() } as Faculty)]);
-              showToast("Faculty profile created successfully!");
-            } catch (e) {
-              setFacultyList((prev) => [...prev, { ...newFac, id: Date.now() } as Faculty]);
-              showToast("Faculty profile added!");
-            }
-          }}
-          onUpdateFaculty={async (id, updatedFac) => {
-            try {
-              await timetableApi.updateFaculty(id, updatedFac);
-              setFacultyList((prev) => prev.map((f) => (f.id === id ? ({ ...f, ...updatedFac } as Faculty) : f)));
-              showToast("Faculty master profile updated!");
-            } catch (e) {
-              setFacultyList((prev) => prev.map((f) => (f.id === id ? ({ ...f, ...updatedFac } as Faculty) : f)));
-              showToast("Faculty master profile updated!");
-            }
-          }}
-          onDeleteFaculty={async (id) => {
-            if (!confirm("Are you sure you want to remove this faculty member from master records?")) return;
-            try {
-              await timetableApi.deleteFaculty(id);
-              setFacultyList((prev) => prev.filter((f) => f.id !== id));
-              showToast("Faculty record removed.");
-            } catch (e) {
-              setFacultyList((prev) => prev.filter((f) => f.id !== id));
-              showToast("Faculty record removed.");
-            }
-          }}
-        />
+        <div className="space-y-6">
+          <FacultyWorkloadChart />
+          <FacultyMasterProfile
+            facultyList={facultyList}
+            subjectList={subjectList}
+            sectionList={sectionList}
+            onAddFaculty={async (newFac) => {
+              try {
+                const res = await timetableApi.createFaculty(newFac);
+                setFacultyList((prev) => [...prev, res.data || ({ ...newFac, id: Date.now() } as Faculty)]);
+                showToast("Faculty profile created successfully!");
+              } catch (e) {
+                setFacultyList((prev) => [...prev, { ...newFac, id: Date.now() } as Faculty]);
+                showToast("Faculty profile added!");
+              }
+            }}
+            onUpdateFaculty={async (id, updatedFac) => {
+              try {
+                await timetableApi.updateFaculty(id, updatedFac);
+                setFacultyList((prev) => prev.map((f) => (f.id === id ? ({ ...f, ...updatedFac } as Faculty) : f)));
+                showToast("Faculty master profile updated!");
+              } catch (e) {
+                setFacultyList((prev) => prev.map((f) => (f.id === id ? ({ ...f, ...updatedFac } as Faculty) : f)));
+                showToast("Faculty master profile updated!");
+              }
+            }}
+            onDeleteFaculty={async (id) => {
+              if (!confirm("Are you sure you want to remove this faculty member from master records?")) return;
+              try {
+                await timetableApi.deleteFaculty(id);
+                setFacultyList((prev) => prev.filter((f) => f.id !== id));
+                showToast("Faculty record removed.");
+              } catch (e) {
+                setFacultyList((prev) => prev.filter((f) => f.id !== id));
+                showToast("Faculty record removed.");
+              }
+            }}
+          />
+        </div>
       )}
+
 
       {/* TAB 2: COMPREHENSIVE VENUE MASTER PROFILER HUB */}
       {activeTab === 'rooms' && (
-        <VenueMasterProfile
-          roomList={roomList}
-          onAddRoom={async (newRoom) => {
-            try {
-              const res = await timetableApi.createRoom(newRoom);
-              setRoomList((prev) => [...prev, res.data || ({ ...newRoom, id: Date.now() } as Room)]);
-              showToast("New venue created successfully!");
-            } catch (e) {
-              setRoomList((prev) => [...prev, { ...newRoom, id: Date.now() } as Room]);
-              showToast("Venue added!");
-            }
-          }}
-          onUpdateRoom={async (id, updatedRoom) => {
-            try {
-              await timetableApi.updateRoom(id, updatedRoom);
-              setRoomList((prev) => prev.map((r) => (r.id === id ? ({ ...r, ...updatedRoom } as Room) : r)));
-              showToast("Venue specifications updated!");
-            } catch (e) {
-              setRoomList((prev) => prev.map((r) => (r.id === id ? ({ ...r, ...updatedRoom } as Room) : r)));
-              showToast("Venue updated!");
-            }
-          }}
-          onDeleteRoom={async (id) => {
-            if (!confirm("Are you sure you want to remove this venue from records?")) return;
-            try {
-              await timetableApi.deleteRoom(id);
-              setRoomList((prev) => prev.filter((r) => r.id !== id));
-              showToast("Venue removed.");
-            } catch (e) {
-              setRoomList((prev) => prev.filter((r) => r.id !== id));
-              showToast("Venue removed.");
-            }
-          }}
-        />
+        <div className="space-y-6">
+          <BuildingBlockChart />
+          <VenueMasterProfile
+            roomList={roomList}
+            onAddRoom={async (newRoom) => {
+              try {
+                const res = await timetableApi.createRoom(newRoom);
+                setRoomList((prev) => [...prev, res.data || ({ ...newRoom, id: Date.now() } as Room)]);
+                showToast("New venue created successfully!");
+              } catch (e) {
+                setRoomList((prev) => [...prev, { ...newRoom, id: Date.now() } as Room]);
+                showToast("Venue added!");
+              }
+            }}
+            onUpdateRoom={async (id, updatedRoom) => {
+              try {
+                await timetableApi.updateRoom(id, updatedRoom);
+                setRoomList((prev) => prev.map((r) => (r.id === id ? ({ ...r, ...updatedRoom } as Room) : r)));
+                showToast("Venue specifications updated!");
+              } catch (e) {
+                setRoomList((prev) => prev.map((r) => (r.id === id ? ({ ...r, ...updatedRoom } as Room) : r)));
+                showToast("Venue updated!");
+              }
+            }}
+            onDeleteRoom={async (id) => {
+              if (!confirm("Are you sure you want to remove this venue from records?")) return;
+              try {
+                await timetableApi.deleteRoom(id);
+                setRoomList((prev) => prev.filter((r) => r.id !== id));
+                showToast("Venue removed.");
+              } catch (e) {
+                setRoomList((prev) => prev.filter((r) => r.id !== id));
+                showToast("Venue removed.");
+              }
+            }}
+          />
+        </div>
       )}
+
 
       {/* TAB 3: COMPREHENSIVE CURRICULUM MASTER PROFILER HUB */}
       {activeTab === 'subjects' && (

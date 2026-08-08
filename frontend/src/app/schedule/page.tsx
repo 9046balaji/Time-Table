@@ -28,7 +28,9 @@ import {
 } from "lucide-react";
 import { TimetableGrid, SlotEntry } from "@/components/timetable/TimetableGrid";
 import { SlotEditorModal } from "@/components/timetable/SlotEditorModal";
+import { RoomUtilizationHeatmap } from "@/components/analytics/RoomUtilizationHeatmap";
 import { timetableApi } from "@/lib/api";
+
 import { Faculty } from "@/lib/types";
 import { useSolver } from "@/hooks/useSolver";
 import { ScheduleSetupWizard } from "@/components/wizard/ScheduleSetupWizard";
@@ -965,8 +967,15 @@ export default function SchedulePage() {
         </div>
       )}
 
+      {/* Period-Wise Occupancy Matrix Heatmap */}
+      <div className="mb-6">
+        <RoomUtilizationHeatmap />
+      </div>
+
+
       {/* MODE 1: SINGLE SECTION MATRIX GRID */}
       {mode === 'matrix' && (
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className={isSidePanelCollapsed ? "lg:col-span-4 transition-all duration-300" : "lg:col-span-3 transition-all duration-300"}>
             {loading ? (
