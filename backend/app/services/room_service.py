@@ -46,11 +46,15 @@ class RoomService:
             except Exception as ex:
                 print(f"[RoomService Warning] DB fetch error: {ex}")
 
+        if type_filter:
+            items = [r for r in items if r.get("type") == type_filter or r.get("room_type") == type_filter]
+
         return {
             "total": len(items),
             "count": len(items),
             "items": items
         }
+
 
 
     @staticmethod

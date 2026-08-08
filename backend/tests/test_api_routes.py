@@ -42,7 +42,8 @@ async def test_list_rooms_api():
         assert response.status_code == 200
         data = response.json()
         assert "items" in data
-        assert all(r["type"] == "classroom" for r in data["items"])
+        assert all((r.get("room_type") or r.get("type")) == "classroom" for r in data["items"])
+
 
 
 @pytest.mark.asyncio
