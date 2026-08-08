@@ -546,10 +546,16 @@ export default function TestingLabPage() {
                 className="bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
               >
                 <option value="ALL">All Branches</option>
-                <option value="CSE (AIML)">CSE (AIML)</option>
-                <option value="CSE (Core)">CSE (Core)</option>
-                <option value="CSE (Data Science)">CSE (Data Science)</option>
-                <option value="CSE (Cyber Security)">CSE (Cyber Security)</option>
+                <option value="CSE (AIML)">AIML (AI & ML)</option>
+                <option value="CSE (Core)">CS (Core CSE)</option>
+                <option value="CSE (Data Science)">DS (Data Science)</option>
+                <option value="CSBS">CSBS (Business Systems)</option>
+                <option value="IOT">IOT (Internet of Things)</option>
+                <option value="BS(DS)">BS(DS) (B.Sc Data Science)</option>
+                <option value="MSC(DS)">MSC(DS) (M.Sc Data Science)</option>
+                <option value="M.TECH">M.TECH (Master of Tech)</option>
+                <option value="MINORHONORS">Minors & Honors</option>
+
               </select>
             </div>
 

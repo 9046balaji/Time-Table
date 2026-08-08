@@ -78,13 +78,17 @@ class SeedService:
             await db.commit()
             await db.refresh(ay)
 
-        # 3. Seed Branches
+        # 3. Seed Branches (Full 9 Programs)
         branches_data = [
             ("AIML", "Artificial Intelligence & Machine Learning"),
             ("CS", "Computer Science & Engineering"),
             ("DS", "Data Science"),
             ("CSBS", "Computer Science & Business Systems"),
             ("IOT", "Internet of Things"),
+            ("BS(DS)", "Bachelor of Science in Data Science"),
+            ("MSC(DS)", "Master of Science in Data Science"),
+            ("M.TECH", "Master of Technology"),
+            ("MINORHONORS", "Minors & Honors Program"),
         ]
         branch_map = {}
         for code, bname in branches_data:
@@ -116,7 +120,13 @@ class SeedService:
                 bcode = "CSBS"
             elif "IOT" in sname:
                 bcode = "IOT"
-            elif "BS(DS)" in sname or "MSC" in sname or "MTECH" in sname or "DS" in sname:
+            elif "MSC" in sname:
+                bcode = "MSC(DS)"
+            elif "MTECH" in sname or "M.TECH" in sname:
+                bcode = "M.TECH"
+            elif "BS(DS)" in sname or "BS" in sname:
+                bcode = "BS(DS)"
+            elif "DS" in sname:
                 bcode = "DS"
             elif "CS" in sname:
                 bcode = "CS"
@@ -152,14 +162,48 @@ class SeedService:
             await db.refresh(sec)
             section_map[sname] = sec.id
 
-        # 6. Seed Faculty Mappings
+        # Parse 4th Year Excel if available (19 sections sec1..sec19)
+        yr4_path = os.path.join(os.path.dirname(excel_path), "4th yr TT 17TH JULY.xlsx")
+        if os.path.exists(yr4_path):
+            try:
+                yr4_parsed = parser.parse_file(yr4_path)
+                for sname in yr4_parsed.sections.keys():
+                    if sname not in section_map:
+                        sec = Section(
+                            name=sname,
+                            label=sname,
+                            year_level=4,
+                            strength=60,
+                            branch_id=branch_map.get("CS", list(branch_map.values())[0]),
+                            academic_year_id=ay.id,
+                            is_active=True
+                        )
+                        db.add(sec)
+                        await db.commit()
+                        await db.refresh(sec)
+                        section_map[sname] = sec.id
+            except Exception as ex:
+                print(f"[Auto-Seed Warning] Could not parse 4th Year Excel: {ex}")
+
+        # 6. Seed Faculty Mappings (Rank-Based Workload Limits)
         faculty_map = {}
         for fname in parsed_result.faculty_mappings.keys():
+            upper_name = fname.upper()
+            if "DR." in upper_name or "DR " in upper_name or "PROF" in upper_name:
+                desig = "Professor"
+                max_h = 12
+            elif "ASSOC" in upper_name:
+                desig = "Associate Professor"
+                max_h = 14
+            else:
+                desig = "Assistant Professor"
+                max_h = 16
+
             fac = Faculty(
                 name=fname,
                 dept_id=dept.id,
-                designation="Assistant Professor",
-                max_hours_per_week=16,
+                designation=desig,
+                max_hours_per_week=max_h,
                 max_daily_classes=5,
                 is_external=False
             )
@@ -168,7 +212,7 @@ class SeedService:
             await db.refresh(fac)
             faculty_map[fname] = fac.id
 
-        # 7. Seed Rooms
+        # 7. Seed All 40 Rooms & Building Blocks
         room_map = {}
         all_rooms = [
             ("601", "classroom", 66, "6", "Aryabhatta Bhavan / U-Block", False),
@@ -190,6 +234,7 @@ class SeedService:
             ("617", "computer_lab", 60, "6", "Aryabhatta Bhavan / U-Block", False),
             ("618", "classroom", 66, "6", "Aryabhatta Bhavan / U-Block", False),
             ("619", "classroom", 66, "6", "Aryabhatta Bhavan / U-Block", False),
+            ("619A", "classroom", 60, "6", "Aryabhatta Bhavan / U-Block", False),
             ("215", "classroom", 60, "2", "Divisional Bhavan / H-Block", False),
             ("216", "classroom", 60, "2", "Divisional Bhavan / H-Block", False),
             ("217", "classroom", 60, "2", "Divisional Bhavan / H-Block", False),
@@ -198,15 +243,25 @@ class SeedService:
             ("402", "classroom", 60, "4", "Aryabhatta Bhavan / U-Block", False),
             ("418", "classroom", 60, "4", "Aryabhatta Bhavan / U-Block", False),
             ("501", "classroom", 60, "5", "Aryabhatta Bhavan / U-Block", False),
+            ("501A", "classroom", 60, "5", "Aryabhatta Bhavan / U-Block", False),
+            ("502", "classroom", 60, "5", "Aryabhatta Bhavan / U-Block", False),
+            ("514", "classroom", 60, "5", "Aryabhatta Bhavan / U-Block", False),
             ("514-A", "classroom", 60, "5", "Aryabhatta Bhavan / U-Block", False),
             ("514-B", "classroom", 60, "5", "Aryabhatta Bhavan / U-Block", False),
+            ("514A", "classroom", 60, "5", "Aryabhatta Bhavan / U-Block", False),
+            ("514B", "classroom", 60, "5", "Aryabhatta Bhavan / U-Block", False),
             ("518", "classroom", 60, "5", "Aryabhatta Bhavan / U-Block", False),
             ("AFTF-12", "gpu_lab", 72, "AFTF", "Aryabhatta Bhavan / U-Block", True),
             ("AFTF-13", "gpu_lab", 72, "AFTF", "Aryabhatta Bhavan / U-Block", True),
             ("AFTF-14", "gpu_lab", 72, "AFTF", "Aryabhatta Bhavan / U-Block", True),
             ("AFF-09", "project_room", 35, "AFF", "Aryabhatta Bhavan / U-Block", False),
             ("AFF-10", "project_room", 35, "AFF", "Aryabhatta Bhavan / U-Block", False),
+            ("AFF-9", "project_room", 35, "AFF", "Aryabhatta Bhavan / U-Block", False),
+            ("/AL/IL", "activity_room", 50, "1", "A-Block", False),
+            ("A-Block First Floor", "activity_room", 60, "1", "A-Block", False),
+            ("VIRTUAL_LIBRARY", "virtual_room", 100, "1", "Central Library", False),
         ]
+
         for rcode, rtype, rcap, rfloor, rblock, rgpu in all_rooms:
             room = Room(
                 dept_id=dept.id,

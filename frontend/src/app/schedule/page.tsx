@@ -794,11 +794,16 @@ export default function SchedulePage() {
               onChange={(e) => setSectionBranchFilter(e.target.value)}
               className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm focus:outline-none cursor-pointer"
             >
-              <option value="ALL">All Specializations</option>
-              <option value="AIML">CSE (AIML)</option>
-              <option value="CS">CSE (Core & CS)</option>
-              <option value="DS">CSE (Data Science)</option>
-              <option value="CSBS">CSE (CSBS)</option>
+              <option value="ALL">All Branches</option>
+              <option value="AIML">AIML (AI & ML)</option>
+              <option value="CS">CS (Core CSE)</option>
+              <option value="DS">DS (Data Science)</option>
+              <option value="CSBS">CSBS (Business Systems)</option>
+              <option value="IOT">IOT (Internet of Things)</option>
+              <option value="BS(DS)">BS(DS) (B.Sc Data Science)</option>
+              <option value="MSC(DS)">MSC(DS) (M.Sc Data Science)</option>
+              <option value="M.TECH">M.TECH (Master of Tech)</option>
+              <option value="MINORHONORS">Minors & Honors</option>
             </select>
 
             {/* Section Sort */}
