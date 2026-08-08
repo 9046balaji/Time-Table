@@ -13,7 +13,8 @@ import { FacultyMasterProfile } from '@/components/faculty/FacultyMasterProfile'
 import { VenueMasterProfile } from '@/components/rooms/VenueMasterProfile';
 import { CurriculumMasterProfile } from '@/components/subjects/CurriculumMasterProfile';
 
-type TabType = 'faculty' | 'rooms' | 'subjects';
+type TabType = 'faculty' | 'rooms' | 'subjects' | 'sections';
+
 
 interface ToastState {
   type: 'success' | 'error' | 'info';
@@ -128,11 +129,11 @@ export default function ConfigurePage() {
         </Link>
       </div>
 
-      {/* Navigation Tabs (3 Main Entity Tabs) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      {/* Navigation Tabs (4 Main Entity Tabs) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <TabButton
           title={`Faculty Instructors (${facultyList.length})`}
-          subtitle="Workload Caps & Availability"
+          subtitle="Workload Caps & Ranks"
           icon={<GraduationCap className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
           active={activeTab === 'faculty'}
           onClick={() => setActiveTab('faculty')}
@@ -151,7 +152,15 @@ export default function ConfigurePage() {
           active={activeTab === 'subjects'}
           onClick={() => setActiveTab('subjects')}
         />
+        <TabButton
+          title={`Student Sections (${sectionList.length})`}
+          subtitle="Cohort Sections & Years"
+          icon={<Users className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
+          active={activeTab === 'sections'}
+          onClick={() => setActiveTab('sections')}
+        />
       </div>
+
 
       {/* TAB 1: COMPREHENSIVE FACULTY MASTER PROFILER HUB */}
       {activeTab === 'faculty' && (
@@ -268,6 +277,49 @@ export default function ConfigurePage() {
           }}
         />
       )}
+
+      {/* TAB 4: STUDENT SECTIONS COHORT MANAGER */}
+      {activeTab === 'sections' && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Active Department Student Sections ({sectionList.length})</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Section cohorts across Year II, III, IV and Postgraduate programs</p>
+            </div>
+            <button
+              onClick={() => {
+                const name = prompt("Enter new section name (e.g. II AIML-M):");
+                if (name) {
+                  const newSec: Section = { id: Date.now(), name, label: name.slice(-1), year_level: 2, strength: 60, is_active: true };
+                  setSectionList(prev => [...prev, newSec]);
+                  showToast("New section cohort registered!");
+                }
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Section
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-2">
+            {sectionList.map((sec) => (
+              <div key={sec.id} className="p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-extrabold text-slate-900 dark:text-white">{sec.name}</span>
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                    Year {sec.year_level || 'II'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                  <span>Capacity: <strong className="text-slate-800 dark:text-slate-200">{sec.strength || 60} students</strong></span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Active</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
