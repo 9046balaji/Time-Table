@@ -8,8 +8,9 @@ class Section(BaseModel):
 
     branch_id = Column(Integer, ForeignKey("branches.id"), nullable=False)
     year_level = Column(Integer, nullable=False, default=2)  # 1, 2, 3, 4
-    label = Column(String(10), nullable=False)  # "A", "B", "C", etc.
+    label = Column(String(50), nullable=False)  # "A", "B", "C", "II MSC (DS)", etc.
     name = Column(String(50), nullable=False, index=True)  # "II AIML-A"
+
     strength = Column(Integer, default=60, nullable=False)
     academic_year_id = Column(Integer, ForeignKey("academic_years.id"), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)

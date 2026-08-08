@@ -1,6 +1,9 @@
 import os
 import sys
-from datetime import datetime, timezone
+import json
+from datetime import datetime, timezone, time
+
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
@@ -22,32 +25,30 @@ V5_FILE_PATH = "time_table/ACSE TIMETABLE (V5)  - W.e.f 15-7-2026.xlsx"
 class SeedService:
     @staticmethod
     async def auto_seed_if_empty(db: AsyncSession) -> bool:
-        """Checks if tables are populated; if empty, parses V5 Excel and seeds DB."""
-        # Check if sections table has records
-        res = await db.execute(select(Section).order_by(Section.id))
-        existing_sections = res.scalars().all()
+        # Check if sections, faculty, and rooms tables have full records
+        res_sec = await db.execute(select(func.count(Section.id)))
+        sec_count = res_sec.scalar() or 0
 
-        if existing_sections:
-            # Check if existing sections contain generic names like "Section 1"
-            has_generic = any("Section " in s.name for s in existing_sections)
-            if has_generic:
-                print("[Auto-Seed] Updating existing generic section records with real VFSTR academic names...")
-                from parser.excel_parser import resolve_v5_path
-                excel_path = resolve_v5_path()
-                if os.path.exists(excel_path):
-                    parsed_res = ExcelTimetableParser().parse_file(excel_path)
-                    real_names = list(parsed_res.sections.keys())
-                    for idx, sec_obj in enumerate(existing_sections):
-                        if idx < len(real_names):
-                            sec_obj.name = real_names[idx]
-                            sec_obj.label = real_names[idx].split("-")[-1].strip() if "-" in real_names[idx] else "Main"
-                    await db.commit()
-                    print(f"[Auto-Seed] Updated {min(len(existing_sections), len(real_names))} section names to real academic codes.")
-            else:
-                print("[Auto-Seed] Database already seeded with real section names. Skipping.")
+        res_fac = await db.execute(select(func.count(Faculty.id)))
+        fac_count = res_fac.scalar() or 0
+
+        res_rm = await db.execute(select(func.count(Room.id)))
+        room_count = res_rm.scalar() or 0
+
+        if sec_count >= 59 and fac_count >= 110 and room_count >= 40:
+            print(f"[Auto-Seed] Database fully seeded ({sec_count} sections, {fac_count} faculty, {room_count} rooms). Skipping.")
             return False
 
-        print("[Auto-Seed] Empty database detected. Parsing V5 Excel and seeding PostgreSQL...")
+        print(f"[Auto-Seed] Incomplete database detected ({sec_count} sections, {fac_count} faculty, {room_count} rooms). Re-seeding full master dataset...")
+        
+        # Clean out incomplete old seed records if present
+        from sqlalchemy import delete
+        await db.execute(delete(TimetableEntry))
+        await db.execute(delete(Section))
+        await db.execute(delete(Faculty))
+        await db.execute(delete(Room))
+        await db.commit()
+
 
         # 1. Seed Department
         dept_stmt = select(Department).where(Department.code == "ACSE")
@@ -145,7 +146,7 @@ class SeedService:
             else:
                 ylevel = 2
 
-            label = sname
+            label = (sname.split("-")[-1].strip() if "-" in sname else sname)[:10]
             brid = branch_map.get(bcode, list(branch_map.values())[0])
 
             sec = Section(
@@ -171,13 +172,15 @@ class SeedService:
                     if sname not in section_map:
                         sec = Section(
                             name=sname,
-                            label=sname,
+                            label=sname[:10],
                             year_level=4,
                             strength=60,
                             branch_id=branch_map.get("CS", list(branch_map.values())[0]),
                             academic_year_id=ay.id,
                             is_active=True
                         )
+
+
                         db.add(sec)
                         await db.commit()
                         await db.refresh(sec)
@@ -185,9 +188,28 @@ class SeedService:
             except Exception as ex:
                 print(f"[Auto-Seed Warning] Could not parse 4th Year Excel: {ex}")
 
-        # 6. Seed Faculty Mappings (Rank-Based Workload Limits)
+        # 6. Seed Faculty Mappings (All 116 Faculty Members & Workload Limits)
+        all_faculty_names = set(parsed_result.faculty_mappings.keys())
+        seed_dir = os.path.abspath("data/seed")
+        for sname_json in ["original_v5_faculty.json", "original_v4_faculty.json"]:
+            spath = os.path.join(seed_dir, sname_json)
+            if os.path.exists(spath):
+                try:
+                    with open(spath, "r", encoding="utf-8") as f:
+                        f_data = json.load(f)
+                        if isinstance(f_data, dict):
+                            all_faculty_names.update(f_data.keys())
+                        elif isinstance(f_data, list):
+                            for fitem in f_data:
+                                fn = fitem.get("name") if isinstance(fitem, dict) else str(fitem)
+                                if fn:
+                                    all_faculty_names.add(fn)
+                except Exception as ex:
+                    print(f"[Auto-Seed Warning] Could not load faculty seed {sname_json}: {ex}")
+
+
         faculty_map = {}
-        for fname in parsed_result.faculty_mappings.keys():
+        for fname in sorted(all_faculty_names):
             upper_name = fname.upper()
             if "DR." in upper_name or "DR " in upper_name or "PROF" in upper_name:
                 desig = "Professor"
@@ -204,13 +226,13 @@ class SeedService:
                 dept_id=dept.id,
                 designation=desig,
                 max_hours_per_week=max_h,
-                max_daily_classes=5,
                 is_external=False
             )
             db.add(fac)
             await db.commit()
             await db.refresh(fac)
             faculty_map[fname] = fac.id
+
 
         # 7. Seed All 40 Rooms & Building Blocks
         room_map = {}
@@ -279,47 +301,57 @@ class SeedService:
             room_map[rcode] = room.id
 
         # 8. Seed Default Time Slots (MON-SAT, Periods 1-8 + Breaks)
-        days = ["MON", "TUE", "WED", "THU", "FRI", "SAT"]
-        times = [
-            (1, "08:15", "09:05", False),
-            (2, "09:05", "09:55", False),
-            (None, "09:55", "10:10", True), # Tea Break
-            (3, "10:10", "11:00", False),
-            (4, "11:00", "11:50", False),
-            (5, "11:50", "12:40", False),
-            (None, "12:40", "13:40", True), # Lunch Break
-            (6, "13:40", "14:30", False),
-            (7, "14:30", "15:20", False),
-            (8, "15:20", "16:05", False),
-        ]
         slot_map = {}
-        for d in days:
-            for p, st, et, is_b in times:
-                ts = TimeSlot(
-                    day=d,
-                    period=p,
-                    start_time=st,
-                    end_time=et,
-                    is_break=is_b,
-                    slot_label="TEA BREAK" if p is None and st == "09:55" else "LUNCH BREAK" if is_b else f"Period {p}"
-                )
-                db.add(ts)
-                await db.commit()
-                await db.refresh(ts)
-                if p is not None:
-                    slot_map[(d, p)] = ts.id
+        res_ts = await db.execute(select(TimeSlot))
+        existing_slots = res_ts.scalars().all()
+
+        if existing_slots:
+            for ts in existing_slots:
+                if ts.period is not None:
+                    slot_map[(ts.day, ts.period)] = ts.id
+        else:
+            days = ["MON", "TUE", "WED", "THU", "FRI", "SAT"]
+            times = [
+                (1, time(8, 15), time(9, 5), False),
+                (2, time(9, 5), time(9, 55), False),
+                (None, time(9, 55), time(10, 10), True), # Tea Break
+                (3, time(10, 10), time(11, 0), False),
+                (4, time(11, 0), time(11, 50), False),
+                (5, time(11, 50), time(12, 40), False),
+                (None, time(12, 40), time(13, 40), True), # Lunch Break
+                (6, time(13, 40), time(14, 30), False),
+                (7, time(14, 30), time(15, 20), False),
+                (8, time(15, 20), time(16, 5), False),
+            ]
+            for d in days:
+                for p, st, et, is_b in times:
+                    ts = TimeSlot(
+                        day=d,
+                        period=p,
+                        start_time=st,
+                        end_time=et,
+                        is_blocked=is_b,
+                        slot_label="TEA BREAK" if p is None and st == time(9, 55) else ("LUNCH BREAK" if is_b else f"Period {p}")
+                    )
+                    db.add(ts)
+                    await db.commit()
+                    await db.refresh(ts)
+                    if p is not None:
+                        slot_map[(d, p)] = ts.id
+
 
         # 9. Create Timetable Versions (V5 and V3)
         from parser.excel_parser import resolve_version_path
 
+        from datetime import date
+
         # Seed V5 (Version ID 5)
         tv5 = TimetableVersion(
-            id=5,
+            academic_year_id=ay.id,
             version_label="V5",
-            effective_date="15-07-2026",
-            is_active=True,
-            hard_violations_count=51,
-            soft_violations_count=12,
+            valid_from=date(2026, 7, 15),
+            is_current=True,
+            source="IMPORTED",
             notes="Current baseline imported from V5 Excel dataset"
         )
         db.add(tv5)
@@ -328,24 +360,24 @@ class SeedService:
 
         # Seed V3 (Version ID 3)
         tv3 = TimetableVersion(
-            id=3,
+            academic_year_id=ay.id,
             version_label="V3",
-            effective_date="13-07-2026",
-            is_active=False,
-            hard_violations_count=64,
-            soft_violations_count=18,
+            valid_from=date(2026, 7, 13),
+            is_current=False,
+            source="IMPORTED",
             notes="Previous revision imported from V3 Excel dataset"
         )
         db.add(tv3)
         await db.commit()
         await db.refresh(tv3)
 
+
         # 10. Seed Timetable Entries for V5
         entries_count = 0
-        for slot in parsed_result.slots:
-            sec_id = section_map.get(slot.section_name)
+        for slot in parsed_result.raw_entries:
+            sec_id = section_map.get(slot.section)
             ts_id = slot_map.get((slot.day, slot.period))
-            rm_id = room_map.get(slot.room_code) if slot.room_code else None
+            rm_id = room_map.get(slot.room) if slot.room else None
 
             if sec_id and ts_id:
                 entry = TimetableEntry(
@@ -353,13 +385,11 @@ class SeedService:
                     section_id=sec_id,
                     time_slot_id=ts_id,
                     room_id=rm_id,
-                    entry_type=slot.slot_type,
+                    entry_type=slot.subject_type,
                     raw_subject_text=slot.subject_code,
-                    raw_room_text=slot.room_code or "",
-                    raw_faculty_text=", ".join(slot.faculty_names) if slot.faculty_names else "",
-                    faculty_ids=[faculty_map[f] for f in slot.faculty_names if f in faculty_map],
-                    source="EXCEL_PARSER_V5",
-                    span_periods=slot.span_periods
+                    raw_room_text=slot.room or "",
+                    faculty_ids=[faculty_map[f] for f in slot.faculty_list if f in faculty_map],
+                    span_periods=1
                 )
                 db.add(entry)
                 entries_count += 1
@@ -368,10 +398,10 @@ class SeedService:
         v3_path = resolve_version_path("V3")
         if os.path.exists(v3_path):
             parsed_v3 = parser.parse_file(v3_path)
-            for slot in parsed_v3.slots:
-                sec_id = section_map.get(slot.section_name)
+            for slot in parsed_v3.raw_entries:
+                sec_id = section_map.get(slot.section)
                 ts_id = slot_map.get((slot.day, slot.period))
-                rm_id = room_map.get(slot.room_code) if slot.room_code else None
+                rm_id = room_map.get(slot.room) if slot.room else None
 
                 if sec_id and ts_id:
                     entry = TimetableEntry(
@@ -379,16 +409,15 @@ class SeedService:
                         section_id=sec_id,
                         time_slot_id=ts_id,
                         room_id=rm_id,
-                        entry_type=slot.slot_type,
+                        entry_type=slot.subject_type,
                         raw_subject_text=slot.subject_code,
-                        raw_room_text=slot.room_code or "",
-                        raw_faculty_text=", ".join(slot.faculty_names) if slot.faculty_names else "",
-                        faculty_ids=[faculty_map[f] for f in slot.faculty_names if f in faculty_map],
-                        source="EXCEL_PARSER_V3",
-                        span_periods=slot.span_periods
+                        raw_room_text=slot.room or "",
+                        faculty_ids=[faculty_map[f] for f in slot.faculty_list if f in faculty_map],
+                        span_periods=1
                     )
                     db.add(entry)
                     entries_count += 1
+
 
         await db.commit()
         print(f"[Auto-Seed Complete] Loaded {entries_count} timetable entries across V5 and V3 versions into PostgreSQL.")

@@ -24,6 +24,8 @@ class RoomService:
         if db is not None:
             try:
                 stmt = select(Room)
+                if type_filter:
+                    stmt = stmt.where(Room.room_type == type_filter)
                 res = await db.execute(stmt)
                 db_rooms = res.scalars().all()
                 if db_rooms:
@@ -31,25 +33,25 @@ class RoomService:
                         {
                             "id": r.id,
                             "code": r.code,
-                            "type": r.type,
+                            "type": r.room_type,
+                            "room_type": r.room_type,
                             "capacity": r.capacity,
                             "floor": r.floor,
                             "block": r.block,
+                            "gpu_capable": r.gpu_capable,
+                            "is_available": r.is_available,
                         }
                         for r in db_rooms
                     ]
-            except Exception:
-                pass
-
-        filtered = items
-        if type_filter:
-            filtered = [r for r in filtered if r["type"] == type_filter]
+            except Exception as ex:
+                print(f"[RoomService Warning] DB fetch error: {ex}")
 
         return {
-            "total": 35,
-            "count": len(filtered),
-            "items": filtered
+            "total": len(items),
+            "count": len(items),
+            "items": items
         }
+
 
     @staticmethod
     async def get_by_id(db: AsyncSession, room_id: int) -> Optional[Room]:
