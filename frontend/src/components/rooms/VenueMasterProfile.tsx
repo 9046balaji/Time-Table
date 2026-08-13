@@ -131,16 +131,21 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
         if (!matchCode && !matchBlock) return false;
       }
 
-      const rType = (rm.room_type || rm.type || "").toLowerCase();
-      const isGpu = rm.gpu_capable || rm.code.includes("AFTF");
-
-      if (quickFilter === "CLASS" && (rType.includes("lab") || isGpu)) return false;
-      if (quickFilter === "LAB" && !rType.includes("lab")) return false;
-      if (quickFilter === "GPU" && !isGpu) return false;
-
       return true;
     });
   }, [roomList, searchQuery, quickFilter]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
+
+  const paginatedRooms = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredRooms.slice(start, start + itemsPerPage);
+  }, [filteredRooms, currentPage]);
+
+  const totalPages = Math.ceil(filteredRooms.length / itemsPerPage) || 1;
+
+
 
   // Helper to find room occupied slot
   const getScheduledSlot = (day: string, period: number) => {
@@ -236,7 +241,7 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
 
       {/* 3. Card Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredRooms.map((rm) => {
+        {paginatedRooms.map((rm) => {
           const isGpu = rm.gpu_capable || rm.code.includes("AFTF");
           const isLab = (rm.room_type || rm.type || "").toLowerCase().includes("lab") || isGpu;
           const cap = rm.capacity || (isGpu ? 72 : isLab ? 60 : 66);
@@ -296,6 +301,35 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
           );
         })}
       </div>
+
+      {/* Pagination Controls Bar */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-xs font-medium">
+          <span className="text-slate-500 dark:text-slate-400">
+            Showing {paginatedRooms.length} of {filteredRooms.length} active department venues
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 disabled:opacity-40 font-bold transition-all"
+            >
+              Prev
+            </button>
+            <span className="px-3 font-bold text-slate-800 dark:text-slate-200">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 disabled:opacity-40 font-bold transition-all"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
 
       {/* 4. Slide-Over Venue Master Dossier Drawer */}
       {selectedRoom && (

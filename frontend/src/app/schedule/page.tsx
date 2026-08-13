@@ -28,8 +28,8 @@ import {
 } from "lucide-react";
 import { TimetableGrid, SlotEntry } from "@/components/timetable/TimetableGrid";
 import { SlotEditorModal } from "@/components/timetable/SlotEditorModal";
-import { RoomUtilizationHeatmap } from "@/components/analytics/RoomUtilizationHeatmap";
 import { timetableApi } from "@/lib/api";
+
 
 import { Faculty } from "@/lib/types";
 import { useSolver } from "@/hooks/useSolver";
@@ -746,14 +746,6 @@ export default function SchedulePage() {
             <Columns className="w-4 h-4" /> Compare 2 Sections
           </button>
 
-          <button
-            onClick={() => setMode('stack')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              mode === 'stack' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-            }`}
-          >
-            <LayoutList className="w-4 h-4" /> Cohort Stack
-          </button>
 
           <button
             onClick={() => setMode('faculty')}
@@ -967,10 +959,7 @@ export default function SchedulePage() {
         </div>
       )}
 
-      {/* Period-Wise Occupancy Matrix Heatmap */}
-      <div className="mb-6">
-        <RoomUtilizationHeatmap />
-      </div>
+
 
 
       {/* MODE 1: SINGLE SECTION MATRIX GRID */}

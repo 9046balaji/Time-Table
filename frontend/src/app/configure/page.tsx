@@ -35,6 +35,30 @@ export default function ConfigurePage() {
   const [sectionList, setSectionList] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Collapsible Analytics State
+  const [showFacultyAnalytics, setShowFacultyAnalytics] = useState(false);
+  const [showRoomAnalytics, setShowRoomAnalytics] = useState(false);
+
+  // Section Tab Pagination & Search State
+  const [sectionSearch, setSectionSearch] = useState("");
+  const [sectionPage, setSectionPage] = useState(1);
+  const sectionsPerPage = 10;
+
+  const filteredSections = useMemo(() => {
+    return sectionList.filter((s: Section) =>
+      s.name.toLowerCase().includes(sectionSearch.toLowerCase())
+    );
+  }, [sectionList, sectionSearch]);
+
+  const paginatedSections = useMemo(() => {
+    const start = (sectionPage - 1) * sectionsPerPage;
+    return filteredSections.slice(start, start + sectionsPerPage);
+  }, [filteredSections, sectionPage]);
+
+  const totalSectionPages = Math.ceil(filteredSections.length / sectionsPerPage) || 1;
+
+
+
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
@@ -168,7 +192,16 @@ export default function ConfigurePage() {
       {/* TAB 1: COMPREHENSIVE FACULTY MASTER PROFILER HUB */}
       {activeTab === 'faculty' && (
         <div className="space-y-6">
-          <FacultyWorkloadChart />
+          <div className="flex justify-end">
+            <button
+              onClick={() => setShowFacultyAnalytics(!showFacultyAnalytics)}
+              className="text-xs font-bold text-blue-700 dark:text-blue-300 hover:underline inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              {showFacultyAnalytics ? "Hide Workload Analytics" : "Show Workload Analytics"}
+            </button>
+          </div>
+          {showFacultyAnalytics && <FacultyWorkloadChart />}
           <FacultyMasterProfile
             facultyList={facultyList}
             subjectList={subjectList}
@@ -212,7 +245,17 @@ export default function ConfigurePage() {
       {/* TAB 2: COMPREHENSIVE VENUE MASTER PROFILER HUB */}
       {activeTab === 'rooms' && (
         <div className="space-y-6">
-          <BuildingBlockChart />
+          <div className="flex justify-end">
+            <button
+              onClick={() => setShowRoomAnalytics(!showRoomAnalytics)}
+              className="text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:underline inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 transition-colors cursor-pointer"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              {showRoomAnalytics ? "Hide Building Capacity Analytics" : "Show Building Capacity Analytics"}
+            </button>
+          </div>
+          {showRoomAnalytics && <BuildingBlockChart />}
+
           <VenueMasterProfile
             roomList={roomList}
             onAddRoom={async (newRoom) => {
@@ -292,42 +335,85 @@ export default function ConfigurePage() {
       {/* TAB 4: STUDENT SECTIONS COHORT MANAGER */}
       {activeTab === 'sections' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Active Department Student Sections ({sectionList.length})</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">Section cohorts across Year II, III, IV and Postgraduate programs</p>
             </div>
-            <button
-              onClick={() => {
-                const name = prompt("Enter new section name (e.g. II AIML-M):");
-                if (name) {
-                  const newSec: Section = { id: Date.now(), name, label: name.slice(-1), year_level: 2, strength: 60, is_active: true };
-                  setSectionList(prev => [...prev, newSec]);
-                  showToast("New section cohort registered!");
-                }
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all"
-            >
-              <Plus className="w-3.5 h-3.5" /> Add Section
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search section..."
+                  value={sectionSearch}
+                  onChange={(e) => {
+                    setSectionSearch(e.target.value);
+                    setSectionPage(1);
+                  }}
+                  className="pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 w-44"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  const name = prompt("Enter new section name (e.g. II AIML-M):");
+                  if (name) {
+                    const newSec: Section = { id: Date.now(), name, label: name.slice(-1), year_level: 2, strength: 60, is_active: true };
+                    setSectionList(prev => [...prev, newSec]);
+                    showToast("New section cohort registered!");
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Section
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-2">
-            {sectionList.map((sec) => (
-              <div key={sec.id} className="p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-2">
+            {paginatedSections.map((sec) => (
+              <div key={sec.id} className="p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2 hover:border-amber-400 transition-all">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-extrabold text-slate-900 dark:text-white">{sec.name}</span>
-                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                  <span className="text-xs font-extrabold text-slate-900 dark:text-white">{sec.name}</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                     Year {sec.year_level || 'II'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                  <span>Capacity: <strong className="text-slate-800 dark:text-slate-200">{sec.strength || 60} students</strong></span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Active</span>
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                  <span>Capacity: <strong className="text-slate-800 dark:text-slate-200">{sec.strength || 60}</strong></span>
+                  <span className="text-emerald-600 font-semibold">Active</span>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Section Pagination Bar */}
+          {totalSectionPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800 text-xs">
+              <span className="text-slate-500 dark:text-slate-400">
+                Showing {paginatedSections.length} of {filteredSections.length} section cohorts
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  disabled={sectionPage === 1}
+                  onClick={() => setSectionPage(p => Math.max(1, p - 1))}
+                  className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 disabled:opacity-40 font-semibold"
+                >
+                  Prev
+                </button>
+                <span className="px-2 font-bold text-slate-700 dark:text-slate-300">
+                  Page {sectionPage} of {totalSectionPages}
+                </span>
+                <button
+                  disabled={sectionPage === totalSectionPages}
+                  onClick={() => setSectionPage(p => Math.min(totalSectionPages, p + 1))}
+                  className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 disabled:opacity-40 font-semibold"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
