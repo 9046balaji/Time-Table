@@ -23,7 +23,9 @@ export default function ImportPage() {
       const response = await timetableApi.importExcel(file);
       setImportResult(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to parse Excel file. Please try again.');
+      const raw = err.response?.data?.detail;
+      const msg = typeof raw === "string" ? raw : (Array.isArray(raw) ? raw.map((d: any) => d.msg || JSON.stringify(d)).join("; ") : "Failed to parse Excel file. Please try again.");
+      setError(msg);
     } finally {
       setLoading(false);
     }

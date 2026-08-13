@@ -197,7 +197,16 @@ export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSucc
         }
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Generation failed. Please check the backend solver is running.");
+      const rawDetail = err.response?.data?.detail;
+      let errMsg = "Generation failed. Please check the backend solver is running.";
+      if (typeof rawDetail === "string") {
+        errMsg = rawDetail;
+      } else if (Array.isArray(rawDetail)) {
+        errMsg = rawDetail.map((d: any) => (typeof d === "string" ? d : d.msg || JSON.stringify(d))).join("; ");
+      } else if (rawDetail && typeof rawDetail === "object") {
+        errMsg = rawDetail.msg || JSON.stringify(rawDetail);
+      }
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
