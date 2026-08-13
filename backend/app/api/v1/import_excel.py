@@ -83,16 +83,162 @@ async def import_excel_timetable(file: UploadFile = File(...)):
             for d in report.details
         ]
 
+        # Build Section Breakdown Report
+        clash_sections = set()
+        clash_rooms = set()
+        clash_faculty = set()
+        for d in report.details:
+            clash_sections.add(d.section_a)
+            clash_sections.add(d.section_b)
+            if d.clash_type == "ROOM":
+                clash_rooms.add(d.key)
+            elif d.clash_type == "FACULTY":
+                clash_faculty.add(d.key)
+
+        sections_report = []
+        for sec_name, slots in parsed_res.sections.items():
+            rooms = sorted(list(set(s.room for s in slots if s.room)))
+            faculty_members = sorted(list(set(f for s in slots for f in s.faculty_list if f)))
+            subjects = sorted(list(set(s.subject_code for s in slots if s.subject_code and s.subject_code not in ["BREAK", "LUNCH"])))
+            ct = slots[0].class_teacher if slots and hasattr(slots[0], "class_teacher") else ""
+
+            l_count = sum(1 for s in slots if s.subject_type == "L")
+            p_count = sum(1 for s in slots if s.subject_type in ["P", "T&P"])
+            t_count = sum(1 for s in slots if s.subject_type == "T")
+
+            sections_report.append({
+                "name": sec_name,
+                "total_slots": len(slots),
+                "lecture_slots": l_count,
+                "lab_slots": p_count,
+                "tutorial_slots": t_count,
+                "rooms": rooms,
+                "faculty_count": len(faculty_members),
+                "faculty_list": faculty_members,
+                "subjects": subjects,
+                "class_teacher": ct,
+                "has_clash": sec_name in clash_sections,
+            })
+        sections_report.sort(key=lambda x: x["name"])
+
+        # Build Faculty Workload Report
+        faculty_map = {}
+        for s in parsed_res.raw_entries:
+            for f in s.faculty_list:
+                if not f or f in ["LIBRARY", "BREAK", "LUNCH"]:
+                    continue
+                if f not in faculty_map:
+                    faculty_map[f] = {
+                        "name": f,
+                        "total_hours": 0,
+                        "sections": set(),
+                        "subjects": set(),
+                        "rooms": set(),
+                    }
+                faculty_map[f]["total_hours"] += 1
+                faculty_map[f]["sections"].add(s.section)
+                if s.subject_code and s.subject_code not in ["BREAK", "LUNCH"]:
+                    faculty_map[f]["subjects"].add(s.subject_code)
+                if s.room:
+                    faculty_map[f]["rooms"].add(s.room)
+
+        faculty_report = [
+            {
+                "name": info["name"],
+                "total_hours": info["total_hours"],
+                "sections_count": len(info["sections"]),
+                "sections": sorted(list(info["sections"])),
+                "subjects": sorted(list(info["subjects"])),
+                "rooms": sorted(list(info["rooms"])),
+                "has_clash": any(f_name.lower() in f_key.lower() for f_key in clash_faculty for f_name in [info["name"]]),
+            }
+            for info in faculty_map.values()
+        ]
+        faculty_report.sort(key=lambda x: x["name"])
+
+        # Build Rooms Utilization Report
+        rooms_map = {}
+        for s in parsed_res.raw_entries:
+            rm = s.room
+            if not rm:
+                continue
+            if rm not in rooms_map:
+                rooms_map[rm] = {
+                    "code": rm,
+                    "total_slots": 0,
+                    "sections": set(),
+                    "subjects": set(),
+                }
+            rooms_map[rm]["total_slots"] += 1
+            rooms_map[rm]["sections"].add(s.section)
+            if s.subject_code and s.subject_code not in ["BREAK", "LUNCH"]:
+                rooms_map[rm]["subjects"].add(s.subject_code)
+
+        rooms_report = [
+            {
+                "code": rm_info["code"],
+                "total_slots": rm_info["total_slots"],
+                "sections_count": len(rm_info["sections"]),
+                "sections": sorted(list(rm_info["sections"])),
+                "subjects": sorted(list(rm_info["subjects"])),
+                "occupancy_rate": min(100, round((rm_info["total_slots"] / 48) * 100)),
+                "has_clash": rm_info["code"] in clash_rooms,
+            }
+            for rm_info in rooms_map.values()
+        ]
+        rooms_report.sort(key=lambda x: x["code"])
+
+        # Build Subjects Distribution Report
+        subjects_map = {}
+        for s in parsed_res.raw_entries:
+            code = s.subject_code
+            if not code or code in ["BREAK", "LUNCH"]:
+                continue
+            if code not in subjects_map:
+                subjects_map[code] = {
+                    "code": code,
+                    "type": s.subject_type,
+                    "total_slots": 0,
+                    "sections": set(),
+                    "faculty": set(),
+                }
+            subjects_map[code]["total_slots"] += 1
+            subjects_map[code]["sections"].add(s.section)
+            for f in s.faculty_list:
+                if f:
+                    subjects_map[code]["faculty"].add(f)
+
+        subjects_report = [
+            {
+                "code": info["code"],
+                "type": info["type"],
+                "total_slots": info["total_slots"],
+                "sections_count": len(info["sections"]),
+                "sections": sorted(list(info["sections"])),
+                "faculty_count": len(info["faculty"]),
+                "faculty": sorted(list(info["faculty"])),
+            }
+            for info in subjects_map.values()
+        ]
+        subjects_report.sort(key=lambda x: x["code"])
+
         return {
             "filename": clean_filename,
             "total_sections": parsed_res.total_sections,
             "total_slots": parsed_res.total_slots,
+            "total_faculty": len(faculty_report),
+            "total_rooms": len(rooms_report),
+            "total_subjects": len(subjects_report),
             "faculty_mappings": len(parsed_res.faculty_mappings),
             "hard_violations": report.total_hard_violations,
             "room_clashes": report.room_clashes,
             "faculty_clashes": report.faculty_clashes,
             "status": "VALID" if report.total_hard_violations == 0 else "NEEDS_FIX",
-            "clash_details": details_json
+            "clash_details": details_json,
+            "sections_report": sections_report,
+            "faculty_report": faculty_report,
+            "rooms_report": rooms_report,
+            "subjects_report": subjects_report,
         }
     except Exception as e:
         raise HTTPException(
