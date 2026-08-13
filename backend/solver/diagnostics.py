@@ -1,5 +1,4 @@
-from typing import List, Dict, Any, Tuple
-from ortools.sat.python import cp_model
+from typing import List, Dict, Any, Tuple, Optional
 
 
 class InfeasibilityDiagnosticAnalyzer:
@@ -8,7 +7,7 @@ class InfeasibilityDiagnosticAnalyzer:
     returns INFEASIBLE by testing constraint sub-groups systematically.
     """
 
-    def __init__(self, solver_config: Any):
+    def __init__(self, solver_config: Optional[Any] = None):
         self.config = solver_config
 
     def analyze_infeasibility(
@@ -17,16 +16,19 @@ class InfeasibilityDiagnosticAnalyzer:
         section_subjects: List[Dict[str, Any]],
         rooms: List[Dict[str, Any]],
         time_slots: List[Dict[str, Any]],
-        faculty_subject_map: Dict[str, List[str]]
+        faculty_subject_map: Optional[Dict[str, List[str]]] = None
     ) -> Dict[str, Any]:
         """
         Runs a diagnostic pass across constraint families to identify 
-        conflicting rules (e.g. Room Capacity vs Section Size, Faculty Double Booking).
+        conflicting rules (e.g. Room Capacity vs Section Size, Lab Supply, Faculty Double Booking).
         """
-        diagnostics = []
+        diagnostics: List[Dict[str, Any]] = []
+        faculty_subject_map = faculty_subject_map or {}
 
+        # -------------------------------------------------------------------
         # Check 1: Room Capacity vs Section Strength (HC-05)
-        max_section_strength = max((s.get("strength", 60) for s in sections), default=60)
+        # -------------------------------------------------------------------
+        max_section_strength = max((s.get("student_count", s.get("strength", 60)) for s in sections), default=60)
         max_room_capacity = max((r.get("capacity", 60) for r in rooms), default=60)
 
         if max_section_strength > max_room_capacity:
@@ -35,13 +37,23 @@ class InfeasibilityDiagnosticAnalyzer:
                 "severity": "CRITICAL",
                 "issue": "Room Capacity Deficit",
                 "description": f"Section strength ({max_section_strength}) exceeds largest room capacity ({max_room_capacity}).",
-                "recommended_action": "Increase room capacity or split large sections."
+                "recommended_action": "Increase room capacity or split large sections into smaller sub-sections."
             })
 
+        # -------------------------------------------------------------------
         # Check 2: Total Required Lab Slots vs Available Lab Room Slots (HC-06)
-        total_lab_slots_needed = sum(s.get("total_slots_needed", 3) for s in section_subjects if s.get("subject_type") == "P")
-        lab_rooms_count = sum(1 for r in rooms if r.get("room_type") in ("computer_lab", "gpu_lab"))
-        available_lab_slots = lab_rooms_count * len(time_slots)
+        # -------------------------------------------------------------------
+        total_lab_slots_needed = sum(
+            s.get("total_slots_needed", 3)
+            for s in section_subjects
+            if str(s.get("subject_type", "")).upper() in ("P", "LAB")
+        )
+        lab_rooms_count = sum(
+            1 for r in rooms
+            if str(r.get("room_type", "")).lower() in ("computer_lab", "gpu_lab", "lab")
+        )
+        usable_time_slots = [t for t in time_slots if not t.get("is_blocked")]
+        available_lab_slots = lab_rooms_count * len(usable_time_slots)
 
         if total_lab_slots_needed > available_lab_slots:
             diagnostics.append({
@@ -49,30 +61,34 @@ class InfeasibilityDiagnosticAnalyzer:
                 "severity": "HIGH",
                 "issue": "Lab Room Supply Shortage",
                 "description": f"Needed lab slots ({total_lab_slots_needed}) exceed available lab room slots ({available_lab_slots}).",
-                "recommended_action": "Add more lab venues or extend operational periods."
+                "recommended_action": "Add more lab venues, convert generic classrooms, or extend operational periods."
             })
 
-        # Check 3: Faculty Workload Over-allocation (HC-09)
+        # -------------------------------------------------------------------
+        # Check 3: Faculty Workload Over-allocation (HC-09/HC-11)
+        # -------------------------------------------------------------------
         for faculty, subjects in faculty_subject_map.items():
             total_assigned_hours = len(subjects) * 3
-            max_allowed = 16  # standard cap
-            if total_assigned_hours > max_allowed * 6:  # weekly context
+            max_allowed = 16  # standard assistant professor cap
+            if total_assigned_hours > max_allowed * 6:
                 diagnostics.append({
-                    "constraint_id": "HC-09",
+                    "constraint_id": "HC-11",
                     "severity": "MEDIUM",
                     "issue": f"Faculty Overload: {faculty}",
-                    "description": f"Faculty assigned {total_assigned_hours} hours exceeding recommended weekly limit ({max_allowed}).",
-                    "recommended_action": f"Reassign some subjects from {faculty} to co-faculty."
+                    "description": f"Faculty assigned {total_assigned_hours} hours, exceeding recommended weekly limit ({max_allowed}h).",
+                    "recommended_action": f"Reassign some subjects from {faculty} to available co-faculty."
                 })
 
+        # -------------------------------------------------------------------
         # Default conflict report if mathematical solver bound failed
+        # -------------------------------------------------------------------
         if not diagnostics:
             diagnostics.append({
                 "constraint_id": "HC-01/HC-02",
                 "severity": "HIGH",
                 "issue": "Simultaneous Room and Faculty Over-Subscription",
-                "description": "The combination of room assignments, faculty availability, and continuous 2-period lab blocks creates an unresolvable bottleneck.",
-                "recommended_action": "Relax SC-01/SC-07 soft penalties or set solver timeout to 300s."
+                "description": "The combination of room assignments, faculty availability, and continuous lab blocks creates an unresolvable bottleneck.",
+                "recommended_action": "Relax soft penalties or increase CP-SAT solver timeout parameter to 300s."
             })
 
         return {
@@ -81,3 +97,4 @@ class InfeasibilityDiagnosticAnalyzer:
             "diagnostics": diagnostics,
             "summary": f"Detected {len(diagnostics)} constraint bottleneck(s) preventing complete schedule generation."
         }
+
