@@ -8,7 +8,7 @@ class CourseAssignmentInput(BaseModel):
     subject_type: str = Field("L", example="L")  # L, P, T
     faculty_name: str = Field(..., example="Dr. S. Srikantha Reddy")  # Primary faculty
     co_faculty: List[str] = Field(default_factory=list, example=["P. Girija", "K. Nikhitha"])  # Lab co-instructors
-    weekly_hours: int = Field(3, ge=1, le=10)
+    weekly_hours: int = Field(3, ge=1, le=30)
     continuous_slots: int = Field(1, ge=1, le=3, example=2)  # 1 for theory, 2 or 3 for continuous labs
 
 
