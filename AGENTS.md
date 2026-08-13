@@ -168,9 +168,21 @@ HC-05 Room Capacity         → Relax last resort only
 HC-06 Room Type             → Relax last resort only
 HC-07 Break/Lunch Block     → NEVER relax
 HC-08 Lab Consecutiveness   → Relax only for 3-hour labs if no room available
-HC-09 Faculty Availability  → Soft in Phase 1, Hard in Phase 2
-HC-10 No 4-consec Teaching  → Soft in Phase 1, Hard in Phase 2
+HC-09 Minors/Honors Slot    → WED P7-P8 & THU P7-P8 Cohort Block ONLY
+HC-10 4th Year SL/EL Block  → P1-P2 MON-SAT & SAT P6-P8 Afternoon Block ONLY
 ```
+
+**Production Schedule Rules (STRICTLY ENFORCED across all runs):**
+1. **Section Quotas**:
+   - 2nd Year: 36 filled teaching slots/week (6 classes/day MON–SAT), 1 Library slot, 1 IIC slot.
+   - 3rd Year: 45 filled teaching slots/week (7.5 classes/day MON–SAT), 0 Library slots.
+   - 4th Year: 39 filled teaching slots/week (6.5 classes/day MON–SAT), 0 Library slots.
+2. **Horizontal Lab Cell Merging**:
+   - Continuous lab sessions (2–3 periods) MUST be merged horizontally in Excel output (`ws.merge_cells`).
+3. **Special Slot Protection**:
+   - `MINORS/HONORS` restricted to WED P7-P8 & THU P7-P8.
+   - 4th Year `SL/EL` restricted to P1-P2 (08:15–09:55) MON–SAT.
+
 
 **Solver config schema (all runs must use this):**
 ```python

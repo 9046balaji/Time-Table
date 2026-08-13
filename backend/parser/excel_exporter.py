@@ -150,6 +150,11 @@ class ExcelTimetableExporter:
                     for offset in range(1, span):
                         span_continuations.add((day_s, p + offset))
 
+        period_col_map = {1: 2, 2: 3, 3: 5, 4: 6, 5: 7, 6: 9, 7: 10, 8: 11}
+
+        # Track merged cells to avoid overwriting continuation cells
+        merged_cell_coords = set()
+
         # Rows grid_start_row..grid_end_row: Days MON..SAT
         for d_off, day in enumerate(self.DAYS):
             r_num = grid_start_row + d_off
@@ -157,21 +162,26 @@ class ExcelTimetableExporter:
             ws.cell(row=r_num, column=1).alignment = center_align
             ws.cell(row=r_num, column=1).border = thin_border
 
-            period_mapping = [
-                (1, 2), (2, 3), (3, 5), (4, 6), (5, 7), (6, 9), (7, 10), (8, 11)
-            ]
+            # First pass: set borders and alignments for all period columns
+            for col_i in range(1, 12):
+                ws.cell(row=r_num, column=col_i).border = thin_border
+                ws.cell(row=r_num, column=col_i).alignment = center_align
 
-            for p_num, col_idx in period_mapping:
-                cell = ws.cell(row=r_num, column=col_idx)
-                cell.border = thin_border
-                cell.alignment = center_align
 
-                if (day, p_num) in span_continuations:
-                    cell.value = ""
-                    cell.font = subj_font
+            period_mapping = [(1, 2), (2, 3), (3, 5), (4, 6), (5, 7), (6, 9), (7, 10), (8, 11)]
+
+            p_idx = 0
+            while p_idx < len(period_mapping):
+                p_num, col_idx = period_mapping[p_idx]
+
+                if (r_num, col_idx) in merged_cell_coords:
+                    p_idx += 1
                     continue
 
+                cell = ws.cell(row=r_num, column=col_idx)
+
                 matching = [s for s in slots if (s.get("section") == sec_name or s.get("section_id") == sec_name) and s.get("day") == day and s.get("period") == p_num]
+
                 if matching:
                     m = matching[0]
                     subj = m.get("subject") or m.get("subjectCode") or m.get("subject_code") or ""
@@ -182,6 +192,29 @@ class ExcelTimetableExporter:
                     if isinstance(co_facs, list) and co_facs:
                         co_str = ", ".join([c for c in co_facs if c])
                         fac = f"{fac}, {co_str}" if fac else co_str
+
+                    # Check for lab span or adjacent matching slot
+                    span = m.get("spanPeriods", 1) or m.get("continuous_slots", 1) or 1
+                    if span == 1 and p_idx + 1 < len(period_mapping):
+                        next_p_num, _ = period_mapping[p_idx + 1]
+                        next_matching = [s for s in slots if (s.get("section") == sec_name or s.get("section_id") == sec_name) and s.get("day") == day and s.get("period") == next_p_num]
+                        if next_matching:
+                            next_m = next_matching[0]
+                            next_subj = next_m.get("subject") or next_m.get("subjectCode") or next_m.get("subject_code") or ""
+                            next_room = next_m.get("room") or next_m.get("roomCode") or next_m.get("room_id") or ""
+                            if subj and next_subj == subj and room and next_room == room and ("(P)" in subj or "LAB" in subj.upper() or "(T&P)" in subj):
+                                span = 2
+
+                    if span > 1 and (p_idx + span - 1) < len(period_mapping):
+                        _, end_col_idx = period_mapping[p_idx + span - 1]
+                        # Merge cells across lab span
+                        try:
+                            ws.merge_cells(start_row=r_num, start_column=col_idx, end_row=r_num, end_column=end_col_idx)
+                        except Exception:
+                            pass
+
+                        for step in range(span):
+                            merged_cell_coords.add((r_num, period_mapping[p_idx + step][1]))
 
                     if "LIBRARY" in subj.upper():
                         cell.value = "LIBRARY"
@@ -203,8 +236,15 @@ class ExcelTimetableExporter:
                                 key = f"{full_subj_name}(L)"
                                 if key not in faculty_lecture_map or (not faculty_lecture_map[key] and fac):
                                     faculty_lecture_map[key] = fac
+
+                    if span > 1:
+                        p_idx += span
+                        continue
                 else:
                     cell.value = ""
+
+                p_idx += 1
+
 
         # 2-Column Faculty Allocation Legend Table (Matching Baseline Excel Format)
         start_leg_row = grid_end_row + 2
@@ -258,35 +298,14 @@ class ExcelTimetableExporter:
         wb = openpyxl.Workbook()
         wb.remove(wb.active)  # Remove default sheet
 
-        sections = timetable_data.get("sections")
+        sections = timetable_data.get("sections") or []
         slots = timetable_data.get("slots") or []
 
-        # Parse V5 if slots or sections empty
-        if not sections or not slots:
-            parser = ExcelTimetableParser()
-            try:
-                v5_path = resolve_v5_path()
-                parsed_res = parser.parse_file(v5_path)
-                if not sections:
-                    sections = [{"name": sname} for sname in parsed_res.sections.keys()]
-                if not slots:
-                    slots = [
-                        {
-                            "section": s.section,
-                            "day": s.day,
-                            "period": s.period,
-                            "subject": s.subject_code,
-                            "room": s.room or "",
-                            "faculty": ", ".join(s.faculty_list) if s.faculty_list else ""
-                        }
-                        for s in parsed_res.raw_entries
-                    ]
-            except Exception as e:
-                print(f"[ExcelExporter Warning] Could not parse V5 file: {e}")
-                if not sections:
-                    sections = [{"name": f"Section {i+1}"} for i in range(44)]
-                if not slots:
-                    slots = []
+        # If sections empty, default to section names from slots
+        if not sections and slots:
+            unique_sec_names = list(dict.fromkeys([s.get("section") for s in slots if s.get("section")]))
+            sections = [{"name": sname} for sname in unique_sec_names]
+
 
         # 1. Master Department Sheet (All 44 Sections Stacked Vertically with Spacers)
         ws_master = wb.create_sheet(title="Master Department View")

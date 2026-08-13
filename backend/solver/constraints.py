@@ -77,12 +77,26 @@ class ConstraintRules:
         max_h = ConstraintRules.get_max_faculty_hours(rank)
         return weekly_hours <= max_h
 
-    # HC-12: Minors/Honors Global Slot Protection
-    # Friday/Saturday periods 7-8 reserved for global Minors/Honors; no section regular classes allowed
+    # HC-12: Minors/Honors Global Slot Protection (Wednesday P7-P8 & Thursday P7-P8)
     @staticmethod
     def check_minors_honors_slot_protection(day: str, period: int, subject_code: str) -> bool:
-        is_global_slot = (day.upper() in ["FRI", "FRIDAY", "SAT", "SATURDAY"]) and (period in [7, 8])
-        if is_global_slot and "MINOR" not in subject_code.upper() and "HONOR" not in subject_code.upper():
+        is_minors_slot = (day.upper() in ["WED", "WEDNESDAY", "THU", "THURSDAY"]) and (period in [7, 8])
+        is_minors_code = ("MINOR" in subject_code.upper() or "HONOR" in subject_code.upper())
+        if is_minors_slot and not is_minors_code:
+            return False
+        if is_minors_code and not is_minors_slot:
             return False
         return True
+
+    # HC-13: 4th Year SL/EL Fixed Morning Block (Periods 1 & 2 MON-SAT)
+    @staticmethod
+    def check_4th_year_slel_slot_protection(day: str, period: int, subject_code: str, is_4th_year: bool = False) -> bool:
+        if not is_4th_year:
+            return True
+        is_slel_code = ("SL/EL" in subject_code.upper() or "SL_EL" in subject_code.upper() or "LEARNING" in subject_code.upper())
+        is_allowed_period = (period in [1, 2]) or (day.upper() in ["SAT", "SATURDAY"] and period in [6, 7, 8])
+        if is_slel_code and not is_allowed_period:
+            return False
+        return True
+
 

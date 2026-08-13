@@ -95,10 +95,21 @@ class CPSATSolver:
             for ss in sec_subjs:
                 sub_id = ss["subject_id"]
                 sub_type = ss.get("subject_type", "L")
+                sub_code = ss.get("subject_code", "")
 
                 # Room domain pre-filtering for fast solving:
+
                 # Theory slots (L/T) use non-lab classrooms; Labs (P) use lab rooms; Self-directed use VIRTUAL_LIB_ROOM
-                if sub_type in SELF_DIRECTED_TYPES:
+                is_self_directed = (
+                    sub_type in SELF_DIRECTED_TYPES or 
+                    sub_code in SELF_DIRECTED_TYPES or 
+                    "MINOR" in sub_code.upper() or 
+                    "HONOR" in sub_code.upper() or 
+                    "SL/EL" in sub_code.upper() or 
+                    "SL_EL" in sub_code.upper() or
+                    "LIBRARY" in sub_code.upper()
+                )
+                if is_self_directed:
                     room_pool = [VIRTUAL_LIB_ROOM]
                 elif sub_type in ("P", "LAB"):
                     room_pool = [r for r in rooms if r.get("room_type") in ("lab", "computer_lab", "gpu_lab")] or rooms
@@ -106,6 +117,7 @@ class CPSATSolver:
                     room_pool = [r for r in rooms if r.get("room_type") not in ("lab", "computer_lab", "gpu_lab")] or rooms
                 else:
                     room_pool = rooms
+
 
 
                 for r in room_pool:
@@ -302,6 +314,7 @@ class CPSATSolver:
         # Rule 4: Max 1 lab block per day for the same subject per section.
         for sec in sections:
             s_id = sec["id"]
+            s_id_str = str(s_id).upper()
             lab_subjs = [ss for ss in section_subjects if ss["section_id"] == s_id and ss.get("subject_type") == "P"]
             for ss in lab_subjs:
                 sub_id = ss["subject_id"]
@@ -343,22 +356,72 @@ class CPSATSolver:
                     if start_day_vars:
                         model.Add(sum(start_day_vars) <= 1)
 
-            # Rule 5: Soft Constraint (SC-07) - Penalize excessive P1 lab starts to distribute labs naturally
+            # Rule 5: MINORS/HONORS Global Slot Protection (WED P7-P8 & THU P7-P8 when P7/P8 present)
+            minors_subjs = [ss for ss in section_subjects if ss["section_id"] == s_id and ("MINOR" in ss.get("subject_code", "").upper() or "HONOR" in ss.get("subject_code", "").upper())]
+            has_p78_slots = any(t.get("period") in (7, 8) for t in time_slots)
+            if minors_subjs and has_p78_slots:
+                for ss in minors_subjs:
+                    sub_id = ss["subject_id"]
+                    sub_rooms = [VIRTUAL_LIB_ROOM] if ss.get("subject_type") in SELF_DIRECTED_TYPES else rooms
+                    for r in sub_rooms:
+                        for t in time_slots:
+                            t_day = t.get("day")
+                            t_p = t.get("period")
+                            # MINORS/HONORS must ONLY occur on WED P7-P8 or THU P7-P8 when P7/P8 present
+                            if not (t_day in ("WED", "THU") and t_p in (7, 8)):
+                                if (s_id, sub_id, r["id"], t["id"]) in x:
+                                    model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
+
+                # Forbid regular theory/lab subjects during WED P7-P8 & THU P7-P8 for this section
+                regular_subjs = [ss for ss in section_subjects if ss["section_id"] == s_id and not ("MINOR" in ss.get("subject_code", "").upper() or "HONOR" in ss.get("subject_code", "").upper())]
+                for ss in regular_subjs:
+                    sub_id = ss["subject_id"]
+                    sub_rooms = [VIRTUAL_LIB_ROOM] if ss.get("subject_type") in SELF_DIRECTED_TYPES else rooms
+                    for r in sub_rooms:
+                        for t in time_slots:
+                            if t.get("day") in ("WED", "THU") and t.get("period") in (7, 8):
+                                if (s_id, sub_id, r["id"], t["id"]) in x:
+                                    model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
+
+            # Rule 6: 4th Year SL/EL Self-Learning Preference (P1-P2 Morning & SAT P6-P8 Afternoon)
+            s_id_str = str(s_id).upper()
+            if "IV " in s_id_str or "IV_" in s_id_str:
+                slel_subjs = [ss for ss in section_subjects if ss["section_id"] == s_id and ("SL/EL" in ss.get("subject_code", "").upper() or "SL_EL" in ss.get("subject_code", "").upper() or "LEARNING" in ss.get("subject_code", "").upper())]
+                if slel_subjs:
+                    for ss in slel_subjs:
+                        sub_id = ss["subject_id"]
+                        sub_rooms = [VIRTUAL_LIB_ROOM] if ss.get("subject_type") in SELF_DIRECTED_TYPES else rooms
+                        for r in sub_rooms:
+                            for t in time_slots:
+                                t_p = t.get("period")
+                                t_day = t.get("day")
+                                is_allowed_slel = (t_p in (1, 2)) or (t_day == "SAT" and t_p in (6, 7, 8))
+                                if not is_allowed_slel:
+                                    if (s_id, sub_id, r["id"], t["id"]) in x:
+                                        model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
+
+            # Soft Preference: 2nd Year Period 1 active and Period 8 free preference variables computed in Objective Function
             pass
 
-        # Objective Function: Minimize P1 lab starts so labs spread evenly across P1, P3, and P6
-        p1_lab_penalty_vars = []
-        for sec in sections:
-            s_id = sec["id"]
-            lab_subjs = [ss for ss in section_subjects if ss["section_id"] == s_id and ss.get("subject_type") == "P"]
-            for ss in lab_subjs:
-                for r in rooms:
-                    for t in time_slots:
-                        if t.get("period") == 1 and not t.get("is_blocked") and (s_id, ss["subject_id"], r["id"], t["id"]) in x:
-                            p1_lab_penalty_vars.append(x[s_id, ss["subject_id"], r["id"], t["id"]])
 
-        if p1_lab_penalty_vars:
-            model.Minimize(sum(p1_lab_penalty_vars))
+
+
+
+
+
+        # Objective Function: Minimize period numbers (sum(var * p_num)) to group classes compactly into early periods (P1..P6)
+        obj_terms = []
+        for (s_id, sub_id, r_id, t_id), var in x.items():
+            try:
+                p_num = int(t_id.split("_")[-1])
+            except Exception:
+                p_num = 1
+            obj_terms.append(var * p_num)
+
+        if obj_terms:
+            model.Minimize(sum(obj_terms))
+
+
 
 
         # Setup Ultra-Fast Solve Parameters
