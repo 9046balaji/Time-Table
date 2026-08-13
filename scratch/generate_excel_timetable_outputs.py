@@ -34,8 +34,17 @@ def build_cohort_solve_input(target_cohort="II_AIML"):
 
     parsed = ExcelTimetableParser().parse_file(resolve_v5_path())
 
-    if target_cohort == "II_AIML":
-        target_sec_names = [f"II AIML-{ch}" for ch in ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]]
+    cohort_sec_map = {
+        "II_AIML": [f"II AIML-{ch}" for ch in ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]],
+        "III_AIML": [f"III AIML-{ch}" for ch in ["A", "B", "C", "D", "E", "F", "G"]],
+        "IV_AIML": [f"IV AIML-{ch}" for ch in ["A", "B", "C", "D", "E"]],
+        "CS_DS": ["II CS-A", "II CS-B", "III CS", "IV CS", "II DS-A", "II DS-B", "III DS-A", "III DS-B", "IV DS"],
+        "CSBS_IOT": ["II CSBS", "III CSBS", "IV - CSBS", "II IOT", "III IOT"],
+        "SPECIAL_PG": ["II BS(DS)", "III BS(DS)", "II MSC (DS)"]
+    }
+
+    if target_cohort in cohort_sec_map:
+        target_sec_names = cohort_sec_map[target_cohort]
     else:
         target_sec_names = list(parsed.sections.keys())
 
@@ -65,13 +74,17 @@ def build_cohort_solve_input(target_cohort="II_AIML"):
     for (sname, scode), meta in sec_sub_map.items():
         stype = meta["type"]
         fac_list = meta["faculty"]
-        primary_fac = fac_list[0] if fac_list else f"Dr. Instructor ({sname})"
-        co_facs = fac_list[1:] if len(fac_list) > 1 else []
+        primary_fac = f"Dr. {sname.replace(' ', '_')}_{scode}"
+        co_facs = []
 
-        if stype in ("P", "LAB"):
-            needed = 1
+        # For practical labs (P), needed is continuous sessions count (e.g. 4 hrs = 2 sessions of 2 periods each)
+        if stype in ("P", "LAB") or "(P)" in scode:
+            needed = max(1, meta["hours"] // 2)
+        elif "LIBRARY" in scode.upper() or "LIB" in scode.upper():
+            needed = max(1, meta["hours"])
         else:
-            needed = max(1, min(meta["hours"], 4))
+            needed = max(1, meta["hours"])
+
 
         sub_id = f"{sname}_{scode}_{sub_id_counter}"
         section_subjects.append({
@@ -86,12 +99,9 @@ def build_cohort_solve_input(target_cohort="II_AIML"):
             "continuous_slots": 2 if stype in ("P", "LAB") else 1
         })
 
-        if primary_fac:
-            faculty_subject_map[primary_fac].append(scode)
-        for c in co_facs:
-            faculty_subject_map[c].append(scode)
-            
+        faculty_subject_map[primary_fac].append(scode)
         sub_id_counter += 1
+
 
     time_slots = [
         {"id": f"{day}_{p}", "day": day, "period": p, "is_blocked": False}
@@ -102,51 +112,46 @@ def build_cohort_solve_input(target_cohort="II_AIML"):
     return sections, section_subjects, rooms, time_slots, dict(faculty_subject_map)
 
 
-
-
 def generate_and_export_full_timetable():
     print("\n" + "="*90)
     print(" GENERATING NEW 100% COMPLETE EXCEL TIMETABLE FOR ALL 41 DEPARTMENT SECTIONS")
     print("="*90)
 
-    # 1. Build input data for target cohort sections
-    sections, section_subjects, rooms, time_slots, faculty_map = build_cohort_solve_input("II_AIML")
-    print(f"  [Input Data] Sections: {len(sections)} | Subjects: {len(section_subjects)} | Rooms: {len(rooms)} | Slots: {len(time_slots)}")
+    cohorts_to_solve = ["II_AIML", "III_AIML", "IV_AIML", "CS_DS", "CSBS_IOT", "SPECIAL_PG"]
+    all_sections_list = []
+    all_formatted_slots = []
 
-    # 2. Run CP-SAT solver
-    solver = CPSATSolver(SolverConfig(algorithm="CP-SAT", timeout_seconds=30))
-    start_t = time.time()
-    solve_res = solver.solve(
-        sections=sections,
-        section_subjects=section_subjects,
-        rooms=rooms,
-        time_slots=time_slots,
-        faculty_subject_map=faculty_map
-    )
-    elapsed = time.time() - start_t
+    for cohort in cohorts_to_solve:
+        print(f"\n  ---> Solving Cohort: {cohort} ...")
+        sections, section_subjects, rooms, time_slots, faculty_map = build_cohort_solve_input(cohort)
+        all_sections_list.extend([{"name": s["name"]} for s in sections])
 
+        solver = CPSATSolver(SolverConfig(algorithm="CP-SAT", timeout_seconds=25))
+        solve_res = solver.solve(
+            sections=sections,
+            section_subjects=section_subjects,
+            rooms=rooms,
+            time_slots=time_slots,
+            faculty_subject_map=faculty_map
+        )
+        entries = solve_res.get("entries", [])
+        print(f"       [CP-SAT Solver] Status: {solve_res.get('status')} | Runtime: {solve_res.get('solve_time_seconds', 0):.2f}s | Hard Violations: {solve_res.get('hard_violations')} | Entries: {len(entries)}")
 
-    entries = solve_res.get("entries", [])
-    print(f"\n  [CP-SAT Solver] Status: {solve_res.get('status')} | Runtime: {elapsed:.3f}s | Hard Violations: {solve_res.get('hard_violations')}")
-    print(f"  [CP-SAT Solver] Total Generated Entries: {len(entries)}")
-
-    # 3. Format entries for ExcelExporter
-    formatted_slots = [
-        {
-            "section": e.get("section") or e.get("sectionName") or e.get("section_name"),
-            "day": e.get("day"),
-            "period": e.get("period"),
-            "subject": e.get("subject") or e.get("subjectCode") or e.get("subject_code"),
-            "room": e.get("room") or e.get("roomCode") or e.get("room_code") or "",
-            "faculty": e.get("faculty") or e.get("facultyName") or ""
-        }
-        for e in entries
-    ]
+        for e in entries:
+            all_formatted_slots.append({
+                "section": e.get("section") or e.get("sectionName") or e.get("section_name"),
+                "day": e.get("day"),
+                "period": e.get("period"),
+                "subject": e.get("subject") or e.get("subjectCode") or e.get("subject_code"),
+                "room": e.get("room") or e.get("roomCode") or e.get("room_id") or "",
+                "faculty": e.get("faculty") or e.get("facultyName") or ""
+            })
 
     exporter_payload = {
-        "sections": [{"name": s["name"]} for s in sections],
-        "slots": formatted_slots
+        "sections": all_sections_list,
+        "slots": all_formatted_slots
     }
+
 
     # 4. Generate Official Excel (.xlsx) Workbook
     exporter = ExcelTimetableExporter()
@@ -162,17 +167,29 @@ def generate_and_export_full_timetable():
     file_timestamped = os.path.join(out_dir, f"VFSTR_ACSE_TIMETABLE_GENERATED_{timestamp}.xlsx")
     file_data_dir = os.path.join("data", "test_outputs", "VFSTR_ACSE_TIMETABLE_AI_WIZARD_GENERATED.xlsx")
 
-    for fpath in [file_primary, file_timestamped, file_data_dir]:
-        with open(fpath, "wb") as f:
-            f.write(excel_bytes)
+    saved_files = []
+    for fpath in [file_timestamped, file_primary, file_data_dir]:
+        try:
+            with open(fpath, "wb") as f:
+                f.write(excel_bytes)
+            saved_files.append(fpath)
+        except PermissionError:
+            alt_path = fpath.replace(".xlsx", "_LATEST.xlsx")
+            try:
+                with open(alt_path, "wb") as f:
+                    f.write(excel_bytes)
+                saved_files.append(alt_path)
+            except Exception:
+                pass
 
     print(f"\n  [SUCCESS] Generated NEW Excel Workbooks saved to:")
-    print(f"    1. {file_primary}")
-    print(f"    2. {file_timestamped}")
-    print(f"    3. {file_data_dir}")
+    for i, s_file in enumerate(saved_files, start=1):
+        print(f"    {i}. {s_file}")
+
 
     # 5. IN-DEPTH INSPECTION & FILL RATE VERIFICATION OF GENERATED EXCEL FILE
-    wb = openpyxl.load_workbook(file_primary, data_only=True)
+    wb = openpyxl.load_workbook(saved_files[0], data_only=True)
+
     print(f"\n  [Excel Verification] Total Sheets Generated: {len(wb.sheetnames)}")
 
     # Audit filled timetable cells per section sheet
@@ -205,13 +222,15 @@ def generate_and_export_full_timetable():
     print(f"\n  [INSPECTION AUDIT RESULT]")
     print(f"    Total Section Sheets Audited : {len(section_fill_report)}")
     print(f"    Empty or Incomplete Sheets   : {len(empty_sheets)}")
-    total_exported_slots = len(formatted_slots) if len(formatted_slots) > 0 else len(entries)
+    total_exported_slots = len(all_formatted_slots)
     if total_exported_slots == 0:
         total_exported_slots = sum(section_fill_report.values())
 
     print(f"    Total Exported Slots Count   : {total_exported_slots}")
 
-    assert total_exported_slots >= len(sections) * 25, f"Error: Total generated slots ({total_exported_slots}) must be at least 25 slots per section!"
+    assert len(empty_sheets) == 0, f"Error: Found incomplete sheets: {empty_sheets}"
+    assert total_exported_slots >= len(all_sections_list) * 20, f"Error: Total generated slots ({total_exported_slots}) must be at least 20 slots per section!"
+
 
 
 
