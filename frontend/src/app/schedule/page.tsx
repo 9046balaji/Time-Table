@@ -65,6 +65,8 @@ export default function SchedulePage() {
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [inspectDay, setInspectDay] = useState("MON");
   const [inspectPeriod, setInspectPeriod] = useState<number>(1);
+  const [allVersionSlots, setAllVersionSlots] = useState<any[]>([]);
+  const [inspectorRoomTypeFilter, setInspectorRoomTypeFilter] = useState<'ALL' | 'CLASSROOM' | 'LAB' | 'GPU'>('ALL');
 
   // Drag & Drop Toast / Undo state
   const [lastSwapHistory, setLastSwapHistory] = useState<{
@@ -138,6 +140,18 @@ export default function SchedulePage() {
       setSubjectList(subs);
     }).catch(() => setSubjectList([]));
   }, []);
+
+  // Fetch full timetable slots for selected version when Free Venue Inspector is opened
+  useEffect(() => {
+    if (isInspectorOpen && selectedVersionId) {
+      timetableApi.getTimetable(selectedVersionId, 'ALL')
+        .then((res) => {
+          const rawSlots = res.data.slots || res.data.entries || (Array.isArray(res.data) ? res.data : []);
+          setAllVersionSlots(rawSlots);
+        })
+        .catch(() => setAllVersionSlots([]));
+    }
+  }, [isInspectorOpen, selectedVersionId]);
 
   // Filtered & Sorted Sections List
   const filteredAndSortedSections = useMemo(() => {
@@ -466,26 +480,69 @@ export default function SchedulePage() {
     const occupiedRooms = new Set<string>();
     const occupiedFaculty = new Set<string>();
 
-    cohortAllSlots.forEach((s) => {
+    const slotsToCheck = allVersionSlots.length > 0 ? allVersionSlots : cohortAllSlots;
+
+    slotsToCheck.forEach((s) => {
       if (s.day === inspectDay && s.period === inspectPeriod) {
-        if (s.room) occupiedRooms.add(s.room);
-        if (s.room_code) occupiedRooms.add(s.room_code);
+        if (s.room) occupiedRooms.add(String(s.room));
+        if (s.room_code) occupiedRooms.add(String(s.room_code));
         if (s.faculty) {
           if (Array.isArray(s.faculty)) s.faculty.forEach((f: any) => occupiedFaculty.add(String(f)));
           else occupiedFaculty.add(String(s.faculty));
         }
+        if (Array.isArray(s.faculty_names)) {
+          s.faculty_names.forEach((f: any) => occupiedFaculty.add(String(f)));
+        }
       }
     });
 
-    const allKnownRooms = ["601", "602", "603", "604", "605", "606", "607", "608", "609", "610", "611", "612", "613", "614", "615", "616", "617", "618", "619", "AFTF-12", "AFTF-13", "AFTF-14", "AFF-09", "AFF-10"];
-    const baseVacant = allKnownRooms.filter((r) => !occupiedRooms.has(r));
+    const defaultRoomsList = [
+      { code: "601", room_type: "Classroom", capacity: 60, block: "Block-VI" },
+      { code: "602", room_type: "Classroom", capacity: 60, block: "Block-VI" },
+      { code: "603", room_type: "Classroom", capacity: 60, block: "Block-VI" },
+      { code: "604", room_type: "Computer Lab", capacity: 60, block: "Block-VI" },
+      { code: "605", room_type: "Computer Lab", capacity: 60, block: "Block-VI" },
+      { code: "606", room_type: "Computer Lab", capacity: 60, block: "Block-VI" },
+      { code: "607", room_type: "Classroom", capacity: 60, block: "Block-VI" },
+      { code: "608", room_type: "Classroom", capacity: 60, block: "Block-VI" },
+      { code: "609", room_type: "Classroom", capacity: 60, block: "Block-VI" },
+      { code: "611", room_type: "Computer Lab", capacity: 60, block: "Block-VI" },
+      { code: "612", room_type: "Computer Lab", capacity: 60, block: "Block-VI" },
+      { code: "AFTF-12", room_type: "GPU Lab", capacity: 70, block: "AFTF Floor" },
+      { code: "AFTF-13", room_type: "GPU Lab", capacity: 70, block: "AFTF Floor" },
+      { code: "AFTF-14", room_type: "GPU Lab", capacity: 70, block: "AFTF Floor" },
+    ];
+
+    const sourceRooms = roomList.length > 0 ? roomList : defaultRoomsList;
+
+    let baseVacant = sourceRooms.filter((rm: any) => {
+      const code = String(rm.code || rm.room_code || rm);
+      return !occupiedRooms.has(code);
+    });
+
     const baseFaculty = facultyList.filter((f) => !occupiedFaculty.has(f.name));
+
+    // Room type filter
+    if (inspectorRoomTypeFilter !== 'ALL') {
+      baseVacant = baseVacant.filter((rm: any) => {
+        const typeStr = String(rm.room_type || rm.type || "").toUpperCase();
+        const codeStr = String(rm.code || rm.room_code || "").toUpperCase();
+        if (inspectorRoomTypeFilter === 'LAB') return typeStr.includes("LAB") || codeStr.includes("LAB");
+        if (inspectorRoomTypeFilter === 'GPU') return typeStr.includes("GPU") || codeStr.includes("AFTF") || Boolean(rm.gpu_capable);
+        if (inspectorRoomTypeFilter === 'CLASSROOM') return typeStr.includes("CLASS") || (!typeStr.includes("LAB") && !codeStr.includes("AFTF"));
+        return true;
+      });
+    }
 
     // Filter & Sort Vacant Rooms
     let filteredVacant = baseVacant;
     if (inspectorSearchQuery) {
       const q = inspectorSearchQuery.toLowerCase();
-      filteredVacant = filteredVacant.filter((r: string) => r.toLowerCase().includes(q));
+      filteredVacant = filteredVacant.filter((rm: any) => {
+        const code = String(rm.code || rm.room_code || rm).toLowerCase();
+        const block = String(rm.block || "").toLowerCase();
+        return code.includes(q) || block.includes(q);
+      });
     }
 
     // Filter & Sort Available Faculty
@@ -497,7 +554,7 @@ export default function SchedulePage() {
 
     return { vacantRooms: filteredVacant, availableFaculty: filteredFaculty, occupiedRoomsCount: occupiedRooms.size };
 
-  }, [cohortAllSlots, inspectDay, inspectPeriod, facultyList, inspectorSearchQuery]);
+  }, [allVersionSlots, cohortAllSlots, inspectDay, inspectPeriod, roomList, facultyList, inspectorSearchQuery, inspectorRoomTypeFilter]);
 
   // Sorted & Filtered Faculty List for Faculty Schedules View
   const processedFacultyList = useMemo(() => {
@@ -1221,21 +1278,81 @@ export default function SchedulePage() {
               )}
             </div>
 
-            {/* Vacant Rooms List */}
+            {/* Room Type Filter Pills */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-bold text-slate-400">Type:</span>
+              {[
+                { id: 'ALL', label: 'All' },
+                { id: 'CLASSROOM', label: 'Classrooms' },
+                { id: 'LAB', label: 'Labs' },
+                { id: 'GPU', label: 'GPU Labs' }
+              ].map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setInspectorRoomTypeFilter(f.id as any)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    inspectorRoomTypeFilter === f.id
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
 
+            {/* Vacant Rooms List */}
             <div className="space-y-3">
               <h4 className="text-xs font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center justify-between">
                 <span>Vacant Venues ({freeRoomsAndFaculty.vacantRooms.length})</span>
-                <span className="text-[10px] font-bold text-slate-400">{inspectDay} P{inspectPeriod}</span>
+                <span className="text-[10px] font-bold text-slate-400">
+                  {inspectDay} P{inspectPeriod} · {freeRoomsAndFaculty.occupiedRoomsCount} occupied
+                </span>
               </h4>
-              <div className="grid grid-cols-3 gap-2">
-                {freeRoomsAndFaculty.vacantRooms.map((rm) => (
-                  <div key={rm} className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center">
-                    <span className="font-extrabold text-xs text-emerald-900 dark:text-emerald-200">Room {rm}</span>
-                    <span className="block text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">VACANT</span>
-                  </div>
-                ))}
-              </div>
+              {freeRoomsAndFaculty.vacantRooms.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400 font-medium bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                  No vacant rooms found for {inspectDay} Period {inspectPeriod} matching filters.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+                  {freeRoomsAndFaculty.vacantRooms.map((rm: any) => {
+                    const code = String(rm.code || rm.room_code || rm);
+                    const type = String(rm.room_type || rm.type || (code.includes("AFTF") ? "GPU Lab" : code.startsWith("60") && parseInt(code) >= 604 && parseInt(code) <= 617 ? "Computer Lab" : "Classroom"));
+                    const cap = rm.capacity || 60;
+                    const block = rm.block || "Block-VI";
+                    const isGpu = Boolean(rm.gpu_capable) || code.includes("AFTF");
+                    const isLab = type.toUpperCase().includes("LAB") || isGpu;
+
+                    return (
+                      <div
+                        key={code}
+                        className={`p-3 rounded-xl border flex flex-col justify-between text-left transition-all ${
+                          isGpu
+                            ? "bg-purple-50/60 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800"
+                            : isLab
+                            ? "bg-indigo-50/60 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800"
+                            : "bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-black text-xs text-slate-900 dark:text-white">Room {code}</span>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold ${
+                            isGpu ? "bg-purple-200 text-purple-800 dark:bg-purple-900 dark:text-purple-200" :
+                            isLab ? "bg-indigo-200 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200" :
+                            "bg-emerald-200 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
+                          }`}>
+                            {isGpu ? "GPU LAB" : isLab ? "LAB" : "CLASS"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                          <span>{cap} Seats</span>
+                          <span>{block}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Available Unassigned Faculty List */}

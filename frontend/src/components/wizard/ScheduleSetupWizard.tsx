@@ -65,8 +65,8 @@ export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSucc
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<WizardGenerationResponse | null>(null);
+  const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloading' | 'done' | 'error'>('idle');
 
-  // Inline timetable preview state
   const [previewSection, setPreviewSection] = useState<string | null>(null);
   const [previewEntries, setPreviewEntries] = useState<any[]>([]);
   const [loadingPreview, setLoadingPreview] = useState(false);
@@ -189,6 +189,8 @@ export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSucc
       } else {
         setResult(res.data);
         onSuccess?.(res.data);
+        // Auto-download Excel with timestamped filename
+        triggerExcelDownload(res.data.version_id);
         // Auto-load preview for first section
         if (selectedSections.length > 0) {
           loadPreview(selectedSections[0], res.data.version_id);
@@ -198,6 +200,33 @@ export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSucc
       setError(err.response?.data?.detail || "Generation failed. Please check the backend solver is running.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Auto-download generated Excel with timestamp filename
+  const triggerExcelDownload = async (versionId?: number) => {
+    if (!versionId) return;
+    setDownloadStatus('downloading');
+    try {
+      const res = await timetableApi.exportExcel(versionId);
+      const blob = new Blob([res.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const now = new Date();
+      const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+      const filename = `VFSTR_Timetable_AI_V${versionId}_${ts}.xlsx`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+      setDownloadStatus('done');
+      setTimeout(() => setDownloadStatus('idle'), 4000);
+    } catch {
+      setDownloadStatus('error');
+      setTimeout(() => setDownloadStatus('idle'), 4000);
     }
   };
 
@@ -494,20 +523,42 @@ export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSucc
                   </div>
                   <div>
                     <div className="text-sm font-bold text-emerald-900 dark:text-emerald-200">
-                      ✅ New Timetable Generated — {result.hard_violations ?? 0} Hard Clashes
+                      New Timetable Generated — {result.hard_violations ?? 0} Hard Clashes
                     </div>
                     <div className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
                       {result.entries_count ?? 0} slots scheduled for {selectedSections.length} section{selectedSections.length !== 1 ? "s" : ""}
                       {result.runtime_seconds ? ` · solved in ${result.runtime_seconds}s` : ""}
+                      {result.version_id ? ` · Version #${result.version_id}` : ""}
+                    </div>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 text-[11px] font-bold">
+                        {downloadStatus === 'downloading' ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" /> Downloading Excel...
+                          </>
+                        ) : (
+                          <>
+                            Excel file downloaded automatically (.xlsx)
+                          </>
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>
-                <Link
-                  href="/schedule"
-                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs font-bold hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition-colors"
-                >
-                  Open Full Grid <ArrowRight className="w-3 h-3" />
-                </Link>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => triggerExcelDownload(result.version_id || 5)}
+                    className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer"
+                  >
+                    <Zap className="w-3 h-3 text-amber-300" /> Download Excel (.xlsx)
+                  </button>
+                  <Link
+                    href="/schedule"
+                    className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs font-bold hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition-colors"
+                  >
+                    Open Full Grid <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
               </div>
 
               {/* Section selector pills */}
