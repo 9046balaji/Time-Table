@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import {
   Grid,
   Sparkles,
@@ -33,7 +34,6 @@ import { timetableApi } from "@/lib/api";
 
 import { Faculty } from "@/lib/types";
 import { useSolver } from "@/hooks/useSolver";
-import { ScheduleSetupWizard } from "@/components/wizard/ScheduleSetupWizard";
 
 const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT"];
 const PERIODS_LIST = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -58,8 +58,8 @@ export default function SchedulePage() {
   const [versions, setVersions] = useState<any[]>([]);
   const [selectedVersionId, setSelectedVersionId] = useState<number>(5);
 
-  // View modes: matrix | stack | faculty | compare | wizard
-  const [mode, setMode] = useState<'matrix' | 'stack' | 'faculty' | 'compare' | 'wizard'>('matrix');
+  // View modes: matrix | stack | faculty | compare
+  const [mode, setMode] = useState<'matrix' | 'stack' | 'faculty' | 'compare'>('matrix');
 
   // Inspector Drawer State (Free Slot / Venue / Faculty Inspector)
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
@@ -722,7 +722,7 @@ export default function SchedulePage() {
       {/* Top Header & Navigation Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Timetable Schedule Workbench & AI Wizard</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Timetable Schedule Workbench</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">Interactive Section Grids, Side-by-Side Comparison & Free Venue Inspector</p>
         </div>
 
@@ -746,7 +746,6 @@ export default function SchedulePage() {
             <Columns className="w-4 h-4" /> Compare 2 Sections
           </button>
 
-
           <button
             onClick={() => setMode('faculty')}
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
@@ -756,14 +755,12 @@ export default function SchedulePage() {
             <UserCheck className="w-4 h-4" /> Faculty Schedules
           </button>
 
-          <button
-            onClick={() => setMode('wizard')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              mode === 'wizard' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md' : 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800'
-            }`}
+          <Link
+            href="/ai-scheduler"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/60"
           >
-            <Wand2 className="w-4 h-4" /> AI Wizard
-          </button>
+            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" /> Open AI Auto-Scheduler
+          </Link>
         </div>
       </div>
 
@@ -1162,11 +1159,6 @@ export default function SchedulePage() {
             />
           )}
         </div>
-      )}
-
-      {/* MODE 5: CREATE TIMETABLE WIZARD */}
-      {mode === 'wizard' && (
-        <ScheduleSetupWizard onSuccess={() => setMode('matrix')} />
       )}
 
       {/* SLIDE-OVER FREE VENUE & FACULTY INSPECTOR DRAWER */}

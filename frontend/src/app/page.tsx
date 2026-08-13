@@ -298,8 +298,9 @@ export default function DashboardPage() {
             <p className="text-xs text-slate-500 mb-4">Direct access to core timetable operations</p>
 
             <div className="space-y-2.5">
-              <QuickActionButton href="/schedule" icon={<Bot className="w-4 h-4 text-purple-600" />} title="AI Schedule Workbench" desc="Interactive grid & free venue inspector" highlight />
-              <QuickActionButton href="/configure" icon={<Settings className="w-4 h-4 text-blue-600" />} title="Master Data Configuration" desc="Faculty, Rooms, & Subjects" />
+              <QuickActionButton href="/ai-scheduler" icon={<Sparkles className="w-4 h-4 text-purple-600" />} title="AI Auto-Scheduler" desc="Autonomous 0-clash timetable generator" highlight />
+              <QuickActionButton href="/schedule" icon={<Bot className="w-4 h-4 text-blue-600" />} title="Timetable Grid Workbench" desc="Interactive grid & free venue inspector" />
+              <QuickActionButton href="/configure" icon={<Settings className="w-4 h-4 text-slate-600" />} title="Master Data Configuration" desc="Faculty, Rooms, & Subjects" />
               <QuickActionButton href="/testing" icon={<Activity className="w-4 h-4 text-emerald-600" />} title="Multi-Branch Testing Hub" desc="Benchmark multi-year cohorts" />
               <QuickActionButton href="/import" icon={<Upload className="w-4 h-4 text-amber-600" />} title="Excel Import Wizard" desc="Upload new XLSX revision" />
               <QuickActionButton href="/export" icon={<Download className="w-4 h-4 text-indigo-600" />} title="Multi-Format Export" desc="Generate Excel, PDF, & iCal feeds" />

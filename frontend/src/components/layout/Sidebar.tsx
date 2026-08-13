@@ -3,10 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Calendar, Upload, Settings, Download, Cpu, FlaskConical, User } from 'lucide-react';
+import { LayoutDashboard, Calendar, Upload, Settings, Download, Cpu, FlaskConical, User, Sparkles } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/ai-scheduler', label: 'AI Auto-Scheduler', icon: Sparkles },
   { href: '/schedule', label: 'Timetable Grid', icon: Calendar },
   { href: '/testing', label: 'Testing Lab (10 Sec)', icon: FlaskConical },
   { href: '/import', label: 'Import Excel', icon: Upload },

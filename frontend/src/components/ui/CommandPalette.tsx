@@ -85,11 +85,19 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       action: () => navigateTo('/', 'Dashboard'),
     },
     {
+      id: 'nav-ai-scheduler',
+      category: 'Navigation',
+      title: 'Autonomous AI Timetable Generator',
+      description: 'Run OR-Tools CP-SAT math solver to auto-generate 0-clash master schedules',
+      icon: <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />,
+      action: () => navigateTo('/ai-scheduler', 'AI Auto-Scheduler'),
+    },
+    {
       id: 'nav-schedule',
       category: 'Navigation',
-      title: 'Timetable Schedule Workbench & AI Wizard',
-      description: 'Interactive section grids, side-by-side comparison, and AI Wizard',
-      icon: <Calendar className="w-4 h-4 text-purple-600 dark:text-purple-400" />,
+      title: 'Timetable Grid Workbench',
+      description: 'Interactive section grids, side-by-side comparison, and faculty view',
+      icon: <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
       action: () => navigateTo('/schedule', 'Schedule Workbench'),
     },
     {
