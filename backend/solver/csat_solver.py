@@ -215,6 +215,26 @@ class CPSATSolver:
                 if fac_daily_vars:
                     model.Add(sum(fac_daily_vars) <= max_classes_per_teacher_per_day)
 
+        # Section daily teaching cap (max 5 teaching hours per day, excluding SL/EL & Library)
+        for sec in sections:
+            s_id = sec["id"]
+            sec_subjs = sec_subjs_by_sec.get(s_id, [])
+            teaching_subjs = [
+                ss for ss in sec_subjs
+                if str(ss.get("subject_type", "L")).upper() not in self.SELF_DIRECTED_TYPES
+            ]
+            for day in days_list:
+                day_slots = [t for t in time_slots if t.get("day") == day and not t.get("is_blocked")]
+                sec_daily_teaching_vars = [
+                    x[s_id, ss["subject_id"], r["id"], t["id"]]
+                    for ss in teaching_subjs
+                    for r in rooms
+                    for t in day_slots
+                    if (s_id, ss["subject_id"], r["id"], t["id"]) in x
+                ]
+                if sec_daily_teaching_vars:
+                    model.Add(sum(sec_daily_teaching_vars) <= 5)
+
         # -----------------------------------------------------------------------
         # 5. HC-03: Section Conflict (At most 1 class per section per slot)
         # -----------------------------------------------------------------------
