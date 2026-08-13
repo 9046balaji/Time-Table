@@ -433,38 +433,84 @@ export function ClashInspector({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredFaculty.map((fac, idx) => (
               <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <span className="font-extrabold text-sm text-slate-900 dark:text-white truncate max-w-[200px]" title={fac.name}>{fac.name}</span>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${fac.has_clash ? "bg-red-100 text-red-700" : "bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300"}`}>
-                    {fac.total_hours} hrs/wk
-                  </span>
+                {/* Faculty Header */}
+                <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div>
+                    <div className="font-extrabold text-sm text-slate-900 dark:text-white" title={fac.name}>{fac.name}</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">{fac.sections_count} section{fac.sections_count !== 1 ? 's' : ''} · {(fac.subjects || []).length} subject{(fac.subjects || []).length !== 1 ? 's' : ''}</div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${fac.has_clash ? "bg-red-100 dark:bg-red-950/70 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800" : "bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"}`}>
+                      {fac.has_clash ? '⚠️ Has Clash' : `${fac.total_hours} hrs/wk`}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="space-y-2 text-xs">
+                {/* Workload bar */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px] text-slate-500">
+                    <span className="font-semibold">Weekly Workload</span>
+                    <span>{fac.total_hours} / 16 hrs</span>
+                  </div>
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        fac.total_hours >= 16 ? 'bg-red-500' :
+                        fac.total_hours >= 12 ? 'bg-amber-500' : 'bg-indigo-500'
+                      }`}
+                      style={{ width: `${Math.min(100, Math.round((fac.total_hours / 16) * 100))}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Subjects taught */}
+                <div>
+                  <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wide">Subjects Taught</div>
+                  <div className="flex flex-wrap gap-1">
+                    {(fac.subjects || []).length > 0 ? (
+                      (fac.subjects || []).map((subj: string, i: number) => (
+                        <span key={i} className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 rounded-full text-[11px] font-semibold">
+                          {subj}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">No subjects</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sections assigned */}
+                <div>
+                  <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wide">Sections Assigned</div>
+                  <div className="flex flex-wrap gap-1">
+                    {(fac.sections || []).length > 0 ? (
+                      (fac.sections || []).map((sec: string, i: number) => (
+                        <span key={i} className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded text-[11px] font-medium">
+                          {sec}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">No sections</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Venues assigned */}
+                {(fac.rooms || []).length > 0 && (
                   <div>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">Sections Taught:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {(fac.sections || []).map((s: string, i: number) => (
-                        <span key={i} className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded text-[11px] font-medium">
-                          {s}
+                    <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wide">Venues Used</div>
+                    <div className="flex flex-wrap gap-1">
+                      {(fac.rooms || []).map((rm: string, i: number) => (
+                        <span key={i} className="px-2 py-0.5 bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-100 dark:border-purple-800 rounded text-[11px] font-medium">
+                          {rm}
                         </span>
                       ))}
                     </div>
                   </div>
-
-                  <div>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">Subjects:</span>{" "}
-                    <span className="text-slate-600 dark:text-slate-400">{(fac.subjects || []).join(", ") || "None"}</span>
-                  </div>
-
-                  <div>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">Venues Assigned:</span>{" "}
-                    <span className="text-slate-600 dark:text-slate-400">{(fac.rooms || []).join(", ") || "None"}</span>
-                  </div>
-                </div>
+                )}
               </div>
             ))}
           </div>
@@ -542,34 +588,55 @@ export function ClashInspector({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredSubjects.map((sub, idx) => (
               <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <span className="font-extrabold text-sm text-slate-900 dark:text-white">{sub.code}</span>
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                {/* Subject Header */}
+                <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div>
+                    <div className="font-extrabold text-sm text-slate-900 dark:text-white">{sub.code}</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">{sub.total_slots} slots/wk · {sub.sections_count} section{sub.sections_count !== 1 ? 's' : ''} · {sub.faculty_count} faculty</div>
+                  </div>
+                  <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                     sub.type === "P" || sub.type === "T&P"
-                      ? "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300"
+                      ? "bg-purple-100 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
                       : sub.type === "T"
-                      ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
-                      : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                      ? "bg-amber-100 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                      : "bg-blue-100 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
                   }`}>
-                    {sub.type === "P" ? "Practical Lab" : sub.type === "T" ? "Tutorial" : "Lecture"}
+                    {sub.type === "P" || sub.type === "T&P" ? "Practical Lab" : sub.type === "T" ? "Tutorial" : "Lecture"}
                   </span>
                 </div>
 
-                <div className="space-y-1 text-xs text-slate-600 dark:text-slate-400">
-                  <div className="flex justify-between">
-                    <span>Total Slots / Week:</span>
-                    <strong className="text-slate-900 dark:text-white">{sub.total_slots} slots</strong>
+                {/* Teaching Faculty */}
+                <div>
+                  <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wide">Teaching Faculty</div>
+                  <div className="flex flex-wrap gap-1">
+                    {(sub.faculty || []).length > 0 ? (
+                      (sub.faculty || []).map((f: string, i: number) => (
+                        <span key={i} className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 rounded-full text-[11px] font-medium">
+                          {f}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">No faculty mapped</span>
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span>Enrolled Sections:</span>
-                    <strong className="text-slate-900 dark:text-white">{sub.sections_count} sections</strong>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">Teaching Faculty:</span>{" "}
-                    {(sub.faculty || []).join(", ") || "None"}
+                </div>
+
+                {/* Sections enrolled */}
+                <div>
+                  <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wide">Sections Enrolled</div>
+                  <div className="flex flex-wrap gap-1">
+                    {(sub.sections || []).length > 0 ? (
+                      (sub.sections || []).map((sec: string, i: number) => (
+                        <span key={i} className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded text-[11px] font-medium">
+                          {sec}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">No sections</span>
+                    )}
                   </div>
                 </div>
               </div>
