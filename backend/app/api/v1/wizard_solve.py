@@ -61,12 +61,15 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
     section_subjects = []
     faculty_map: Dict[str, List[str]] = {}
 
-    for sec in req.sections:
+    for sec_idx, sec in enumerate(req.sections, start=1):
         sec_norm = sec.replace(" ", "").replace("-", "").upper()
         for idx, assign in enumerate(req.assignments, start=101):
-            sub_id = f"{assign.subject_code}_{idx}"
+            sub_id = f"{sec}_{assign.subject_code}_{idx}"
             co_facs = [co.strip() for co in getattr(assign, "co_faculty", []) if co.strip()]
             c_slots = getattr(assign, "continuous_slots", 2 if assign.subject_type == "P" else 1)
+
+            needed_slots = max(1, assign.weekly_hours)
+
 
             # Determine primary faculty for this specific section
             base_subj = assign.subject_code.replace("(P)", "").replace("(T)", "").replace(" ", "").upper()
@@ -74,16 +77,22 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
             
             if real_fac_list and len(real_fac_list) > 0:
                 primary_fac = real_fac_list[0]
-            else:
-                # Fallback to UI assigned faculty or subject pool
+            elif assign.faculty_name and assign.faculty_name.strip():
                 primary_fac = assign.faculty_name.strip()
+            elif subj_fac_pool.get(base_subj):
+                # Round-robin assign from subject faculty pool per section
+                pool = subj_fac_pool[base_subj]
+                primary_fac = pool[(sec_idx - 1) % len(pool)]
+            else:
+                # Dedicated section instructor fallback
+                primary_fac = f"Dr. Faculty ({sec})"
 
             section_subjects.append({
                 "section_id": sec,
                 "subject_id": sub_id,
                 "subject_code": assign.subject_code,
                 "subject_type": assign.subject_type,
-                "total_slots_needed": assign.weekly_hours,
+                "total_slots_needed": needed_slots,
                 "faculty_name": primary_fac,
                 "co_faculty": co_facs,
                 "continuous_slots": c_slots
@@ -102,6 +111,7 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
                     faculty_map[co] = []
                 if assign.subject_code not in faculty_map[co]:
                     faculty_map[co].append(assign.subject_code)
+
 
     # 3. Dynamic Room Pool Expansion
     custom_rooms = getattr(req, "rooms", None)

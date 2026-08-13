@@ -69,7 +69,8 @@ class CPSATSolver:
         # -----------------------------------------------------------------------
         # SELF-DIRECTED SLOT TYPES — defined first so all constraint blocks can use it
         # -----------------------------------------------------------------------
-        SELF_DIRECTED_TYPES = frozenset({"LIBRARY", "IIC", "SL_EL", "OE", "CRT", "SPECIAL", "MINORHONOR"})
+        SELF_DIRECTED_TYPES = frozenset({"LIBRARY", "IIC", "SL_EL", "SL/EL", "OE", "CRT", "SPECIAL", "MINORHONOR", "MINORS", "HONORS", "MINORS/HONORS", "LIBRARY/IIC"})
+
 
         def _has_faculty(ss: Dict[str, Any]) -> bool:
             """True when a subject record carries a real (non-None, non-empty) faculty name."""
