@@ -1,32 +1,40 @@
 import time
 import json
 import redis
-from typing import Dict, Any
+import os
+from typing import Dict, Any, List, Optional
 from backend.tasks.celery_app import celery_app
 from backend.solver.csat_solver import CPSATSolver, SolverConfig
 from backend.solver.genetic_algorithm import GeneticAlgorithmOptimizer
 
-import os
-
-# Connect to Redis for real-time Pub/Sub progress broadcasting
 REDIS_URL = os.getenv("REDIS_URL", os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0"))
+
+# Reuse Redis connection pool across task invocations
+_redis_pool = redis.ConnectionPool.from_url(REDIS_URL)
 
 
 @celery_app.task(bind=True, name="run_solver_task")
-def run_solver_task(self, config_dict: Dict[str, Any], sections: list, section_subjects: list, rooms: list, time_slots: list, faculty_map: dict = None):
+def run_solver_task(
+    self,
+    config_dict: Dict[str, Any],
+    sections: List[Dict[str, Any]],
+    section_subjects: List[Dict[str, Any]],
+    rooms: List[Dict[str, Any]],
+    time_slots: List[Dict[str, Any]],
+    faculty_map: Optional[Dict[str, List[str]]] = None
+) -> Dict[str, Any]:
     """Celery task running the CP-SAT or Genetic Algorithm timetable solver asynchronously."""
     algorithm = config_dict.get("algorithm", "CP-SAT")
     timeout = config_dict.get("timeout_seconds", 120)
     task_id = self.request.id or "default_task"
 
-    # Setup Redis client for Pub/Sub
     r_client = None
     try:
-        r_client = redis.Redis.from_url(REDIS_URL)
+        r_client = redis.Redis(connection_pool=_redis_pool)
     except Exception as ex:
         print(f"[Celery Worker Redis Warning] Could not connect to Redis Pub/Sub: {ex}")
 
-    def publish_progress(meta_dict: dict):
+    def publish_progress(meta_dict: dict) -> None:
         self.update_state(state="PROGRESS", meta=meta_dict)
         if r_client:
             try:
@@ -43,17 +51,37 @@ def run_solver_task(self, config_dict: Dict[str, Any], sections: list, section_s
         "runtime_seconds": 0.0
     })
 
-    def progress_callback(update_dict: dict):
+    def progress_callback(update_dict: dict) -> None:
         update_dict["type"] = "progress"
         publish_progress(update_dict)
 
     if algorithm == "GeneticAlgorithm":
+        # Build initial seed entries from section_subjects for GA optimization
+        initial_entries = []
+        for sec in sections:
+            s_id = sec["id"]
+            sec_subjs = [ss for ss in section_subjects if ss.get("section_id") == s_id]
+            for ss in sec_subjs:
+                sub_id = ss.get("subject_id")
+                needed = ss.get("total_slots_needed", 3)
+                for _ in range(needed):
+                    initial_entries.append({
+                        "section_id": s_id,
+                        "section": sec.get("name", str(s_id)),
+                        "subject_id": sub_id,
+                        "subject": ss.get("subject_code", str(sub_id)),
+                        "room": rooms[0]["code"] if rooms else "601",
+                        "day": "MON",
+                        "period": 1,
+                        "faculty": ss.get("faculty_name", "")
+                    })
+
         ga = GeneticAlgorithmOptimizer(
             population_size=config_dict.get("population_size", 50),
             generations=config_dict.get("generations", 200),
             mutation_rate=config_dict.get("mutation_rate", 0.05)
         )
-        result = ga.optimize([])
+        result = ga.optimize(initial_entries)
     else:
         cfg = SolverConfig(algorithm=algorithm, timeout_seconds=timeout)
         solver = CPSATSolver(cfg)
@@ -78,3 +106,4 @@ def run_solver_task(self, config_dict: Dict[str, Any], sections: list, section_s
     publish_progress(complete_msg)
 
     return result
+
