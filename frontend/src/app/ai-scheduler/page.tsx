@@ -10,7 +10,7 @@ export default function AISchedulerPage() {
   const [, setLastGenerated] = useState<WizardGenerationResponse | null>(null);
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 w-full max-w-full">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
