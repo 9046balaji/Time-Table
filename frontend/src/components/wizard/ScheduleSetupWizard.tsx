@@ -193,7 +193,7 @@ export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSucc
         triggerExcelDownload(res.data.version_id);
         // Auto-load preview for first section
         if (selectedSections.length > 0) {
-          loadPreview(selectedSections[0], res.data.version_id);
+          loadPreview(selectedSections[0], res.data.version_id, res.data);
         }
       }
     } catch (err: any) {
@@ -239,21 +239,47 @@ export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSucc
     }
   };
 
-  const loadPreview = async (sectionName: string, versionId?: number) => {
+  const loadPreview = async (sectionName: string, versionId?: number, solverResultOverride?: any) => {
     setPreviewSection(sectionName);
     setLoadingPreview(true);
     setPreviewEntries([]);
+
+    const sourceResult = solverResultOverride || result;
+    if (sourceResult && Array.isArray(sourceResult.entries) && sourceResult.entries.length > 0) {
+      const targetNorm = sectionName.toUpperCase().replace(/[\s\-]/g, "");
+      const matched = sourceResult.entries.filter((e: any) => {
+        const secStr = String(e.section || e.sectionName || e.section_id || "").toUpperCase().replace(/[\s\-]/g, "");
+        return secStr === targetNorm;
+      });
+      if (matched.length > 0) {
+        const mapped = matched.map((e: any, idx: number) => ({
+          id: String(e.id || `${sectionName}_${idx}`),
+          day: e.day,
+          period: e.period,
+          subjectCode: e.subjectCode || e.subject || e.subject_code || "—",
+          roomCode: e.roomCode || e.room || e.room_code || "",
+          facultyName: e.facultyName || e.faculty || (Array.isArray(e.facultyNames) ? e.facultyNames.join(", ") : e.faculty_name) || "",
+          subjectType: e.subjectType || e.type || e.entry_type || "L",
+          spanPeriods: e.spanPeriods || e.span_periods || 1,
+        }));
+        setPreviewEntries(mapped);
+        setLoadingPreview(false);
+        return;
+      }
+    }
+
     try {
       const res = await timetableApi.getTimetable(versionId ?? 5, sectionName);
-      const raw = res.data?.entries || res.data || [];
-      const entries = (Array.isArray(raw) ? raw : []).map((e: any) => ({
-        id: String(e.id ?? Math.random()),
+      const raw = res.data?.entries || res.data?.slots || res.data || [];
+      const entries = (Array.isArray(raw) ? raw : []).map((e: any, idx: number) => ({
+        id: String(e.id ?? idx),
         day: e.day,
         period: e.period,
-        subjectCode: e.subject_code || e.subject || "—",
-        roomCode: e.room_code || e.room || "",
-        facultyName: e.faculty_name || e.faculty || "",
-        subjectType: e.subject_type || e.entry_type || "L",
+        subjectCode: e.subject_code || e.subjectCode || e.subject || "—",
+        roomCode: e.room_code || e.roomCode || e.room || "",
+        facultyName: e.faculty_name || e.facultyName || (Array.isArray(e.faculty) ? e.faculty.join(", ") : e.faculty) || "",
+        subjectType: e.subject_type || e.subjectType || e.entry_type || "L",
+        spanPeriods: e.span_periods || e.spanPeriods || 1,
       }));
       setPreviewEntries(entries);
     } catch {

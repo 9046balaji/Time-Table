@@ -178,6 +178,70 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
     elapsed = round(time.time() - start_time, 2)
     is_ok = result["status"] in ("OPTIMAL", "FEASIBLE")
 
+    db_version_id = None
+    if is_ok:
+        try:
+            from app.core.database import async_session_factory
+            from app.models.timetable import TimetableVersion, TimetableEntry
+            from app.models.section import Section
+            from app.models.time_slot import TimeSlot
+            from app.models.subject import Subject
+            from app.models.room import Room
+            from sqlalchemy import select
+
+            async with async_session_factory() as db_session:
+                new_ver = TimetableVersion(
+                    academic_year_id=1,
+                    version_label=f"AI-{int(time.time()) % 1000}",
+                    source="SOLVER",
+                    is_current=True,
+                    notes=f"AI Auto-Generated for {', '.join(req.sections[:4])}"
+                )
+                db_session.add(new_ver)
+                await db_session.flush()
+                db_version_id = new_ver.id
+
+                sec_res = await db_session.execute(select(Section))
+                sec_map = {s.name: s.id for s in sec_res.scalars().all()}
+
+                ts_res = await db_session.execute(select(TimeSlot))
+                ts_map = {(ts.day, ts.period): ts.id for ts in ts_res.scalars().all()}
+
+                sub_res = await db_session.execute(select(Subject))
+                sub_map = {s.code: s.id for s in sub_res.scalars().all()}
+
+                room_res = await db_session.execute(select(Room))
+                room_map = {r.code: r.id for r in room_res.scalars().all()}
+
+                for e in result.get("entries", []):
+                    s_name = e.get("section")
+                    sec_id = sec_map.get(s_name)
+                    day = e.get("day")
+                    period = e.get("period")
+                    ts_id = ts_map.get((day, period))
+
+                    if sec_id and ts_id:
+                        sub_code = e.get("subject")
+                        room_code = e.get("room")
+
+                        entry_row = TimetableEntry(
+                            timetable_version_id=db_version_id,
+                            section_id=sec_id,
+                            subject_id=sub_map.get(sub_code),
+                            room_id=room_map.get(room_code),
+                            time_slot_id=ts_id,
+                            entry_type=e.get("subjectType", "L"),
+                            span_periods=e.get("spanPeriods", 1),
+                            raw_subject_text=sub_code,
+                            raw_room_text=room_code,
+                            faculty_ids=None
+                        )
+                        db_session.add(entry_row)
+
+                await db_session.commit()
+        except Exception as ex:
+            print(f"[Wizard DB Save Warning] {ex}")
+
     msg = "✓ 100% Clash-Free Timetable Generated Successfully via AI Wizard!" if is_ok else (
         f"Infeasible: {preflight['warnings'][0]}" if preflight['warnings'] else "Infeasible: Resource constraints over-subscribed. Try selecting additional venue blocks."
     )
@@ -189,5 +253,6 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
         hard_violations=result.get("hard_violations", 0),
         soft_violations=result.get("soft_violations", 0),
         message=msg,
+        version_id=db_version_id,
         entries=result.get("entries", [])
     )

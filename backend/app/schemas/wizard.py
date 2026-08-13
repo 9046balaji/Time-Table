@@ -31,4 +31,5 @@ class WizardGenerationResponse(BaseModel):
     hard_violations: int
     soft_violations: int
     message: str
+    version_id: Optional[int] = None
     entries: List[Dict[str, Any]]
