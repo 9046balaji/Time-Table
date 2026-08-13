@@ -383,20 +383,34 @@ class CPSATSolver:
                                 if (s_id, sub_id, r["id"], t["id"]) in x:
                                     model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
 
-            # Rule 3: 4th Year SL/EL Fixed Block Protection
+            # Rule 3: 4th Year SL/EL Fixed Block Protection (P1-P2 MON-SAT strictly SL/EL)
             s_id_str = str(s_id).upper()
-            if "IV " in s_id_str or "IV_" in s_id_str or "IV-" in s_id_str:
+            is_fourth_year = "IV " in s_id_str or "IV_" in s_id_str or "IV-" in s_id_str or "IV" in s_id_str.split()
+            if is_fourth_year:
+                # 4th Year regular theory & lab subjects CANNOT be in P1 or P2 (P1-P2 reserved for SL/EL)
+                regular_4th_subjs = [
+                    ss for ss in sec_subjs
+                    if not any(k in str(ss.get("subject_code", "")).upper() or k in str(ss.get("subject_type", "")).upper()
+                               for k in ("SL/EL", "SL_EL", "LEARNING", "LIBRARY", "MINOR", "HONOR"))
+                ]
+                for ss in regular_4th_subjs:
+                    sub_id = ss["subject_id"]
+                    for r in rooms:
+                        for t in time_slots:
+                            if t.get("period") in (1, 2):
+                                if (s_id, sub_id, r["id"], t["id"]) in x:
+                                    model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
+
+                # 4th Year SL/EL MUST be assigned to P1-P2 (or Saturday afternoon P6-P8)
                 slel_subjs = [
                     ss for ss in sec_subjs
-                    if ("SL/EL" in str(ss.get("subject_code", "")).upper()
-                        or "SL_EL" in str(ss.get("subject_code", "")).upper()
-                        or "LEARNING" in str(ss.get("subject_code", "")).upper())
+                    if any(k in str(ss.get("subject_code", "")).upper() or k in str(ss.get("subject_type", "")).upper()
+                           for k in ("SL/EL", "SL_EL", "LEARNING"))
                 ]
                 if slel_subjs:
                     for ss in slel_subjs:
                         sub_id = ss["subject_id"]
-                        sub_type = str(ss.get("subject_type", "L")).upper()
-                        sub_rooms = [self.VIRTUAL_LIB_ROOM] if sub_type in self.SELF_DIRECTED_TYPES else rooms
+                        sub_rooms = [self.VIRTUAL_LIB_ROOM]
                         for r in sub_rooms:
                             for t in time_slots:
                                 t_p = t.get("period")
@@ -405,6 +419,21 @@ class CPSATSolver:
                                 if not is_allowed_slel:
                                     if (s_id, sub_id, r["id"], t["id"]) in x:
                                         model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
+
+            # Rule 4: 2nd Year Teaching Slot Protection (P1 to P6 cap)
+            is_second_year = "II " in s_id_str or "II_" in s_id_str or "II-" in s_id_str or "II" in s_id_str.split()
+            if is_second_year:
+                regular_2nd_subjs = [
+                    ss for ss in sec_subjs
+                    if str(ss.get("subject_type", "L")).upper() not in self.SELF_DIRECTED_TYPES
+                ]
+                for ss in regular_2nd_subjs:
+                    sub_id = ss["subject_id"]
+                    for r in rooms:
+                        for t in time_slots:
+                            if t.get("period") in (7, 8):
+                                if (s_id, sub_id, r["id"], t["id"]) in x:
+                                    model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
 
         # -----------------------------------------------------------------------
         # 10. Objective Function: Schedule Compacting into Early Periods (P1..P6)
