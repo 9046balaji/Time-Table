@@ -1,5 +1,12 @@
 import pytest
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from backend.solver.incremental_validator import ScheduleIndexStore, IncrementalValidator, DragDropSwapRequest
+
 
 
 class MockTimetableEntry:
@@ -22,8 +29,9 @@ def test_schedule_index_store_construction():
     
     assert ("MON", 1, "601") in store.room_occupancy
     assert ("MON", 1, "604") in store.room_occupancy
-    assert ("MON", 1, "Dr. Reddy") in store.faculty_schedule
-    assert ("MON", 1, "P. Girija") in store.faculty_schedule
+    assert ("MON", 1, "DR. REDDY") in store.faculty_schedule
+    assert ("MON", 1, "P. GIRIJA") in store.faculty_schedule
+
 
 
 def test_incremental_validator_valid_swap():

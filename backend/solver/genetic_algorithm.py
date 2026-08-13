@@ -1,17 +1,31 @@
 import random
 import time
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from backend.solver.fitness import FitnessEvaluator
 
 
 class GeneticAlgorithmOptimizer:
-    def __init__(self, population_size: int = 50, generations: int = 100, mutation_rate: float = 0.05, elite_size: int = 5):
+    """
+    Heuristic Genetic Algorithm Optimizer for timetable fine-tuning and soft constraint minimization.
+    """
+
+    def __init__(
+        self,
+        population_size: int = 50,
+        generations: int = 100,
+        mutation_rate: float = 0.05,
+        elite_size: int = 5
+    ):
         self.population_size = population_size
         self.generations = generations
         self.mutation_rate = mutation_rate
         self.elite_size = min(elite_size, population_size // 2)
 
     def optimize(self, initial_entries: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Executes population generation, tournament selection, crossover, and mutation.
+        Returns optimized entries dictionary with runtime and fitness metrics.
+        """
         start_time = time.time()
         if not initial_entries:
             return {
@@ -28,7 +42,7 @@ class GeneticAlgorithmOptimizer:
         population: List[List[Dict[str, Any]]] = [initial_entries]
         for _ in range(1, self.population_size):
             variant = [dict(e) for e in initial_entries]
-            # Randomly perturb 5% of period slots
+            # Perturb ~5% of entries into valid period ranges (1..8)
             for item in variant:
                 if random.random() < 0.05:
                     item["period"] = random.randint(1, 8)
@@ -71,12 +85,16 @@ class GeneticAlgorithmOptimizer:
             "optimized_entries": best_individual
         }
 
-    def _tournament_select(self, evaluations: List[Tuple[List[Dict[str, Any]], Dict[str, Any]]], k: int = 3) -> List[Dict[str, Any]]:
+    def _tournament_select(
+        self, evaluations: List[Tuple[List[Dict[str, Any]], Dict[str, Any]]], k: int = 3
+    ) -> List[Dict[str, Any]]:
         competitors = random.sample(evaluations, min(k, len(evaluations)))
         competitors.sort(key=lambda x: x[1]["fitness_score"], reverse=True)
         return competitors[0][0]
 
-    def _crossover(self, parent1: List[Dict[str, Any]], parent2: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _crossover(
+        self, parent1: List[Dict[str, Any]], parent2: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         if len(parent1) <= 1:
             return [dict(e) for e in parent1]
         cut = random.randint(1, len(parent1) - 1)
@@ -89,4 +107,5 @@ class GeneticAlgorithmOptimizer:
             if random.random() < self.mutation_rate:
                 item["period"] = random.randint(1, 8)
         return mutated
+
 
