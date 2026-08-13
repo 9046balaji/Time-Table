@@ -4,100 +4,13 @@ import os
 from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Optional, Any, Set
 
-
-# ---------------------------------------------------------------------------
-# CRITICAL-03 / HIGH-04 / LOW-01 FIX: Robust name & code normalisation
-# ---------------------------------------------------------------------------
-
-def normalize_faculty_name(raw: str) -> str:
-    """Strip legend artefacts like '(P):' / '(L):' prefixes, leading dots,
-    collapsed whitespace and trailing punctuation from raw faculty name strings."""
-    if not raw:
-        return ""
-    name = raw.strip()
-    # Remove type-prefix artefacts e.g. "(P):Dr. Name", "(T&P):Name"
-    name = re.sub(r'^\([A-Z&]+\)\s*:', '', name).strip()
-    # Remove leading dots or commas
-    name = name.lstrip('.').lstrip(',').strip()
-    # Collapse multiple spaces
-    name = re.sub(r'\s+', ' ', name)
-    return name
-
-
-# Full-title → short-code bridge (50+ subject variants from VFSTR ACSE)
-SUBJECT_TITLE_TO_CODE: Dict[str, str] = {
-    # Core II Year AIML
-    "DATA STRUCTURES": "DS",
-    "STATISTICAL FOUNDATION FOR COMPUTING": "SFCDS",
-    "STATISTICAL FOUNDATION": "SFCDS",
-    "DISCRETE MATHEMATICAL STRUCTURES": "DMS",
-    "DISCRETE MATHEMATICAL": "DMS",
-    "DISCRETE MATH": "DMS",
-    "ARTIFICIAL INTELLIGENCE": "AI",
-    "DATABASE MANAGEMENT SYSTEMS": "DBMS",
-    "DATABASE MANAGEMENT": "DBMS",
-    "OBJECT ORIENTED PROGRAMMING": "OOPS",
-    "OBJECT-ORIENTED PROGRAMMING": "OOPS",
-    "DATA ENGINEERING FOUNDATIONS": "DEF",
-    "DATA ENGINEERING": "DEF",
-    # III Year
-    "DEEP LEARNING": "DL",
-    "WEB TECHNOLOGIES": "WT",
-    "COMPUTER VISION": "CV",
-    "ADVANCED DATA STRUCTURES": "ADS",
-    "ADVANCED DATA STRUCTURES AND ALGORITHMS": "ADS",
-    "MACHINE LEARNING OPERATIONS": "MLOP",
-    "MLOPS": "MLOP",
-    "INTERDISCIPLINARY PROJECT": "IDP",
-    "INTER DISCIPLINARY PROJECT": "IDP",
-    "IDP PROJECT": "IDP",
-    # IV Year
-    "GENERATIVE AI": "GENAI",
-    "GENERATIVE ARTIFICIAL INTELLIGENCE": "GENAI",
-    "GEN AI": "GENAI",
-    "CRYPTOGRAPHY AND NETWORK SECURITY": "CNS",
-    "CRYPTOGRAPHY & NETWORK SECURITY": "CNS",
-    "INTERNET OF THINGS": "IOT",
-    "TECHNICAL MANAGEMENT": "TM",
-    # Special / common
-    "MACHINE LEARNING": "ML",
-    "NATURAL LANGUAGE PROCESSING": "NLP",
-    "REINFORCEMENT LEARNING": "RL",
-    "CLOUD COMPUTING": "CC",
-    "OPERATIONS RESEARCH": "OR",
-    "QUANTITATIVE APTITUDE": "QALR",
-    "QUANTITATIVE ANALYSIS": "QALR",
-    "OPEN ELECTIVE": "OE",
-    "CAREER READINESS TRAINING": "CRT",
-    "INNOVATION AND INCUBATION": "IIC",
-    "SELF LEARNING": "SL_EL",
-    "SL/EL/IL": "SL_EL",
-}
-
-
-def normalize_subject_code(subj_part: str) -> Tuple[str, str]:
-    """Given a raw legend subject part like 'Data Structures(L)' or 'DS(T&P)',
-    return (clean_code, type_suffix) e.g. ('DS', '(L)') or ('DS', '(T&P)')."""
-    subj_upper = subj_part.strip().upper()
-    # Extract type suffix
-    suffix = ""
-    for s in ["(T&P)", "(T)", "(P)", "(L)"]:
-        if s in subj_upper:
-            suffix = s
-            break
-    # Strip suffix from the text to get the bare title
-    bare = re.sub(r'\([A-Z&]+\)', '', subj_part).strip()
-    bare_upper = bare.upper()
-    # Try direct short-code match first (e.g. subj_part is already "DS")
-    if len(bare) <= 8 and bare_upper.replace("-", "").replace("_", "").isalpha():
-        return bare_upper, suffix
-    # Try full-title lookup
-    for title, code in SUBJECT_TITLE_TO_CODE.items():
-        if title in bare_upper:
-            return code, suffix
-    # Fallback: return first word as code (capitalised)
-    first_word = bare_upper.split()[0] if bare_upper.split() else bare_upper
-    return first_word, suffix
+from backend.parser.normalizer import (
+    normalize_faculty_name,
+    normalize_room_code,
+    normalize_subject_code,
+    normalize_section_name,
+    SUBJECT_TITLE_TO_CODE,
+)
 
 V5_FILE_PATH = "time_table/ACSE TIMETABLE (V5)  - W.e.f 15-7-2026.xlsx"
 V3_FILE_PATH = "time_table/ACSE TIMETABLE (V3)  - W.e.f 13-7-2026.xlsx"
@@ -126,6 +39,7 @@ def resolve_version_path(v_name: str = "V5") -> str:
         if os.path.exists(c):
             return c
     return candidates[0]
+
 
 
 @dataclass
