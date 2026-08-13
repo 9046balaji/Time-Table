@@ -75,14 +75,17 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
             base_subj = assign.subject_code.replace("(P)", "").replace("(T)", "").replace(" ", "").upper()
             real_fac_list = section_fac_map.get((sec_norm, base_subj))
             
-            if real_fac_list and len(real_fac_list) > 0:
+            sub_type_norm = assign.subject_type.upper().strip()
+            if sub_type_norm in ("SL_EL", "SL/EL", "LIBRARY", "IIC", "MINORHONOR", "MINORS", "HONORS"):
+                primary_fac = f"{assign.faculty_name} ({sec})"
+            elif real_fac_list and len(real_fac_list) > 0:
                 primary_fac = real_fac_list[0]
-            elif assign.faculty_name and assign.faculty_name.strip():
-                primary_fac = assign.faculty_name.strip()
             elif subj_fac_pool.get(base_subj):
-                # Round-robin assign from subject faculty pool per section
                 pool = subj_fac_pool[base_subj]
                 primary_fac = pool[(sec_idx - 1) % len(pool)]
+            elif assign.faculty_name and assign.faculty_name.strip():
+                # If generating for multiple sections, scope default faculty per section to avoid workload overflow
+                primary_fac = f"{assign.faculty_name.strip()} ({sec})" if len(req.sections) > 1 else assign.faculty_name.strip()
             else:
                 # Dedicated section instructor fallback
                 primary_fac = f"Dr. Faculty ({sec})"
@@ -113,42 +116,34 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
                     faculty_map[co].append(assign.subject_code)
 
 
-    # 3. Dynamic Room Pool Expansion
+    # 3. Dynamic Room Pool Expansion (always provide full venue pool for maximum solver feasibility)
     custom_rooms = getattr(req, "rooms", None)
     if custom_rooms:
         rooms_list = custom_rooms
     else:
-        # Load full venue pool from seed cache if generating for >= 3 sections
-        if len(req.sections) >= 3:
-            seed_rooms = seed.get("rooms", [])
-            rooms_list = [{"id": r["code"], "capacity": r["capacity"], "room_type": r["room_type"]} for r in seed_rooms]
+        seed_rooms = seed.get("rooms", [])
+        if seed_rooms:
+            rooms_list = [{"id": str(r.get("code") or r.get("id")), "capacity": r.get("capacity", 66), "room_type": r.get("room_type", "classroom")} for r in seed_rooms]
         else:
-            block_clean = req.preferred_block.lower()
-            if "aftf" in block_clean or "gpu" in block_clean:
-                rooms_list = [
-                    {"id": "AFTF-12", "capacity": 72, "room_type": "gpu_lab"},
-                    {"id": "AFTF-13", "capacity": 72, "room_type": "gpu_lab"},
-                    {"id": "AFTF-14", "capacity": 72, "room_type": "gpu_lab"},
-                    {"id": "601", "capacity": 66, "room_type": "classroom"},
-                    {"id": "602", "capacity": 66, "room_type": "classroom"},
-                ]
-            else:
-                rooms_list = [
-                    {"id": "601", "capacity": 66, "room_type": "classroom"},
-                    {"id": "602", "capacity": 66, "room_type": "classroom"},
-                    {"id": "603", "capacity": 66, "room_type": "classroom"},
-                    {"id": "607", "capacity": 66, "room_type": "classroom"},
-                    {"id": "608", "capacity": 66, "room_type": "classroom"},
-                    {"id": "614", "capacity": 66, "room_type": "classroom"},
-                    {"id": "619", "capacity": 66, "room_type": "classroom"},
-                    {"id": "215", "capacity": 66, "room_type": "classroom"},
-                    {"id": "218", "capacity": 66, "room_type": "classroom"},
-                    {"id": "604", "capacity": 60, "room_type": "computer_lab"},
-                    {"id": "605", "capacity": 60, "room_type": "computer_lab"},
-                    {"id": "606", "capacity": 60, "room_type": "computer_lab"},
-                    {"id": "611", "capacity": 60, "room_type": "computer_lab"},
-                    {"id": "616", "capacity": 60, "room_type": "computer_lab"},
-                ]
+            rooms_list = [
+                {"id": "601", "capacity": 66, "room_type": "classroom"},
+                {"id": "602", "capacity": 66, "room_type": "classroom"},
+                {"id": "603", "capacity": 66, "room_type": "classroom"},
+                {"id": "607", "capacity": 66, "room_type": "classroom"},
+                {"id": "608", "capacity": 66, "room_type": "classroom"},
+                {"id": "614", "capacity": 66, "room_type": "classroom"},
+                {"id": "619", "capacity": 66, "room_type": "classroom"},
+                {"id": "215", "capacity": 66, "room_type": "classroom"},
+                {"id": "218", "capacity": 66, "room_type": "classroom"},
+                {"id": "604", "capacity": 60, "room_type": "computer_lab"},
+                {"id": "605", "capacity": 60, "room_type": "computer_lab"},
+                {"id": "606", "capacity": 60, "room_type": "computer_lab"},
+                {"id": "611", "capacity": 60, "room_type": "computer_lab"},
+                {"id": "616", "capacity": 60, "room_type": "computer_lab"},
+                {"id": "AFTF-12", "capacity": 72, "room_type": "gpu_lab"},
+                {"id": "AFTF-13", "capacity": 72, "room_type": "gpu_lab"},
+                {"id": "AFTF-14", "capacity": 72, "room_type": "gpu_lab"},
+            ]
 
     # 4. Build Time Slots (MON..SAT, Periods 1..8)
     time_slots = []

@@ -144,10 +144,12 @@ class WizardDefaultsService:
                 {"subject_code": "MINORHONOR", "subject_name": "Synchronized Minors / Honors", "subject_type": "P", "faculty_name": "A. Hruday Raj", "co_faculty": ["Ms. Attuluri Ramya"], "weekly_hours": 2, "continuous_slots": 2},
             ],
             "IV Year": [
+                {"subject_code": "SL/EL", "subject_name": "Self Learning / Extra Learning", "subject_type": "SL_EL", "faculty_name": "Self-Guided", "co_faculty": [], "weekly_hours": 12, "continuous_slots": 2},
                 {"subject_code": "CNS", "subject_name": "Cryptography & Network Security", "subject_type": "L", "faculty_name": "Dr. M. Vasudeva", "co_faculty": [], "weekly_hours": 3, "continuous_slots": 1},
                 {"subject_code": "CNS(P)", "subject_name": "Cryptography Lab", "subject_type": "P", "faculty_name": "Dr. M. Vasudeva", "co_faculty": ["P. Girija"], "weekly_hours": 2, "continuous_slots": 2},
                 {"subject_code": "GENAI(P)", "subject_name": "Generative AI Practical Lab", "subject_type": "P", "faculty_name": "V. Amarnath", "co_faculty": ["Mr. Mahendra Varma"], "weekly_hours": 2, "continuous_slots": 2},
                 {"subject_code": "IOT", "subject_name": "Internet of Things", "subject_type": "L", "faculty_name": "Dr. A.V. Nageswara Rao", "co_faculty": [], "weekly_hours": 3, "continuous_slots": 1},
+                {"subject_code": "MINORS/HONORS", "subject_name": "Synchronized Minors / Honors Track", "subject_type": "MINORHONOR", "faculty_name": "Department Faculty", "co_faculty": [], "weekly_hours": 2, "continuous_slots": 2},
             ],
         }
 
