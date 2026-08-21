@@ -548,10 +548,12 @@ class CPSATSolver:
         available_rooms: List[Dict[str, Any]],
         disrupted_room_code: Optional[str] = None,
         disrupted_faculty_name: Optional[str] = None,
+        priority_level: str = "P2_HIGH",
     ) -> Dict[str, Any]:
         """
         Performs scoped minimal-disruption local repair.
         Freezes unaffected timetable entries and re-allocates only impacted cells to available replacement rooms.
+        Priority Levels: P1_CRITICAL (Labs/4th-Year), P2_HIGH (Standard Theory), P3_NORMAL (Tutorial/Library)
         """
         start_time = time.time()
         disrupted_room_norm = str(disrupted_room_code or "").strip().upper()
