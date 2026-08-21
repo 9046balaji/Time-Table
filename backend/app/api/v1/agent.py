@@ -31,6 +31,14 @@ async def get_agent_session(session_id: int, db: AsyncSession = Depends(get_db))
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+_last_simulation_times: Dict[int, float] = {}
+
+@router.get("/health/data-integrity", response_model=Dict[str, Any])
+async def get_data_integrity_health(db: AsyncSession = Depends(get_db)):
+    """Health check endpoint auditing raw text fields vs FK database relations."""
+    from app.services.timetable_service import TimetableService
+    return await TimetableService.check_data_integrity(db)
+
 @router.post("/simulate-room-failure", response_model=Dict[str, Any])
 async def simulate_room_failure(
     payload: Dict[str, Any],
@@ -43,10 +51,17 @@ async def simulate_room_failure(
     if not room_code:
         raise HTTPException(status_code=400, detail="room_code is required")
 
+    import time
+    s_id = int(session_id)
+    now = time.time()
+    if s_id in _last_simulation_times and (now - _last_simulation_times[s_id]) < 1.0:
+        raise HTTPException(status_code=429, detail="Simulation cooldown active. Please wait 1 second before triggering consecutive disruptions.")
+    _last_simulation_times[s_id] = now
+
     try:
         return await AgentService.simulate_room_failure(
             db,
-            session_id=int(session_id),
+            session_id=s_id,
             room_code=room_code,
             severity=str(payload.get("severity") or "high"),
             affected_sections=payload.get("affected_sections") or [],
@@ -205,6 +220,13 @@ async def simulate_disruption_scenario(
     session_id = payload.get("session_id")
     if not session_id:
         raise HTTPException(status_code=400, detail="session_id is required")
+
+    import time
+    s_id = int(session_id)
+    now = time.time()
+    if s_id in _last_simulation_times and (now - _last_simulation_times[s_id]) < 1.0:
+        raise HTTPException(status_code=429, detail="Simulation cooldown active. Please wait 1 second before triggering consecutive disruptions.")
+    _last_simulation_times[s_id] = now
 
     from app.services.mission_simulator import MissionSimulator
     try:
