@@ -36,6 +36,13 @@ class ConflictChecker:
 
     IGNORED_ROOM_CODES: Set[str] = ConstraintRules.IGNORED_ROOM_CODES
 
+    @staticmethod
+    def _get_attr(slot: Any, key: str, default: Any = None) -> Any:
+        if isinstance(slot, dict):
+            val = slot.get(key)
+            return val if val is not None else default
+        return getattr(slot, key, default)
+
     def detect(self, parsed_result: Any) -> ClashReport:
         """
         Runs comprehensive hard constraint conflict detection across all slots.
@@ -52,17 +59,17 @@ class ConflictChecker:
         section_map: Dict[Tuple[str, int, str], List[Any]] = {}
 
         for slot in slots:
-            period = getattr(slot, "period", None)
+            period = self._get_attr(slot, "period", None)
             if period is None or period <= 0:
                 continue
 
-            day_norm = ConstraintRules.normalize_string(getattr(slot, "day", ""))
+            day_norm = ConstraintRules.normalize_string(self._get_attr(slot, "day", ""))
             if not day_norm:
                 continue
 
-            section = getattr(slot, "section", "") or ""
-            subject_code = getattr(slot, "subject_code", "") or ""
-            subject_type = getattr(slot, "subject_type", "") or ""
+            section = self._get_attr(slot, "section", "") or ""
+            subject_code = self._get_attr(slot, "subject_code", "") or self._get_attr(slot, "subject", "") or ""
+            subject_type = self._get_attr(slot, "subject_type", "") or self._get_attr(slot, "type", "") or ""
             code_norm = ConstraintRules.normalize_string(subject_code)
 
             # ---------------------------------------------------------
@@ -89,7 +96,7 @@ class ConflictChecker:
             # ---------------------------------------------------------
             # 1. Bucket Room Occupancy (HC-01)
             # ---------------------------------------------------------
-            room = ConstraintRules.normalize_string(getattr(slot, "room", ""))
+            room = ConstraintRules.normalize_string(self._get_attr(slot, "room", ""))
             is_minors = (
                 subject_type in ("MINORHONOR", "M_H")
                 or "MINOR" in code_norm
@@ -105,7 +112,14 @@ class ConflictChecker:
             # ---------------------------------------------------------
             # 2. Bucket Faculty Assignments (HC-02)
             # ---------------------------------------------------------
-            faculty_list = getattr(slot, "faculty_list", [])
+            faculty_list = self._get_attr(slot, "faculty_list", None)
+            if not faculty_list:
+                facs = self._get_attr(slot, "faculty", [])
+                if isinstance(facs, str):
+                    faculty_list = [f.strip() for f in facs.split(",") if f.strip()]
+                elif isinstance(facs, list):
+                    faculty_list = [str(f).strip() for f in facs if str(f).strip()]
+
             if faculty_list:
                 for fac in faculty_list:
                     fac_clean = fac.strip()
@@ -133,8 +147,9 @@ class ConflictChecker:
 
             # Deduplicate by section to find distinct section collisions
             distinct_slots_by_section: Dict[str, Any] = {}
+            distinct_slots_by_section: Dict[str, Any] = {}
             for s in occupied_slots:
-                sec = getattr(s, "section", "")
+                sec = self._get_attr(s, "section", "")
                 if sec not in distinct_slots_by_section:
                     distinct_slots_by_section[sec] = s
 
@@ -145,8 +160,8 @@ class ConflictChecker:
                         sa, sb = conflicting_slots[i], conflicting_slots[j]
                         report.room_clashes += 1
 
-                        sub_a_code = getattr(sa, "subject_code", "") or ""
-                        sub_b_code = getattr(sb, "subject_code", "") or ""
+                        sub_a_code = self._get_attr(sa, "subject_code", "") or self._get_attr(sa, "subject", "") or ""
+                        sub_b_code = self._get_attr(sb, "subject_code", "") or self._get_attr(sb, "subject", "") or ""
                         sub_a_norm = ConstraintRules.normalize_string(sub_a_code).replace("(P)", "").replace("(T)", "").replace("(L)", "").strip()
                         sub_b_norm = ConstraintRules.normalize_string(sub_b_code).replace("(P)", "").replace("(T)", "").replace("(L)", "").strip()
 
@@ -163,11 +178,11 @@ class ConflictChecker:
                                 day=day,
                                 period=period,
                                 key=room,
-                                section_a=getattr(sa, "section", ""),
+                                section_a=self._get_attr(sa, "section", ""),
                                 subject_a=sub_a_code,
-                                section_b=getattr(sb, "section", ""),
+                                section_b=self._get_attr(sb, "section", ""),
                                 subject_b=sub_b_code,
-                                message=f"[{clash_label}] {day} Period-{period}, Room {room} → {getattr(sa, 'section', '')}: {sub_a_code} AND {getattr(sb, 'section', '')}: {sub_b_code}",
+                                message=f"[{clash_label}] {day} Period-{period}, Room {room} → {self._get_attr(sa, 'section', '')}: {sub_a_code} AND {self._get_attr(sb, 'section', '')}: {sub_b_code}",
                             )
                         )
 
@@ -180,7 +195,7 @@ class ConflictChecker:
 
             distinct_slots_by_section = {}
             for s in occupied_slots:
-                sec = getattr(s, "section", "")
+                sec = self._get_attr(s, "section", "")
                 if sec not in distinct_slots_by_section:
                     distinct_slots_by_section[sec] = s
 
@@ -190,19 +205,19 @@ class ConflictChecker:
                     for j in range(i + 1, len(conflicting_slots)):
                         sa, sb = conflicting_slots[i], conflicting_slots[j]
                         report.faculty_clashes += 1
-                        sub_a_code = getattr(sa, "subject_code", "") or ""
-                        sub_b_code = getattr(sb, "subject_code", "") or ""
+                        sub_a_code = self._get_attr(sa, "subject_code", "") or self._get_attr(sa, "subject", "") or ""
+                        sub_b_code = self._get_attr(sb, "subject_code", "") or self._get_attr(sb, "subject", "") or ""
                         report.details.append(
                             ClashDetail(
                                 clash_type="FACULTY",
                                 day=day,
                                 period=period,
                                 key=fac,
-                                section_a=getattr(sa, "section", ""),
+                                section_a=self._get_attr(sa, "section", ""),
                                 subject_a=sub_a_code,
-                                section_b=getattr(sb, "section", ""),
+                                section_b=self._get_attr(sb, "section", ""),
                                 subject_b=sub_b_code,
-                                message=f"[FACULTY_CLASH] {day} Period-{period}, Faculty {fac} → {getattr(sa, 'section', '')}: {sub_a_code} AND {getattr(sb, 'section', '')}: {sub_b_code}",
+                                message=f"[FACULTY_CLASH] {day} Period-{period}, Faculty {fac} → {self._get_attr(sa, 'section', '')}: {sub_a_code} AND {self._get_attr(sb, 'section', '')}: {sub_b_code}",
                             )
                         )
 
