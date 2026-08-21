@@ -523,3 +523,68 @@ class AgentService:
         db.add(event)
         await db.commit()
         return result
+
+    @staticmethod
+    async def recover_dead_sessions(db: AsyncSession, max_stuck_seconds: int = 300) -> Dict[str, Any]:
+        """Risk A: Detects and auto-recovers agent sessions stuck in 'REPAIRING' state past timeout threshold."""
+        await ensure_database()
+        from datetime import datetime, timedelta
+        threshold = datetime.utcnow() - timedelta(seconds=max_stuck_seconds)
+
+        res = await db.execute(
+            select(AgentSession)
+            .where(AgentSession.status == "REPAIRING")
+            .where(AgentSession.updated_at <= threshold)
+        )
+        stuck_sessions = res.scalars().all()
+        recovered_ids = []
+
+        for s in stuck_sessions:
+            s.status = "FAILED"
+            s.summary = "Session auto-recovered: CP-SAT repair process timed out or crashed."
+            recovered_ids.append(s.id)
+
+            ev = AgentEvent(
+                session_id=s.id,
+                event_type="SESSION_TIMEOUT_RECOVERY",
+                source="system",
+                severity="high",
+                summary=s.summary,
+                payload={"recovered_at": datetime.utcnow().isoformat()}
+            )
+            db.add(ev)
+
+        await db.commit()
+        return {
+            "recovered_count": len(recovered_ids),
+            "recovered_session_ids": recovered_ids
+        }
+
+    @staticmethod
+    async def cleanup_expired_snapshots(db: AsyncSession, session_id: int, max_snapshots: int = 10) -> Dict[str, Any]:
+        """Risk B: Enforces snapshot retention policy keeping only the last max_snapshots per session."""
+        res = await db.execute(select(AgentSession).where(AgentSession.id == session_id))
+        session = res.scalar_one_or_none()
+        if not session or not session.context:
+            return {"cleaned_count": 0}
+
+        snaps = session.context.get("snapshots", {})
+        if len(snaps) <= max_snapshots:
+            return {"cleaned_count": 0}
+
+        # Keep initial and newest (max_snapshots - 1) snapshots
+        sorted_keys = sorted(snaps.keys())
+        initial = snaps.get("initial")
+        newest_keys = sorted_keys[-(max_snapshots - 1):]
+
+        pruned_snaps = {}
+        if initial:
+            pruned_snaps["initial"] = initial
+        for k in newest_keys:
+            if k in snaps:
+                pruned_snaps[k] = snaps[k]
+
+        cleaned_count = len(snaps) - len(pruned_snaps)
+        session.context["snapshots"] = pruned_snaps
+        await db.commit()
+        return {"cleaned_count": cleaned_count, "remaining_count": len(pruned_snaps)}
