@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -164,6 +164,40 @@ async def simulate_disruption_scenario(
             target_code=payload.get("target_code"),
             affected_sections=payload.get("affected_sections") or [],
             payload_extra=payload.get("extra") or {}
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.websocket("/stream/{session_id}")
+async def stream_agent_events(websocket: WebSocket, session_id: int):
+    from app.services.agent_websocket_manager import agent_ws_manager
+    await agent_ws_manager.connect(session_id, websocket)
+    try:
+        while True:
+            # Keep connection alive & listen for client messages
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text("pong")
+    except WebSocketDisconnect:
+        agent_ws_manager.disconnect(session_id, websocket)
+    except Exception:
+        agent_ws_manager.disconnect(session_id, websocket)
+
+
+@router.post("/sessions/{session_id}/consensus", response_model=Dict[str, Any])
+async def evaluate_multi_agent_consensus(
+    session_id: int,
+    payload: Dict[str, Any],
+    db: AsyncSession = Depends(get_db),
+):
+    entries = payload.get("entries") or []
+    from app.services.multi_agent_consensus import MultiAgentConsensusEngine
+    try:
+        return await MultiAgentConsensusEngine.evaluate_consensus(
+            db,
+            session_id=session_id,
+            timetable_entries=entries
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
