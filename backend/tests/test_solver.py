@@ -10,8 +10,8 @@ from backend.solver.csat_solver import CPSATSolver, SolverConfig
 
 def test_cp_sat_solver_basic():
     sections = [
-        {"id": 1, "name": "II AIML-A"},
-        {"id": 2, "name": "II AIML-B"},
+        {"id": 1, "name": "SEC-A"},
+        {"id": 2, "name": "SEC-B"},
     ]
     section_subjects = [
         {"section_id": 1, "subject_id": 101, "total_slots_needed": 3},
@@ -23,7 +23,7 @@ def test_cp_sat_solver_basic():
         {"id": 1, "code": "601", "type": "classroom"},
         {"id": 2, "code": "602", "type": "classroom"},
     ]
-    # Provide 7 usable periods + 1 blocked lunch period
+    # Provide MON + TUE usable periods (max 5 teaching hours per day per section)
     time_slots = [
         {"id": 1, "day": "MON", "period": 1, "is_blocked": False},
         {"id": 2, "day": "MON", "period": 2, "is_blocked": False},
@@ -33,6 +33,14 @@ def test_cp_sat_solver_basic():
         {"id": 6, "day": "MON", "period": 6, "is_blocked": True},  # Lunch
         {"id": 7, "day": "MON", "period": 7, "is_blocked": False},
         {"id": 8, "day": "MON", "period": 8, "is_blocked": False},
+        {"id": 9, "day": "TUE", "period": 1, "is_blocked": False},
+        {"id": 10, "day": "TUE", "period": 2, "is_blocked": False},
+        {"id": 11, "day": "TUE", "period": 3, "is_blocked": False},
+        {"id": 12, "day": "TUE", "period": 4, "is_blocked": False},
+        {"id": 13, "day": "TUE", "period": 5, "is_blocked": False},
+        {"id": 14, "day": "TUE", "period": 6, "is_blocked": True},  # Lunch
+        {"id": 15, "day": "TUE", "period": 7, "is_blocked": False},
+        {"id": 16, "day": "TUE", "period": 8, "is_blocked": False},
     ]
 
     solver = CPSATSolver(config=SolverConfig(timeout_seconds=10))
