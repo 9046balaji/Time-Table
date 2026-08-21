@@ -226,6 +226,22 @@ class AgentService:
         )
         db.add(event)
 
+        from app.models.agent import AgentDecision, ApprovalRequest
+
+        # Add ApprovalRequest record if risk is medium/high
+        app_req = None
+        if computed_risk in ["medium", "high"]:
+            app_req = ApprovalRequest(
+                session_id=session.id,
+                risk_level=computed_risk,
+                status="pending_approval",
+                rationale=summary,
+                payload=payload
+            )
+            db.add(app_req)
+            session.approval_required = True
+            session.approval_status = "pending_approval"
+
         session.current_step = "plan"
         session.status = "active"
         session.summary = summary
@@ -250,6 +266,8 @@ class AgentService:
             "affected_sections": event.affected_sections or [],
             "summary": event.summary,
             "payload": event.payload or {},
+            "approval_required": session.approval_required,
+            "approval_status": session.approval_status,
             "created_at": AgentService._serialize_datetime(event.created_at),
         }
 
@@ -266,10 +284,27 @@ class AgentService:
         if session is None:
             raise ValueError(f"Session {session_id} not found")
 
+        from app.models.agent import ApprovalRequest
+        from datetime import datetime, timezone
+
         normalized_decision = str(decision or "").strip().lower()
         allowed = {"approved", "rejected"}
         if normalized_decision not in allowed:
             raise ValueError("decision must be either 'approved' or 'rejected'")
+
+        # Update pending ApprovalRequest records
+        app_res = await db.execute(
+            select(ApprovalRequest)
+            .where(ApprovalRequest.session_id == session_id, ApprovalRequest.status == "pending_approval")
+        )
+        app_requests = app_res.scalars().all()
+        for ar in app_requests:
+            ar.status = normalized_decision
+            ar.responded_at = datetime.now()
+
+        session.approval_status = normalized_decision
+        if normalized_decision == "approved":
+            session.approval_required = False
 
         payload = {
             "session_id": session.id,
@@ -285,9 +320,9 @@ class AgentService:
             severity="low" if normalized_decision == "approved" else "medium",
             affected_sections=list((session.context or {}).get("affected_sections") or []),
             summary=(
-                "Local repair approved and ready for validation."
+                "Local repair approved and schedule updated."
                 if normalized_decision == "approved"
-                else "Local repair rejected; continue monitoring the affected room."
+                else "Local repair rejected; snapshot retained."
             ),
             payload=payload,
         )
