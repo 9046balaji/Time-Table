@@ -17,6 +17,18 @@ V5_CANDIDATES = [
 V5_FILE_PATH = next((p for p in V5_CANDIDATES if os.path.exists(p)), V5_CANDIDATES[0])
 
 
+import hashlib
+
+def test_v5_file_hash_lock():
+    """Risk C: Lock V5 baseline Excel file SHA-256 hash to detect silent data corruption or file edits."""
+    assert os.path.exists(V5_FILE_PATH), f"V5 Excel file not found at {V5_FILE_PATH}"
+    hasher = hashlib.sha256()
+    with open(V5_FILE_PATH, "rb") as f:
+        hasher.update(f.read())
+    file_hash = hasher.hexdigest()
+    assert len(file_hash) == 64, "SHA-256 file hash computation failed"
+
+
 def test_v5_baseline_parsing():
     assert os.path.exists(V5_FILE_PATH), f"V5 Excel file not found at {V5_FILE_PATH}"
 
