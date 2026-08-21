@@ -107,3 +107,22 @@ def run_solver_task(
 
     return result
 
+
+@celery_app.task(bind=True, name="run_async_local_repair")
+def run_async_local_repair(
+    self,
+    session_id: int,
+    current_entries: List[Dict[str, Any]],
+    available_rooms: List[Dict[str, Any]],
+    disrupted_room_code: Optional[str] = None,
+    disrupted_faculty_name: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Celery task running local repair algorithm off the main event loop."""
+    solver = CPSATSolver()
+    return solver.solve_local_repair(
+        current_entries=current_entries,
+        available_rooms=available_rooms,
+        disrupted_room_code=disrupted_room_code,
+        disrupted_faculty_name=disrupted_faculty_name,
+    )
+
