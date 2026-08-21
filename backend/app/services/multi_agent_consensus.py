@@ -76,18 +76,20 @@ class MultiAgentConsensusEngine:
             "rationale": "Dynamic room capacities and lab venue assignments are architecturally valid." if architect_passed else f"Architectural mismatch: {lab_type_mismatches} lab venue mismatch(es), {capacity_issues} capacity alert(s)."
         }
 
-        # 3. SOLVER Sub-Agent (Soft Constraint Penalties & Slot Compactness)
+        # 3. SOLVER Sub-Agent (Soft Constraint SC-07 Afternoon Slot Compactness)
         p78_slots = sum(1 for e in timetable_entries if int(e.get("period", 1)) in (7, 8))
         total_slots = max(len(timetable_entries), 1)
         late_ratio = round((p78_slots / total_slots) * 100.0, 1)
 
-        solver_passed = (late_ratio <= 50.0)
+        # VFSTR Policy SC-07: Afternoon slot (P7-P8) ratio should remain under 40% per section
+        solver_passed = (late_ratio <= 40.0)
         solver_vote = {
             "role": "SOLVER",
             "vote": "APPROVE" if solver_passed else "REJECT",
             "has_veto_power": False,
             "late_slot_pct": late_ratio,
-            "rationale": f"Schedule compactness optimal ({late_ratio}% late P7-P8 slots)." if solver_passed else f"Sub-optimal compactness ({late_ratio}% late slots)."
+            "policy_rule": "SC-07",
+            "rationale": f"SC-07 Soft Constraint satisfied ({late_ratio}% late P7-P8 slots <= 40% policy threshold)." if solver_passed else f"SC-07 Soft Constraint threshold exceeded ({late_ratio}% late P7-P8 slots > 40% cap)."
         }
 
         # Overall Consensus Protocol (VALIDATOR Veto + Unanimous/Majority Rule)
