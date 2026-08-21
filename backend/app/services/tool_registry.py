@@ -179,6 +179,33 @@ class ToolRegistry:
         ]
 
     @staticmethod
+    async def explain_infeasibility(timetable_entries: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Surfaces exact hard constraint rules (HC-01..HC-10) causing schedule infeasibility."""
+        checker = ConflictChecker()
+        report = checker.detect(timetable_entries)
+
+        explanations = []
+        if report.room_clashes > 0:
+            explanations.append(f"HC-01 Room Conflict: {report.room_clashes} venue double-booking instance(s) detected.")
+        if report.faculty_clashes > 0:
+            explanations.append(f"HC-02 Faculty Double-Booking: {report.faculty_clashes} instructor conflict(s) detected.")
+        if report.student_clashes > 0:
+            explanations.append(f"HC-03 Student Section Conflict: {report.student_clashes} section overlapping slot(s) detected.")
+
+        if not explanations:
+            explanations.append("No hard constraint violations detected. Schedule is feasible.")
+
+        return {
+            "is_infeasible": report.total_hard_violations > 0,
+            "total_hard_violations": report.total_hard_violations,
+            "room_clashes": report.room_clashes,
+            "faculty_clashes": report.faculty_clashes,
+            "student_clashes": report.student_clashes,
+            "diagnostic_summary": "; ".join(explanations),
+            "explanations": explanations
+        }
+
+    @staticmethod
     async def detect_conflicts(db: AsyncSession, timetable_entries: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Runs the standalone ConflictChecker to detect hard violations and clash breakdowns."""
         start = time.time()
