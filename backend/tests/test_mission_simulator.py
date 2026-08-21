@@ -20,6 +20,8 @@ async def test_mission_simulator_all_scenarios():
         assert res.status_code == 200
         session_id = res.json()["id"]
 
+        import asyncio
+
         # 1. Room Failure
         rf_res = await client.post(
             "/api/v1/agent/simulate/room_failure",
@@ -31,6 +33,8 @@ async def test_mission_simulator_all_scenarios():
         assert rf_data["event_type"] == "ROOM_UNAVAILABLE"
         assert "repair_recommendation" in rf_data
 
+        await asyncio.sleep(1.1)
+
         # 2. Faculty Absence
         fa_res = await client.post(
             "/api/v1/agent/simulate/faculty_absence",
@@ -41,6 +45,8 @@ async def test_mission_simulator_all_scenarios():
         assert fa_data["scenario"] == "faculty_absence"
         assert fa_data["event_type"] == "FACULTY_UNAVAILABLE"
 
+        await asyncio.sleep(1.1)
+
         # 3. Capacity Surge
         cs_res = await client.post(
             "/api/v1/agent/simulate/capacity_surge",
@@ -49,6 +55,8 @@ async def test_mission_simulator_all_scenarios():
         assert cs_res.status_code == 200
         assert cs_res.json()["scenario"] == "capacity_surge"
 
+        await asyncio.sleep(1.1)
+
         # 4. Priority Reroute
         pr_res = await client.post(
             "/api/v1/agent/simulate/priority_reroute",
@@ -56,6 +64,8 @@ async def test_mission_simulator_all_scenarios():
         )
         assert pr_res.status_code == 200
         assert pr_res.json()["scenario"] == "priority_reroute"
+
+        await asyncio.sleep(1.1)
 
         # 5. Constraint Adjustment
         ca_res = await client.post(
