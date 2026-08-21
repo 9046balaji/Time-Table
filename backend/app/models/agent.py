@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Integer, JSON, ForeignKey
+from sqlalchemy import Column, String, Text, Integer, JSON, ForeignKey, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from app.models.base import BaseModel
 
@@ -13,9 +13,19 @@ class AgentSession(BaseModel):
     summary = Column(Text, nullable=True)
     context = Column(JSON, nullable=True)
 
+    # Added Phase 1 fields for iteration tracking and approval gate state
+    iteration = Column(Integer, default=1, nullable=False)
+    total_iterations = Column(Integer, default=1, nullable=False)
+    approval_required = Column(Boolean, default=False, nullable=False)
+    approval_status = Column(String(30), default="none", nullable=False)  # "none", "pending_approval", "approved", "rejected"
+    completed_actions = Column(JSON, default=list, nullable=False)
+    failed_actions = Column(JSON, default=list, nullable=False)
+
     events = relationship("AgentEvent", back_populates="session", cascade="all, delete-orphan")
     actions = relationship("AgentAction", back_populates="session", cascade="all, delete-orphan")
     decisions = relationship("AgentDecision", back_populates="session", cascade="all, delete-orphan")
+    approval_requests = relationship("ApprovalRequest", back_populates="session", cascade="all, delete-orphan")
+    runs = relationship("AgentRun", back_populates="session", cascade="all, delete-orphan")
 
 
 class AgentEvent(BaseModel):
@@ -58,3 +68,30 @@ class AgentDecision(BaseModel):
     payload = Column(JSON, nullable=True)
 
     session = relationship("AgentSession", back_populates="decisions")
+
+
+class ApprovalRequest(BaseModel):
+    __tablename__ = "approval_requests"
+
+    session_id = Column(Integer, ForeignKey("agent_sessions.id"), nullable=False, index=True)
+    risk_level = Column(String(20), default="medium", nullable=False)
+    status = Column(String(30), default="pending_approval", nullable=False)  # "pending_approval", "approved", "rejected"
+    candidate_snapshot_id = Column(Integer, nullable=True)
+    rationale = Column(Text, nullable=True)
+    payload = Column(JSON, nullable=True)
+    responded_at = Column(DateTime, nullable=True)
+
+    session = relationship("AgentSession", back_populates="approval_requests")
+
+
+class AgentRun(BaseModel):
+    __tablename__ = "agent_runs"
+
+    session_id = Column(Integer, ForeignKey("agent_sessions.id"), nullable=False, index=True)
+    iteration = Column(Integer, default=1, nullable=False)
+    objective_score = Column(Integer, default=0, nullable=False)
+    hard_violations_count = Column(Integer, default=0, nullable=False)
+    soft_penalty_total = Column(Integer, default=0, nullable=False)
+    status = Column(String(30), default="completed", nullable=False)
+
+    session = relationship("AgentSession", back_populates="runs")
