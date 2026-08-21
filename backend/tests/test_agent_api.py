@@ -63,3 +63,17 @@ async def test_create_agent_session_and_room_failure_event():
         assert decision_data["event_type"] == "REPAIR_DECISION"
         assert decision_data["payload"]["decision"] == "approved"
         assert decision_data["payload"]["session_id"] == session_data["id"]
+
+        validation_response = await client.post(
+            f"/api/v1/agent/sessions/{session_data['id']}/repair-validation",
+            json={
+                "room_code": "604",
+                "affected_sections": ["III AIML-A", "III AIML-B"],
+                "check_type": "room_capacity_and_conflict",
+            },
+        )
+        assert validation_response.status_code == 200, validation_response.text
+        validation_data = validation_response.json()
+        assert validation_data["event_type"] == "REPAIR_VALIDATION"
+        assert validation_data["payload"]["passed"] is True
+        assert validation_data["payload"]["session_id"] == session_data["id"]
