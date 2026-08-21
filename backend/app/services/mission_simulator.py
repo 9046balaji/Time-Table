@@ -12,16 +12,19 @@ from app.services.agent_service import AgentService
 class MissionSimulator:
     """
     Event-Driven Campus Disruption Simulator Engine.
-    Simulates real-world academic disruptions (room failures, faculty outages, capacity surges, priority shifts, constraint shifts)
+    Simulates real-world academic disruptions (room failures, GPU lab outages, faculty absences, capacity surges, new class additions, constraint modifications)
     and automatically triggers the Agent's perception-plan-repair loop.
     """
 
     SCENARIOS = {
         "room_failure": "ROOM_UNAVAILABLE",
+        "gpu_lab_failure": "GPU_LAB_UNAVAILABLE",
         "faculty_absence": "FACULTY_UNAVAILABLE",
         "capacity_surge": "CAPACITY_SURGE",
+        "new_class_addition": "NEW_CLASS_ADDED",
         "priority_reroute": "PRIORITY_REROUTE",
         "constraint_adjustment": "CONSTRAINT_ADJUSTMENT",
+        "constraint_modification": "CONSTRAINT_MODIFICATION",
     }
 
     @staticmethod
@@ -53,6 +56,11 @@ class MissionSimulator:
             summary = f"Emergency maintenance triggered for Room {room_code}. Impacted sections: {', '.join(sections) or 'All assigned'}."
             severity = "high"
             code_key = room_code
+        elif scenario == "gpu_lab_failure":
+            room_code = str(target_code or "AFTF-12").strip()
+            summary = f"M7 GPU High-Performance Lab {room_code} hardware outage. Re-routing AI/DL lab sessions to alternate GPU block."
+            severity = "high"
+            code_key = room_code
         elif scenario == "faculty_absence":
             fac_name = str(target_code or "Dr. S. Srikantha Reddy").strip()
             summary = f"Faculty member {fac_name} reported unavailable. Re-allocating assigned slots."
@@ -64,14 +72,19 @@ class MissionSimulator:
             summary = f"Section enrollment surge detected for Room {room_code} (student count: {new_capacity}). Capacity audit required."
             severity = "medium"
             code_key = room_code
+        elif scenario == "new_class_addition":
+            sec_name = str(target_code or "II CSBS-B").strip()
+            summary = f"M6 Mid-semester new class section {sec_name} added. Seeking available classroom and faculty slots."
+            severity = "medium"
+            code_key = sec_name
         elif scenario == "priority_reroute":
             target_sec = str(target_code or "IV AIML-A").strip()
             summary = f"Priority boost granted for cohort {target_sec}. Morning slot preference re-aligned."
             severity = "low"
             code_key = target_sec
-        elif scenario == "constraint_adjustment":
+        elif scenario in ("constraint_adjustment", "constraint_modification"):
             rule_name = str(target_code or "HC-08").strip()
-            summary = f"Global constraint rule {rule_name} (Lab Consecutiveness) strictly enforced."
+            summary = f"Global constraint rule {rule_name} modification enforced."
             severity = "medium"
             code_key = rule_name
         else:
@@ -85,7 +98,7 @@ class MissionSimulator:
             event_type=event_type,
             source="mission_simulator",
             severity=severity,
-            room_code=code_key if "room" in scenario or scenario == "capacity_surge" else None,
+            room_code=code_key if "room" in scenario or "lab" in scenario or scenario == "capacity_surge" else None,
             affected_sections=sections,
             summary=summary,
             payload={
@@ -101,11 +114,13 @@ class MissionSimulator:
         repair_res = await ToolRegistry.run_local_repair(
             db,
             session_id=session_id,
-            room_code=code_key if "room" in scenario else None,
+            room_code=code_key if "room" in scenario or "lab" in scenario else None,
             faculty_name=code_key if scenario == "faculty_absence" else None,
             affected_sections=sections
         )
 
+        session.iteration = (session.iteration or 1) + 1
+        session.total_iterations = max(session.total_iterations or 1, session.iteration)
         session.current_step = "plan"
         session.status = "active"
         session.summary = f"{summary} Local repair ready (moved slots: {repair_res['moved_count']}, stability: {repair_res['stability_score']}%)."
@@ -131,6 +146,7 @@ class MissionSimulator:
         return {
             "incident_id": event.id,
             "session_id": session_id,
+            "iteration": session.iteration,
             "scenario": scenario,
             "event_type": event_type,
             "severity": severity,
