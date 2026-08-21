@@ -101,6 +101,42 @@ async def resolve_repair_decision(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+@router.post("/sessions/{session_id}/approve", response_model=Dict[str, Any])
+async def approve_repair_request(
+    session_id: int,
+    payload: Optional[Dict[str, Any]] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    rationale = (payload or {}).get("rationale") or "Human administrator approved local repair plan."
+    try:
+        return await AgentService.resolve_repair_decision(
+            db,
+            session_id=session_id,
+            decision="approved",
+            rationale=rationale,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/sessions/{session_id}/reject", response_model=Dict[str, Any])
+async def reject_repair_request(
+    session_id: int,
+    payload: Optional[Dict[str, Any]] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    rationale = (payload or {}).get("rationale") or "Human administrator rejected local repair plan."
+    try:
+        return await AgentService.resolve_repair_decision(
+            db,
+            session_id=session_id,
+            decision="rejected",
+            rationale=rationale,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
 @router.post("/sessions/{session_id}/repair-validation", response_model=Dict[str, Any])
 async def validate_repair(
     session_id: int,
