@@ -146,10 +146,15 @@ class ToolRegistry:
 
     @staticmethod
     async def find_alternative_room(db: AsyncSession, day: str, period: int, room_type: Optional[str] = None, min_capacity: int = 40) -> Optional[Dict[str, Any]]:
-        """Recommends the single best available alternative venue matching criteria."""
+        """Recommends the single best available alternative venue enforcing deterministic priority ordering (Room Type -> Capacity Fit)."""
         avail = await ToolRegistry.get_room_availability(db, day=day, period=period, room_type=room_type)
         suitable = [r for r in avail if int(r.get("capacity", 0)) >= min_capacity]
-        return suitable[0] if suitable else (avail[0] if avail else None)
+        if not suitable:
+            suitable = avail
+
+        # Priority Sorting: 1. Exact capacity fit (closest to min_capacity), 2. Room code alpha order
+        suitable.sort(key=lambda r: (abs(int(r.get("capacity", 60)) - min_capacity), str(r.get("code", ""))))
+        return suitable[0] if suitable else None
 
     @staticmethod
     async def find_alternative_faculty(db: AsyncSession, subject_code: str, day: str, period: int) -> Optional[Dict[str, Any]]:
