@@ -42,6 +42,8 @@ async def ensure_database() -> None:
             await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS approval_status VARCHAR(30) DEFAULT 'none' NOT NULL;"))
             await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS completed_actions JSON DEFAULT '[]'::json NOT NULL;"))
             await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS failed_actions JSON DEFAULT '[]'::json NOT NULL;"))
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS session_timeout_at TIMESTAMP WITHOUT TIME ZONE;"))
+            await conn.execute(text("ALTER TABLE agent_events ADD COLUMN IF NOT EXISTS sequence_number INTEGER DEFAULT 1 NOT NULL;"))
     except (RuntimeError, Exception):
         await engine.dispose()
         async with engine.begin() as conn:
@@ -53,19 +55,10 @@ async def ensure_database() -> None:
             await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS approval_status VARCHAR(30) DEFAULT 'none' NOT NULL;"))
             await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS completed_actions JSON DEFAULT '[]'::json NOT NULL;"))
             await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS failed_actions JSON DEFAULT '[]'::json NOT NULL;"))
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS session_timeout_at TIMESTAMP WITHOUT TIME ZONE;"))
+            await conn.execute(text("ALTER TABLE agent_events ADD COLUMN IF NOT EXISTS sequence_number INTEGER DEFAULT 1 NOT NULL;"))
 
 
 async def get_db():
-    try:
-        async with AsyncSessionLocal() as session:
-            try:
-                yield session
-            finally:
-                await session.close()
-    except (RuntimeError, Exception):
-        await engine.dispose()
-        async with AsyncSessionLocal() as session:
-            try:
-                yield session
-            finally:
-                await session.close()
+    async with AsyncSessionLocal() as session:
+        yield session
