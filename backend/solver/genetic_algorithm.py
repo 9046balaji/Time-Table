@@ -75,13 +75,22 @@ class GeneticAlgorithmOptimizer:
             population = new_population
 
         runtime = round(time.time() - start_time, 2)
+
+        # Enforce zero-hard-violation ConflictChecker validation gate (Risk D)
+        from backend.solver.conflict_checker import ConflictChecker
+        checker = ConflictChecker()
+        report = checker.detect(best_individual)
+
+        is_validated = report.total_hard_violations == 0
         return {
             "algorithm": "GeneticAlgorithm",
             "runtime_seconds": runtime,
             "generations": self.generations,
             "fitness_score": best_eval["fitness_score"],
-            "hard_violations": best_eval["hard_violations"],
+            "hard_violations": report.total_hard_violations,
             "soft_violations": best_eval["soft_violations"],
+            "is_validated": is_validated,
+            "validation_passed": is_validated,
             "optimized_entries": best_individual
         }
 
