@@ -14,6 +14,8 @@ class AgentSession(BaseModel):
     context = Column(JSON, nullable=True)
 
     events = relationship("AgentEvent", back_populates="session", cascade="all, delete-orphan")
+    actions = relationship("AgentAction", back_populates="session", cascade="all, delete-orphan")
+    decisions = relationship("AgentDecision", back_populates="session", cascade="all, delete-orphan")
 
 
 class AgentEvent(BaseModel):
@@ -29,3 +31,30 @@ class AgentEvent(BaseModel):
     payload = Column(JSON, nullable=True)
 
     session = relationship("AgentSession", back_populates="events")
+
+
+class AgentAction(BaseModel):
+    __tablename__ = "agent_actions"
+
+    session_id = Column(Integer, ForeignKey("agent_sessions.id"), nullable=False, index=True)
+    tool_name = Column(String(100), nullable=False)
+    arguments = Column(JSON, nullable=True)
+    result = Column(JSON, nullable=True)
+    status = Column(String(30), default="success", nullable=False)
+    execution_time_ms = Column(Integer, default=0, nullable=False)
+
+    session = relationship("AgentSession", back_populates="actions")
+
+
+class AgentDecision(BaseModel):
+    __tablename__ = "agent_decisions"
+
+    session_id = Column(Integer, ForeignKey("agent_sessions.id"), nullable=False, index=True)
+    decision_type = Column(String(50), nullable=False)
+    reason_code = Column(String(50), nullable=False)
+    selected_option = Column(String(100), nullable=False)
+    risk_level = Column(String(20), default="low", nullable=False)
+    rationale = Column(Text, nullable=True)
+    payload = Column(JSON, nullable=True)
+
+    session = relationship("AgentSession", back_populates="decisions")
