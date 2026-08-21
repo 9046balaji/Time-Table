@@ -197,20 +197,63 @@ class TimetableService:
         new_time_slot_id: int,
         new_room_id: Optional[int] = None
     ) -> Optional[TimetableEntry]:
-        """Update a specific entry slot assignment asynchronously with pessimistic row locking."""
+        """Update a specific entry slot assignment asynchronously with pessimistic row locking and transactional conflict validation."""
         stmt = select(TimetableEntry).where(TimetableEntry.id == entry_id).with_for_update()
         res = await db.execute(stmt)
         entry = res.scalar_one_or_none()
         if not entry:
             return None
 
+        orig_slot = entry.time_slot_id
+        orig_room = entry.room_id
+
         entry.time_slot_id = new_time_slot_id
         if new_room_id:
             entry.room_id = new_room_id
 
+        # Validate with ConflictChecker inside transaction
+        all_tt = await TimetableService.get_version_timetable(db, version_id=entry.timetable_version_id, section_name="ALL")
+        from backend.solver.conflict_checker import ConflictChecker
+        checker = ConflictChecker()
+        report = checker.detect(all_tt.get("entries", []))
+
+        if report.total_hard_violations > 0:
+            entry.time_slot_id = orig_slot
+            entry.room_id = orig_room
+            await db.rollback()
+            raise ValueError(f"Manual slot update rejected: Introduces {report.total_hard_violations} hard constraint clash(es).")
+
         await db.commit()
         await db.refresh(entry)
         return entry
+
+    @staticmethod
+    async def check_data_integrity(db: AsyncSession, version_id: int = 5) -> Dict[str, Any]:
+        """Performs startup data integrity audit resolving raw text fields to database FK relations."""
+        tt_data = await TimetableService.get_version_timetable(db, version_id=version_id, section_name="ALL")
+        entries = tt_data.get("entries", [])
+        total = max(len(entries), 1)
+
+        valid_rooms = 0
+        valid_faculty = 0
+
+        for e in entries:
+            if e.get("room"): valid_rooms += 1
+            if e.get("faculty"): valid_faculty += 1
+
+        room_resolution_pct = round((valid_rooms / total) * 100, 1)
+        faculty_resolution_pct = round((valid_faculty / total) * 100, 1)
+        is_healthy = room_resolution_pct >= 90.0 and faculty_resolution_pct >= 90.0
+
+        return {
+            "status": "HEALTHY" if is_healthy else "WARNING",
+            "version_id": version_id,
+            "total_entries": len(entries),
+            "room_resolution_pct": room_resolution_pct,
+            "faculty_resolution_pct": faculty_resolution_pct,
+            "missing_room_fk_count": len(entries) - valid_rooms,
+            "missing_faculty_fk_count": len(entries) - valid_faculty,
+        }
 
     @staticmethod
     async def bulk_create_timetable_entries(
