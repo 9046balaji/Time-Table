@@ -14,6 +14,7 @@ from app.models.solver_run import SolverRun
 from app.models.clash_report import ClashReport
 from app.models.audit_log import AuditLog
 from app.models.constraint_definition import ConstraintDefinition
+from app.models.agent import AgentSession, AgentEvent
 
 __all__ = [
     "BaseModel",
@@ -33,4 +34,6 @@ __all__ = [
     "ClashReport",
     "AuditLog",
     "ConstraintDefinition",
+    "AgentSession",
+    "AgentEvent",
 ]

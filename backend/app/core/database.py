@@ -23,6 +23,19 @@ AsyncSessionLocal = async_sessionmaker(
 Base = declarative_base()
 
 
+async def ensure_database() -> None:
+    """Create all table definitions registered in the app metadata.
+
+    This guard prevents requests from failing when the app is being exercised via
+    ASGITransport or any startup path that does not trigger the FastAPI lifespan
+    hook.
+    """
+    import app.models  # noqa: F401  # ensure all metadata is imported before create_all
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
 async def get_db():
     async with AsyncSessionLocal() as session:
         try:

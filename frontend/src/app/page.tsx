@@ -121,12 +121,20 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <Link
-            href="/schedule"
-            className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black px-6 py-3 rounded-2xl text-xs shadow-lg transition-all cursor-pointer shrink-0"
-          >
-            <Bot className="w-4 h-4" /> Launch AI Solver Engine
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/agent"
+              className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-black px-6 py-3 rounded-2xl text-xs shadow-lg transition-all cursor-pointer shrink-0"
+            >
+              <Bot className="w-4 h-4" /> Agent Console
+            </Link>
+            <Link
+              href="/schedule"
+              className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black px-6 py-3 rounded-2xl text-xs shadow-lg transition-all cursor-pointer shrink-0"
+            >
+              <Bot className="w-4 h-4" /> Launch AI Solver Engine
+            </Link>
+          </div>
         </div>
       </div>
 

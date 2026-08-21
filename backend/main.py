@@ -2,17 +2,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.core.database import engine, AsyncSessionLocal
-from app.models.base import BaseModel
+from app.core.database import engine, AsyncSessionLocal, ensure_database
 from app.api.v1.router import api_v1_router
 from app.services.seed_service import SeedService
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables on startup if they don't exist
-    async with engine.begin() as conn:
-        await conn.run_sync(BaseModel.metadata.create_all)
+    await ensure_database()
 
     # Seed baseline database if empty
     async with AsyncSessionLocal() as db:
