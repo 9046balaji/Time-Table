@@ -475,3 +475,31 @@ class ToolRegistry:
         )
 
         return result
+
+    @staticmethod
+    async def send_notification(
+        db: AsyncSession,
+        session_id: int,
+        recipients: List[str],
+        channel: str,
+        message: str
+    ) -> Dict[str, Any]:
+        """Logs simulated admin push notifications and emails for schedule adjustments."""
+        start = time.time()
+        res = {
+            "delivered_count": len(recipients),
+            "channel": channel,
+            "recipients": recipients,
+            "message": message,
+            "delivered_at": time.time()
+        }
+        elapsed_ms = int((time.time() - start) * 1000)
+        await ToolRegistry.log_action(
+            db,
+            session_id=session_id,
+            tool_name="send_notification",
+            arguments={"recipients": recipients, "channel": channel, "message": message},
+            result=res,
+            execution_time_ms=elapsed_ms
+        )
+        return res
