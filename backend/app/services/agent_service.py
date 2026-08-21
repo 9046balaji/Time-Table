@@ -155,3 +155,139 @@ class AgentService:
             "payload": event.payload or {},
             "created_at": AgentService._serialize_datetime(event.created_at),
         }
+
+    @staticmethod
+    async def create_repair_suggestion(
+        db: AsyncSession,
+        session_id: int,
+        room_code: str,
+        affected_sections: Optional[List[str]] = None,
+        proposed_room: Optional[str] = None,
+        risk_level: str = "medium",
+        reason: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        await ensure_database()
+        result = await db.execute(select(AgentSession).where(AgentSession.id == session_id))
+        session = result.scalar_one_or_none()
+        if session is None:
+            raise ValueError(f"Session {session_id} not found")
+
+        sections = list(affected_sections or [])
+        backup_room = (proposed_room or "nearest_available_lab").strip()
+        summary = (
+            f"Local repair suggested for room {room_code}: move {len(sections) or 'affected'} affected section(s) "
+            f"to {backup_room} and freeze unaffected slots."
+        )
+
+        payload = {
+            "session_id": session.id,
+            "room_code": room_code,
+            "affected_sections": sections,
+            "proposed_room": backup_room,
+            "risk_level": risk_level,
+            "reason": reason or "Move the impacted sections to the nearest compatible room block.",
+            "status": "pending",
+        }
+
+        event = AgentEvent(
+            session_id=session.id,
+            event_type="REPAIR_SUGGESTED",
+            source="agent",
+            severity="medium",
+            room_code=room_code,
+            affected_sections=sections,
+            summary=summary,
+            payload=payload,
+        )
+        db.add(event)
+
+        session.current_step = "plan"
+        session.status = "active"
+        session.summary = summary
+        session.context = {
+            **(session.context or {}),
+            "last_event": "REPAIR_SUGGESTED",
+            "last_room": room_code,
+            "affected_sections": sections,
+            "repair_plan": payload,
+        }
+        await db.commit()
+        await db.refresh(event)
+
+        return {
+            "id": event.id,
+            "session_id": session.id,
+            "event_type": event.event_type,
+            "source": event.source,
+            "severity": event.severity,
+            "room_code": event.room_code,
+            "affected_sections": event.affected_sections or [],
+            "summary": event.summary,
+            "payload": event.payload or {},
+            "created_at": AgentService._serialize_datetime(event.created_at),
+        }
+
+    @staticmethod
+    async def resolve_repair_decision(
+        db: AsyncSession,
+        session_id: int,
+        decision: str,
+        rationale: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        await ensure_database()
+        result = await db.execute(select(AgentSession).where(AgentSession.id == session_id))
+        session = result.scalar_one_or_none()
+        if session is None:
+            raise ValueError(f"Session {session_id} not found")
+
+        normalized_decision = str(decision or "").strip().lower()
+        allowed = {"approved", "rejected"}
+        if normalized_decision not in allowed:
+            raise ValueError("decision must be either 'approved' or 'rejected'")
+
+        payload = {
+            "session_id": session.id,
+            "decision": normalized_decision,
+            "rationale": rationale or "No rationale supplied.",
+            "status": normalized_decision,
+        }
+
+        event = AgentEvent(
+            session_id=session.id,
+            event_type="REPAIR_DECISION",
+            source="human",
+            severity="low" if normalized_decision == "approved" else "medium",
+            affected_sections=list((session.context or {}).get("affected_sections") or []),
+            summary=(
+                "Local repair approved and ready for validation."
+                if normalized_decision == "approved"
+                else "Local repair rejected; continue monitoring the affected room."
+            ),
+            payload=payload,
+        )
+        db.add(event)
+
+        session.current_step = "validate" if normalized_decision == "approved" else "observe"
+        session.status = "active" if normalized_decision == "approved" else "blocked"
+        session.summary = event.summary
+        session.context = {
+            **(session.context or {}),
+            "last_event": "REPAIR_DECISION",
+            "last_decision": normalized_decision,
+            "decision_rationale": payload["rationale"],
+        }
+        await db.commit()
+        await db.refresh(event)
+
+        return {
+            "id": event.id,
+            "session_id": session.id,
+            "event_type": event.event_type,
+            "source": event.source,
+            "severity": event.severity,
+            "room_code": event.room_code,
+            "affected_sections": event.affected_sections or [],
+            "summary": event.summary,
+            "payload": event.payload or {},
+            "created_at": AgentService._serialize_datetime(event.created_at),
+        }

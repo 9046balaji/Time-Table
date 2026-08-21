@@ -34,3 +34,32 @@ async def test_create_agent_session_and_room_failure_event():
         assert data["room_code"] == "AFTF-12"
         assert data["affected_sections"] == ["III AIML-A", "III AIML-B"]
         assert "summary" in data
+
+        repair_response = await client.post(
+            f"/api/v1/agent/sessions/{session_data['id']}/repair-suggestion",
+            json={
+                "room_code": "AFTF-12",
+                "affected_sections": ["III AIML-A", "III AIML-B"],
+                "proposed_room": "604",
+                "risk_level": "medium",
+                "reason": "Shift affected labs to the nearest available classroom-lab block.",
+            },
+        )
+        assert repair_response.status_code == 200, repair_response.text
+        repair_data = repair_response.json()
+        assert repair_data["event_type"] == "REPAIR_SUGGESTED"
+        assert repair_data["payload"]["proposed_room"] == "604"
+        assert repair_data["payload"]["risk_level"] == "medium"
+
+        decision_response = await client.post(
+            f"/api/v1/agent/sessions/{session_data['id']}/repair-decision",
+            json={
+                "decision": "approved",
+                "rationale": "The swap keeps all critical labs in the same teaching block.",
+            },
+        )
+        assert decision_response.status_code == 200, decision_response.text
+        decision_data = decision_response.json()
+        assert decision_data["event_type"] == "REPAIR_DECISION"
+        assert decision_data["payload"]["decision"] == "approved"
+        assert decision_data["payload"]["session_id"] == session_data["id"]

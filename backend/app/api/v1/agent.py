@@ -53,3 +53,49 @@ async def simulate_room_failure(
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/sessions/{session_id}/repair-suggestion", response_model=Dict[str, Any])
+async def create_repair_suggestion(
+    session_id: int,
+    payload: Dict[str, Any],
+    db: AsyncSession = Depends(get_db),
+):
+    room_code = str(payload.get("room_code") or "").strip()
+    if not room_code:
+        raise HTTPException(status_code=400, detail="room_code is required")
+
+    try:
+        return await AgentService.create_repair_suggestion(
+            db,
+            session_id=session_id,
+            room_code=room_code,
+            affected_sections=payload.get("affected_sections") or [],
+            proposed_room=str(payload.get("proposed_room") or "nearest_available_lab").strip(),
+            risk_level=str(payload.get("risk_level") or "medium"),
+            reason=str(payload.get("reason") or "Local repair recommended"),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/sessions/{session_id}/repair-decision", response_model=Dict[str, Any])
+async def resolve_repair_decision(
+    session_id: int,
+    payload: Dict[str, Any],
+    db: AsyncSession = Depends(get_db),
+):
+    decision = str(payload.get("decision") or "").strip()
+    rationale = payload.get("rationale")
+    if not decision:
+        raise HTTPException(status_code=400, detail="decision is required")
+
+    try:
+        return await AgentService.resolve_repair_decision(
+            db,
+            session_id=session_id,
+            decision=decision,
+            rationale=str(rationale) if rationale is not None else None,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc

@@ -100,6 +100,65 @@ export default function AgentConsolePage() {
     }
   };
 
+  const recommendLocalRepair = async () => {
+    if (!session?.id) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${apiBase}/api/v1/agent/sessions/${session.id}/repair-suggestion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          room_code: 'AFTF-12',
+          affected_sections: ['III AIML-A', 'III AIML-B', 'III AIML-C'],
+          proposed_room: '604',
+          risk_level: 'medium',
+          reason: 'Shift the impacted labs to the nearest compatible room block and freeze unaffected slots.',
+        }),
+      });
+      if (!res.ok) {
+        throw new Error('Repair recommendation failed');
+      }
+      const result = await res.json();
+      const reloaded = await loadSession(session.id);
+      setSession(reloaded ?? session);
+      setError(null);
+      return result;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Repair recommendation failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const decideRepair = async (decision: 'approved' | 'rejected') => {
+    if (!session?.id) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${apiBase}/api/v1/agent/sessions/${session.id}/repair-decision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          decision,
+          rationale: decision === 'approved'
+            ? 'Approved from the agent console to maintain continuity without changing unrelated sections.'
+            : 'Rejected to keep the current timetable stable until a lower-risk repair is identified.',
+        }),
+      });
+      if (!res.ok) {
+        throw new Error('Repair decision failed');
+      }
+      const result = await res.json();
+      const reloaded = await loadSession(session.id);
+      setSession(reloaded ?? session);
+      setError(null);
+      return result;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Repair decision failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     createSession();
   }, []);
@@ -240,6 +299,27 @@ export default function AgentConsolePage() {
                   className="w-full rounded-xl bg-amber-500 text-white font-semibold px-4 py-2.5"
                 >
                   Room unavailable
+                </button>
+                <button
+                  type="button"
+                  onClick={recommendLocalRepair}
+                  className="w-full rounded-xl bg-blue-600 text-white font-semibold px-4 py-2.5"
+                >
+                  Recommend local repair
+                </button>
+                <button
+                  type="button"
+                  onClick={() => decideRepair('approved')}
+                  className="w-full rounded-xl bg-emerald-600 text-white font-semibold px-4 py-2.5"
+                >
+                  Approve repair
+                </button>
+                <button
+                  type="button"
+                  onClick={() => decideRepair('rejected')}
+                  className="w-full rounded-xl border border-red-200 bg-red-50 text-red-700 font-semibold px-4 py-2.5"
+                >
+                  Reject repair
                 </button>
                 <Link
                   href="/schedule"
