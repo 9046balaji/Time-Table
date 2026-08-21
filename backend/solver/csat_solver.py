@@ -82,7 +82,8 @@ class CPSATSolver:
         time_slots: List[Dict[str, Any]],
         faculty_subject_map: Optional[Dict[str, List[str]]] = None,
         progress_callback: Optional[Any] = None,
-        max_classes_per_teacher_per_day: int = 5
+        max_classes_per_teacher_per_day: int = 5,
+        warm_start_hints: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """
         Executes CP-SAT constraint optimization across section timetable demands.
@@ -472,6 +473,17 @@ class CPSATSolver:
         # -----------------------------------------------------------------------
         # 11. CP-SAT Solver Tuning Parameters
         # -----------------------------------------------------------------------
+        # AddHint Warm Start support (Bottleneck 1.1)
+        if warm_start_hints:
+            for hint in warm_start_hints:
+                s_id = hint.get("section_id")
+                sub_id = hint.get("subject_id")
+                r_id = hint.get("room_id")
+                t_id = hint.get("time_slot_id")
+                var = x.get((s_id, sub_id, r_id, t_id))
+                if var is not None:
+                    model.AddHint(var, 1)
+
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = float(self.config.timeout_seconds)
         solver.parameters.num_search_workers = 8
@@ -533,10 +545,11 @@ class CPSATSolver:
                                     "spanPeriods": span
                                 })
 
+        status_str = "OPTIMAL" if status == cp_model.OPTIMAL else ("FEASIBLE" if is_feasible else ("UNKNOWN" if status == cp_model.UNKNOWN else "INFEASIBLE"))
         return {
-            "status": "OPTIMAL" if status == cp_model.OPTIMAL else ("FEASIBLE" if is_feasible else "INFEASIBLE"),
+            "status": status_str,
             "runtime_seconds": round(runtime, 2),
-            "hard_violations": 0 if is_feasible else 10,
+            "hard_violations": 0 if is_feasible else (5 if status == cp_model.UNKNOWN else 10),
             "soft_violations": 0,
             "entries_count": len(entries),
             "entries": entries
