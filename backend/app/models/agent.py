@@ -13,13 +13,14 @@ class AgentSession(BaseModel):
     summary = Column(Text, nullable=True)
     context = Column(JSON, nullable=True)
 
-    # Added Phase 1 fields for iteration tracking and approval gate state
+    # Added Phase 1 & 10 fields for iteration tracking, approval gate state, and resilience
     iteration = Column(Integer, default=1, nullable=False)
     total_iterations = Column(Integer, default=1, nullable=False)
     approval_required = Column(Boolean, default=False, nullable=False)
     approval_status = Column(String(30), default="none", nullable=False)  # "none", "pending_approval", "approved", "rejected"
     completed_actions = Column(JSON, default=list, nullable=False)
     failed_actions = Column(JSON, default=list, nullable=False)
+    session_timeout_at = Column(DateTime, nullable=True)
 
     events = relationship("AgentEvent", back_populates="session", cascade="all, delete-orphan")
     actions = relationship("AgentAction", back_populates="session", cascade="all, delete-orphan")
@@ -32,6 +33,7 @@ class AgentEvent(BaseModel):
     __tablename__ = "agent_events"
 
     session_id = Column(Integer, ForeignKey("agent_sessions.id"), nullable=False, index=True)
+    sequence_number = Column(Integer, default=1, nullable=False)
     event_type = Column(String(50), nullable=False)
     source = Column(String(30), default="system", nullable=False)
     severity = Column(String(20), default="medium", nullable=False)
