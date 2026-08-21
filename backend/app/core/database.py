@@ -35,10 +35,24 @@ async def ensure_database() -> None:
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS iteration INTEGER DEFAULT 1 NOT NULL;"))
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS total_iterations INTEGER DEFAULT 1 NOT NULL;"))
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS approval_required BOOLEAN DEFAULT FALSE NOT NULL;"))
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS approval_status VARCHAR(30) DEFAULT 'none' NOT NULL;"))
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS completed_actions JSON DEFAULT '[]'::json NOT NULL;"))
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS failed_actions JSON DEFAULT '[]'::json NOT NULL;"))
     except (RuntimeError, Exception):
         await engine.dispose()
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS iteration INTEGER DEFAULT 1 NOT NULL;"))
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS total_iterations INTEGER DEFAULT 1 NOT NULL;"))
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS approval_required BOOLEAN DEFAULT FALSE NOT NULL;"))
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS approval_status VARCHAR(30) DEFAULT 'none' NOT NULL;"))
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS completed_actions JSON DEFAULT '[]'::json NOT NULL;"))
+            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS failed_actions JSON DEFAULT '[]'::json NOT NULL;"))
 
 
 async def get_db():
