@@ -30,6 +30,8 @@ export const DiffView: React.FC<DiffViewProps> = ({
   onRollback,
   loading = false,
 }) => {
+  const [showOnlyChanges, setShowOnlyChanges] = React.useState<boolean>(true);
+
   if (!repairedEntries || repairedEntries.length === 0) {
     return null;
   }
@@ -42,6 +44,8 @@ export const DiffView: React.FC<DiffViewProps> = ({
     if (!orig) return false;
     return orig.room !== rep.room || orig.day !== rep.day || orig.period !== rep.period;
   });
+
+  const displaySlots = (showOnlyChanges ? changedSlots : repairedEntries).slice(0, 100);
 
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
@@ -89,7 +93,7 @@ export const DiffView: React.FC<DiffViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {changedSlots.map((rep, idx) => {
+              {displaySlots.map((rep, idx) => {
                 const key = String(rep.id || `${rep.section}_${rep.day}_${rep.period}`);
                 const orig = origMap.get(key);
                 return (
