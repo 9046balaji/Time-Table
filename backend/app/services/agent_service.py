@@ -45,6 +45,40 @@ class AgentService:
         }
 
     @staticmethod
+    async def parse_natural_command(db: AsyncSession, session_id: int, command_text: str) -> Dict[str, Any]:
+        """Parses natural language admin directives into structured disruption scenario triggers."""
+        text = str(command_text or "").strip().lower()
+        from app.services.mission_simulator import MissionSimulator
+
+        if any(k in text for k in ["room", "lab", "604", "601", "aftf-12", "closed", "maintenance", "failure", "outage"]):
+            if "gpu" in text or "aftf" in text:
+                scenario = "gpu_lab_failure"
+                target = "AFTF-12"
+            else:
+                scenario = "room_failure"
+                target = "604" if "604" in text else ("601" if "601" in text else "604")
+        elif any(k in text for k in ["faculty", "dr.", "prof", "absent", "leave", "unavailable", "reddy"]):
+            scenario = "faculty_absence"
+            target = "Dr. S. Srikantha Reddy"
+        elif any(k in text for k in ["surge", "capacity", "crowded", "overflow"]):
+            scenario = "capacity_surge"
+            target = "601"
+        elif any(k in text for k in ["new class", "section", "add class"]):
+            scenario = "new_class_addition"
+            target = "II CSBS-B"
+        else:
+            scenario = "room_failure"
+            target = "604"
+
+        return await MissionSimulator.trigger_scenario(
+            db,
+            session_id=session_id,
+            scenario_type=scenario,
+            target_code=target,
+            affected_sections=[]
+        )
+
+    @staticmethod
     async def create_session(db: AsyncSession, goal: str, priority: Optional[List[str]] = None) -> Dict[str, Any]:
         await ensure_database()
         priorities = list(priority or [])
