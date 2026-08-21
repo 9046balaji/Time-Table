@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Activity, AlertTriangle, CheckCircle2, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, RefreshCw, ShieldCheck, RotateCcw } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/api';
+import { DecisionTrace } from '@/components/agent/DecisionTrace';
+import { MissionSimulator } from '@/components/agent/MissionSimulator';
+import { DiffView } from '@/components/agent/DiffView';
 
 type AgentEvent = {
   id: number;
@@ -14,6 +17,7 @@ type AgentEvent = {
   affected_sections?: string[];
   summary?: string;
   created_at?: string;
+  payload?: any;
 };
 
 type AgentSession = {
@@ -23,11 +27,14 @@ type AgentSession = {
   current_step: string;
   priority: string[];
   summary?: string;
+  context?: any;
   events?: AgentEvent[];
 };
 
 export default function AgentConsolePage() {
   const [session, setSession] = useState<AgentSession | null>(null);
+  const [originalEntries, setOriginalEntries] = useState<any[]>([]);
+  const [repairedEntries, setRepairedEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +48,9 @@ export default function AgentConsolePage() {
       }
       const data = await res.json();
       setSession(data);
+      if (data.context?.candidate_entries) {
+        setRepairedEntries(data.context.candidate_entries);
+      }
       return data;
     }
     return null;
@@ -53,8 +63,8 @@ export default function AgentConsolePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          goal: 'Repair timetable after room outage',
-          priority: ['final_year', 'hard_constraints', 'minimal_disruption'],
+          goal: 'Autonomous adaptive timetable scheduling & minimal disruption repair',
+          priority: ['hard_constraints', 'minimal_disruption', 'final_year_priority'],
         }),
       });
       if (!res.ok) {
@@ -63,6 +73,14 @@ export default function AgentConsolePage() {
       const sessionData = await res.json();
       setSession(sessionData);
       setError(null);
+
+      // Load initial baseline entries for diff view
+      const ttRes = await fetch(`${apiBase}/api/v1/timetable?version_id=5&section_name=ALL`);
+      if (ttRes.ok) {
+        const ttData = await ttRes.json();
+        setOriginalEntries(ttData.entries || []);
+      }
+
       return sessionData;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -71,60 +89,48 @@ export default function AgentConsolePage() {
     }
   };
 
-  const triggerRoomFailure = async () => {
+  const triggerScenario = async (scenarioType: string, targetCode?: string, affectedSections?: string[]) => {
     if (!session?.id) return;
     setLoading(true);
     try {
-      const res = await fetch(`${apiBase}/api/v1/agent/simulate-room-failure`, {
+      const res = await fetch(`${apiBase}/api/v1/agent/simulate/${scenarioType}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           session_id: session.id,
-          room_code: 'AFTF-12',
-          severity: 'high',
-          affected_sections: ['III AIML-A', 'III AIML-B', 'III AIML-C'],
+          target_code: targetCode,
+          affected_sections: affectedSections || [],
         }),
       });
       if (!res.ok) {
-        throw new Error('Room failure simulation failed');
+        throw new Error(`Simulation failed for ${scenarioType}`);
       }
-      const event = await res.json();
+      const result = await res.json();
+      if (result.repair_recommendation?.entries) {
+        setRepairedEntries(result.repair_recommendation.entries);
+      }
       const reloaded = await loadSession(session.id);
       setSession(reloaded ?? session);
       setError(null);
-      return event;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Room failure simulation failed');
+      setError(err instanceof Error ? err.message : 'Simulation request failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const recommendLocalRepair = async () => {
+  const observeState = async () => {
     if (!session?.id) return;
     setLoading(true);
     try {
-      const res = await fetch(`${apiBase}/api/v1/agent/sessions/${session.id}/repair-suggestion`, {
+      const res = await fetch(`${apiBase}/api/v1/agent/sessions/${session.id}/observe`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          room_code: 'AFTF-12',
-          affected_sections: ['III AIML-A', 'III AIML-B', 'III AIML-C'],
-          proposed_room: '604',
-          risk_level: 'medium',
-          reason: 'Shift the impacted labs to the nearest compatible room block and freeze unaffected slots.',
-        }),
       });
-      if (!res.ok) {
-        throw new Error('Repair recommendation failed');
-      }
-      const result = await res.json();
+      if (!res.ok) throw new Error('Observe state failed');
       const reloaded = await loadSession(session.id);
       setSession(reloaded ?? session);
-      setError(null);
-      return result;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Repair recommendation failed');
+      setError(err instanceof Error ? err.message : 'Observe state failed');
     } finally {
       setLoading(false);
     }
@@ -140,20 +146,56 @@ export default function AgentConsolePage() {
         body: JSON.stringify({
           decision,
           rationale: decision === 'approved'
-            ? 'Approved from the agent console to maintain continuity without changing unrelated sections.'
-            : 'Rejected to keep the current timetable stable until a lower-risk repair is identified.',
+            ? 'Approved from agent console: minimal disruption repair confirmed.'
+            : 'Rejected: rollback requested to preserve pre-disruption snapshot.',
         }),
       });
-      if (!res.ok) {
-        throw new Error('Repair decision failed');
-      }
-      const result = await res.json();
+      if (!res.ok) throw new Error('Repair decision failed');
       const reloaded = await loadSession(session.id);
       setSession(reloaded ?? session);
-      setError(null);
-      return result;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Repair decision failed');
+      setError(err instanceof Error ? err.message : 'Decision failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const validateRepair = async () => {
+    if (!session?.id) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${apiBase}/api/v1/agent/sessions/${session.id}/repair-validation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          room_code: session.context?.last_room || '604',
+          affected_sections: session.context?.affected_sections || [],
+          check_type: 'full_constraint_validation',
+        }),
+      });
+      if (!res.ok) throw new Error('Validation failed');
+      const reloaded = await loadSession(session.id);
+      setSession(reloaded ?? session);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Validation failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const executeRollback = async () => {
+    if (!session?.id) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${apiBase}/api/v1/agent/sessions/${session.id}/rollback`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('Rollback failed');
+      setRepairedEntries([]);
+      const reloaded = await loadSession(session.id);
+      setSession(reloaded ?? session);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Rollback failed');
     } finally {
       setLoading(false);
     }
@@ -163,175 +205,152 @@ export default function AgentConsolePage() {
     createSession();
   }, []);
 
-  const eventList = session?.events ?? [];
+  const eventList = (session?.events || []) as any[];
 
   return (
-    <div className="space-y-6 w-full max-w-6xl mx-auto px-2 pb-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6 w-full max-w-7xl mx-auto px-4 pb-16 font-sans">
+      {/* Console Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4 border-b border-slate-100 dark:border-slate-800 pb-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold border border-blue-200">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800">
             <Activity className="w-3.5 h-3.5" />
-            Adaptive Scheduling Agent
+            VFSTR Adaptive Academic Scheduling Agent
           </div>
-          <h1 className="mt-3 text-2xl md:text-3xl font-black text-slate-900">Agent Console</h1>
+          <h1 className="mt-2 text-2xl md:text-3xl font-black text-slate-900 dark:text-white">Agent Mission Console</h1>
         </div>
-        <div className="flex gap-2">
+
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
+            disabled={loading}
             onClick={() => createSession()}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 font-semibold text-xs hover:bg-slate-50 transition-all"
           >
-            <RefreshCw className="w-4 h-4" />
-            New mission
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            New Mission Session
           </button>
           <button
             type="button"
-            onClick={triggerRoomFailure}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold shadow-sm"
+            disabled={loading}
+            onClick={observeState}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-semibold text-xs hover:bg-indigo-100 transition-all"
           >
-            <AlertTriangle className="w-4 h-4" />
-            Simulate room failure
+            <Activity className="w-3.5 h-3.5" />
+            Observe State
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={executeRollback}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 font-semibold text-xs hover:bg-red-100 transition-all"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            1-Click Rollback
           </button>
         </div>
       </div>
 
-      {error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
-      ) : null}
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/40 p-4 text-xs font-semibold text-red-700 dark:text-red-300">
+          {error}
+        </div>
+      )}
 
-      {loading && !session ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">Starting agent session...</div>
-      ) : null}
+      {/* Simulator Section */}
+      <MissionSimulator onTriggerScenario={triggerScenario} loading={loading} />
 
-      {session ? (
-        <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-6">
-          <div className="space-y-6">
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Current mission</p>
-                  <h2 className="mt-2 text-xl font-extrabold text-slate-900">{session.goal}</h2>
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-bold text-emerald-700">
-                  <ShieldCheck className="w-4 h-4" />
-                  {session.status}
-                </div>
-              </div>
-
-              <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-slate-600">
-                <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Step</div>
-                  <div className="mt-1 font-bold text-slate-900">{session.current_step}</div>
-                </div>
-                <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Priority</div>
-                  <div className="mt-1 font-bold text-slate-900">{session.priority.join(', ') || 'default'}</div>
-                </div>
-                <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Session</div>
-                  <div className="mt-1 font-bold text-slate-900">#{session.id}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-extrabold text-slate-900">Decision trace</h3>
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div className="mt-4 space-y-3">
-                {eventList.length ? (
-                  eventList.map((event) => (
-                    <div key={event.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="font-bold text-slate-900">{event.event_type}</span>
-                        <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500">{event.severity}</span>
-                      </div>
-                      <p className="mt-2 text-sm text-slate-600">{event.summary}</p>
-                      {event.room_code ? (
-                        <p className="mt-2 text-xs text-slate-500">Room: {event.room_code}</p>
-                      ) : null}
-                      {event.affected_sections?.length ? (
-                        <p className="mt-1 text-xs text-slate-500">
-                          Affected sections: {event.affected_sections.join(', ')}
-                        </p>
-                      ) : null}
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-slate-500">No events yet. Trigger a mission to begin.</p>
-                )}
-              </div>
-            </div>
+      {/* Main Grid Layout */}
+      {session && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Decision Trace Log */}
+          <div className="lg:col-span-2 space-y-6">
+            <DecisionTrace events={eventList} currentStep={session.current_step} status={session.status} />
+            {repairedEntries.length > 0 && (
+              <DiffView
+                originalEntries={originalEntries}
+                repairedEntries={repairedEntries}
+                stabilityScore={session.context?.repair_metrics?.stability_score || 95}
+                movedCount={session.context?.repair_metrics?.moved_count || repairedEntries.length}
+                displacedSections={session.context?.repair_metrics?.displaced_sections || []}
+                onRollback={executeRollback}
+                loading={loading}
+              />
+            )}
           </div>
 
+          {/* Action & Approval Controls */}
           <div className="space-y-6">
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="text-base font-extrabold text-slate-900">Mission status</h3>
-              <div className="mt-4 space-y-3 text-sm">
-                <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
-                  <span className="text-slate-500">Status</span>
-                  <span className="font-bold text-slate-900">{session.status}</span>
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Active Session Telemetry</h3>
+                <span className="text-xs font-mono font-bold text-slate-400">#{session.id}</span>
+              </div>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="flex justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800">
+                  <span className="text-slate-500">Current Step:</span>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400 font-mono">{session.current_step.toUpperCase()}</span>
                 </div>
-                <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
-                  <span className="text-slate-500">Current step</span>
-                  <span className="font-bold text-slate-900">{session.current_step}</span>
+                <div className="flex justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800">
+                  <span className="text-slate-500">Session Status:</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">{session.status.toUpperCase()}</span>
                 </div>
-                <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
-                  <span className="text-slate-500">Summary</span>
-                  <span className="font-bold text-slate-900 text-right max-w-[60%]">{session.summary || 'No summary yet'}</span>
+                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800">
+                  <span className="text-slate-500 block mb-1">Active Summary:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 leading-relaxed block">{session.summary || 'Ready for disruption simulation.'}</span>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-2 text-base font-extrabold text-slate-900">
-                <AlertTriangle className="w-5 h-5 text-amber-600" />
-                Mission simulator
+            {/* Approval Workflow Box */}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <ShieldCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Human Approval Gate</h3>
               </div>
-              <p className="mt-3 text-sm text-slate-600">
-                The agent will capture the incident, classify it, and recommend a repair strategy.
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+                High-impact local repairs require explicit human approval before schedule publication.
               </p>
-              <div className="mt-4 grid gap-2">
+
+              <div className="space-y-2">
                 <button
                   type="button"
-                  onClick={triggerRoomFailure}
-                  className="w-full rounded-xl bg-amber-500 text-white font-semibold px-4 py-2.5"
-                >
-                  Room unavailable
-                </button>
-                <button
-                  type="button"
-                  onClick={recommendLocalRepair}
-                  className="w-full rounded-xl bg-blue-600 text-white font-semibold px-4 py-2.5"
-                >
-                  Recommend local repair
-                </button>
-                <button
-                  type="button"
+                  disabled={loading}
                   onClick={() => decideRepair('approved')}
-                  className="w-full rounded-xl bg-emerald-600 text-white font-semibold px-4 py-2.5"
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
                 >
-                  Approve repair
+                  <CheckCircle2 className="w-4 h-4" />
+                  Approve Local Repair
                 </button>
                 <button
                   type="button"
-                  onClick={() => decideRepair('rejected')}
-                  className="w-full rounded-xl border border-red-200 bg-red-50 text-red-700 font-semibold px-4 py-2.5"
+                  disabled={loading}
+                  onClick={validateRepair}
+                  className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
                 >
-                  Reject repair
+                  <ShieldCheck className="w-4 h-4" />
+                  Run Validation Gate Check
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => decideRepair('rejected')}
+                  className="w-full py-2.5 px-4 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  Reject & Request Rollback
                 </button>
                 <Link
                   href="/schedule"
-                  className="w-full rounded-xl border border-slate-200 text-slate-700 font-semibold px-4 py-2.5 text-center"
+                  className="w-full block text-center py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all mt-2"
                 >
-                  View timetable
+                  View Full Timetable Grid &rarr;
                 </Link>
               </div>
             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
