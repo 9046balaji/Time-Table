@@ -29,6 +29,9 @@ async def test_phase5_mission_simulator_multicycle_scenarios():
         assert gpu_data["scenario"] == "gpu_lab_failure"
         assert gpu_data["iteration"] >= 2
 
+        import asyncio
+        await asyncio.sleep(1.1)
+
         # Cycle 2: Trigger Faculty Absence scenario sequentially on same session
         fac_res = await client.post(
             "/api/v1/agent/simulate/faculty_absence",
