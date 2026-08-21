@@ -597,14 +597,18 @@ class CPSATSolver:
                 sec = str(e.get("section", "Section"))
                 sub_type = str(e.get("type", "L")).upper()
 
-                # Find alternative compatible room that is free at (day, period)
+                # Multi-Stage Repair Fallback Search
                 assigned_room = None
+                assigned_day = day
+                assigned_period = period
+                repair_stage = "STAGE_1_STRICT"
+
+                # STAGE 1: Strict Same-Slot Room Swap
                 for r in available_rooms:
                     r_code = str(r.get("code") or r.get("id")).strip().upper()
                     if r_code == disrupted_room_norm or r_code == "VIRTUAL_LIBRARY":
                         continue
 
-                    # Filter by room type compatibility
                     r_type = str(r.get("room_type", "classroom")).lower()
                     if sub_type in ("P", "LAB") and r_type not in ("lab", "computer_lab", "gpu_lab"):
                         continue
@@ -617,15 +621,39 @@ class CPSATSolver:
                         occupied_cells.add(candidate_key)
                         break
 
+                # STAGE 2: Time Slot Relaxation (Adjacent Period on Same Day)
                 if not assigned_room:
-                    # Fallback to next available lab/classroom code
+                    repair_stage = "STAGE_2_SLOT_RELAXATION"
+                    for adj_period in [period + 1, period - 1, period + 2, period - 2]:
+                        if adj_period < 1 or adj_period > 8:
+                            continue
+                        for r in available_rooms:
+                            r_code = str(r.get("code") or r.get("id")).strip().upper()
+                            if r_code == disrupted_room_norm or r_code == "VIRTUAL_LIBRARY":
+                                continue
+
+                            candidate_key = (day, adj_period, r_code)
+                            if candidate_key not in occupied_cells:
+                                assigned_room = r_code
+                                assigned_period = adj_period
+                                occupied_cells.add(candidate_key)
+                                break
+                        if assigned_room:
+                            break
+
+                # STAGE 3: Default Safe Venue Fallback
+                if not assigned_room:
+                    repair_stage = "STAGE_3_SAFE_FALLBACK"
                     assigned_room = "605" if sub_type not in ("P", "LAB") else "611"
 
                 entry_copy["room"] = assigned_room
                 entry_copy["roomCode"] = assigned_room
+                entry_copy["day"] = assigned_day
+                entry_copy["period"] = assigned_period
+                entry_copy["repair_stage"] = repair_stage
                 moved_entries.append(entry_copy)
                 displaced_sections.add(sec)
-            
+
             repaired_entries.append(entry_copy)
 
         runtime = round(time.time() - start_time, 3)
