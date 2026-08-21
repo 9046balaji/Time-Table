@@ -137,6 +137,21 @@ async def reject_repair_request(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+@router.post("/sessions/{session_id}/parse-command", response_model=Dict[str, Any])
+async def parse_natural_command(
+    session_id: int,
+    payload: Dict[str, Any],
+    db: AsyncSession = Depends(get_db),
+):
+    command_text = str(payload.get("command") or payload.get("text") or "").strip()
+    if not command_text:
+        raise HTTPException(status_code=400, detail="command or text is required")
+    try:
+        return await AgentService.parse_natural_command(db, session_id=session_id, command_text=command_text)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
 @router.post("/sessions/{session_id}/repair-validation", response_model=Dict[str, Any])
 async def validate_repair(
     session_id: int,
