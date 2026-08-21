@@ -17,6 +17,15 @@ export const MissionSimulator: React.FC<MissionSimulatorProps> = ({ onTriggerSce
       color: 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800'
     },
     {
+      id: 'gpu_lab_failure',
+      name: 'M7 GPU Lab Outage',
+      target: 'AFTF-12',
+      sections: ['IV AIML-A', 'IV AIML-B'],
+      desc: 'Simulate High-Performance GPU Lab hardware failure.',
+      icon: '💻',
+      color: 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'
+    },
+    {
       id: 'faculty_absence',
       name: 'Faculty Absence',
       target: 'Dr. S. Srikantha Reddy',
@@ -55,20 +64,20 @@ export const MissionSimulator: React.FC<MissionSimulatorProps> = ({ onTriggerSce
   ];
 
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm font-sans">
       <div className="mb-4">
         <h2 className="text-lg font-bold text-slate-900 dark:text-white">Campus Disruption Simulator</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400">Trigger real-world events to evaluate agent perception & local repair speed</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         {scenarios.map((sc) => (
           <button
             key={sc.id}
             type="button"
             disabled={loading}
             onClick={() => onTriggerScenario(sc.id, sc.target, sc.sections)}
-            className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition-all font-sans ${sc.color} ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02]'}`}
+            className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition-all ${sc.color} ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02]'}`}
           >
             <div>
               <div className="flex items-center gap-2 mb-1.5">
