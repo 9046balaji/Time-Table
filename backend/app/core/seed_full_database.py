@@ -23,6 +23,7 @@ from app.models import (
     TimetableEntry
 )
 from sqlalchemy import select
+from backend.solver.conflict_checker import faculty_identity_key
 
 V5_EXCEL = r"c:\Users\ggvfj\Downloads\All Projects\Time_Table\time_table\ACSE TIMETABLE (V5)  - W.e.f 15-7-2026.xlsx"
 FILE_4TH = r"c:\Users\ggvfj\Downloads\All Projects\Time_Table\time_table\4th yr TT 17TH JULY.xlsx"
@@ -208,14 +209,24 @@ async def seed_database():
         print(f"  • Successfully Seeded {len(db_rooms)} Rooms into PostgreSQL")
 
         # Seed Faculty
+        # Match on the canonical identity key, not the raw string: the source
+        # workbook spells the same person several ways ("DR. P. KALPANA" vs
+        # "DR. P. Kalpana"), and an exact-name lookup created a duplicate row per
+        # spelling. Duplicate faculty rows split one person's workload across two
+        # identities and hide genuine HC-02 double-bookings.
         db_faculty = {}
+        existing_res = await db.execute(select(Faculty))
+        by_identity = {}
+        for existing in existing_res.scalars().all():
+            by_identity.setdefault(faculty_identity_key(existing.name), existing)
         for f_name, f_info in all_faculty_map.items():
-            f_res = await db.execute(select(Faculty).where(Faculty.name == f_name))
-            f_obj = f_res.scalars().first()
+            identity = faculty_identity_key(f_name)
+            f_obj = by_identity.get(identity)
             if not f_obj:
                 f_obj = Faculty(dept_id=dep.id, name=f_name, designation=f_info["designation"], max_hours_per_week=16, is_external=False)
                 db.add(f_obj)
                 await db.flush()
+                by_identity[identity] = f_obj
             db_faculty[f_name] = f_obj
         print(f"  • Successfully Seeded {len(db_faculty)} Faculty Members into PostgreSQL")
 

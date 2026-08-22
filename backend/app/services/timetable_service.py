@@ -1,3 +1,4 @@
+import logging
 from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -8,6 +9,8 @@ from app.models.section import Section
 from app.models.room import Room
 from app.models.time_slot import TimeSlot
 from app.models.faculty import Faculty
+
+logger = logging.getLogger(__name__)
 
 
 class TimetableService:
@@ -38,15 +41,32 @@ class TimetableService:
                 res = await db.execute(stmt)
                 entries = res.scalars().all()
 
+                # Resolve the faculty_ids JSON column without an N+1 query.
+                faculty_names_by_id: Dict[int, str] = {}
+                needed_ids = {
+                    fid
+                    for e in entries
+                    for fid in (e.faculty_ids if isinstance(e.faculty_ids, list) else [])
+                }
+                if needed_ids:
+                    fac_res = await db.execute(select(Faculty).where(Faculty.id.in_(needed_ids)))
+                    faculty_names_by_id = {f.id: f.name for f in fac_res.scalars().all()}
+
                 for e in entries:
                     sec_name = e.section.name if e.section else "II AIML-A"
                     day_val = e.time_slot.day if e.time_slot else "MON"
                     period_val = e.time_slot.period if e.time_slot else 1
                     room_val = e.room.code if e.room else (e.raw_room_text or "")
                     
+                    # NOTE: there is no `raw_faculty_text` column on TimetableEntry.
+                    # Reading one raised AttributeError for every entry without a
+                    # faculty_assignments row, which the broad except below swallowed,
+                    # silently serving the static seed cache for *every* version.
+                    # Fall back to the real `faculty_ids` JSON column instead.
                     fac_names = [fa.faculty.name for fa in e.faculty_assignments if fa.faculty]
-                    if not fac_names and e.raw_faculty_text:
-                        fac_names = e.raw_faculty_text.split(", ")
+                    if not fac_names and e.faculty_ids:
+                        fac_ids = e.faculty_ids if isinstance(e.faculty_ids, list) else []
+                        fac_names = [faculty_names_by_id[fid] for fid in fac_ids if fid in faculty_names_by_id]
 
                     result.append({
                         "id": e.id,
@@ -60,7 +80,9 @@ class TimetableService:
                         "span_periods": e.span_periods or 1
                     })
             except Exception as ex:
-                print(f"[TimetableService Error] {ex}")
+                # Do not fail silently: a broken DB read here degrades the whole
+                # agent to stale seed-cache data while still reporting success.
+                logger.exception("get_version_timetable DB read failed for version %s: %s", version_id, ex)
 
         # Fast memory seed cache fallback if DB entries are empty
         if not result:

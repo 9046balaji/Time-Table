@@ -41,6 +41,7 @@ RUN mkdir -p /app/backend && \
     ln -s /app/solver /app/backend/solver && \
     ln -s /app/tasks /app/backend/tasks && \
     ln -s /app/app /app/backend/app && \
+    ln -s /app/main.py /app/backend/main.py && \
     chown -R appuser:appgroup /app
 
 # Switch to non-root user

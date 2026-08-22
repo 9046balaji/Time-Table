@@ -1,6 +1,22 @@
+import re
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Set, Tuple, Optional
 from backend.solver.constraints import ConstraintRules
+
+
+def faculty_identity_key(raw: Any) -> str:
+    """
+    Collapses a raw faculty name into a canonical identity key.
+
+    HC-02 (faculty double-booking) must treat "DR. P. KALPANA", "DR. P. Kalpana"
+    and "Dr.P.Kalpana" as the same human being. Grouping on the raw string lets a
+    genuine double-booking pass validation whenever the two rows spell the name
+    differently, so every faculty index in this module keys on this function.
+    Display strings keep their original spelling.
+    """
+    if not raw:
+        return ""
+    return re.sub(r"[^A-Z0-9]", "", str(raw).upper())
 
 
 @dataclass
@@ -56,6 +72,7 @@ class ConflictChecker:
         # Pre-indexed buckets for fast single-pass grouping
         room_map: Dict[Tuple[str, int, str], List[Any]] = {}
         faculty_map: Dict[Tuple[str, int, str], List[Any]] = {}
+        faculty_display: Dict[Tuple[str, int, str], str] = {}
         section_map: Dict[Tuple[str, int, str], List[Any]] = {}
 
         for slot in slots:
@@ -122,11 +139,12 @@ class ConflictChecker:
 
             if faculty_list:
                 for fac in faculty_list:
-                    fac_clean = fac.strip()
-                    if fac_clean:
-                        fac_key = (day_norm, period, fac_clean)
+                    fac_id = faculty_identity_key(fac)
+                    if fac_id:
+                        fac_key = (day_norm, period, fac_id)
                         if fac_key not in faculty_map:
                             faculty_map[fac_key] = []
+                            faculty_display[fac_key] = str(fac).strip()
                         faculty_map[fac_key].append(slot)
 
             # ---------------------------------------------------------
@@ -189,7 +207,9 @@ class ConflictChecker:
         # =============================================================
         # Process Faculty Clashes (HC-02)
         # =============================================================
-        for (day, period, fac), occupied_slots in faculty_map.items():
+        for _fac_key, occupied_slots in faculty_map.items():
+            day, period, _fac_id = _fac_key
+            fac = faculty_display.get(_fac_key, _fac_id)
             if len(occupied_slots) <= 1:
                 continue
 
@@ -299,9 +319,9 @@ class IncrementalValidator:
             fac_list = [faculty] if isinstance(faculty, str) else faculty
             for fac in fac_list:
                 if fac and isinstance(fac, str):
-                    fac_clean = fac.strip()
-                    if fac_clean:
-                        self.faculty_index[(day, period, fac_clean)] = e
+                    fac_id = faculty_identity_key(fac)
+                    if fac_id:
+                        self.faculty_index[(day, period, fac_id)] = e
 
     def validate_move(
         self,
@@ -331,7 +351,7 @@ class IncrementalValidator:
 
         # 2. Faculty double-booking check
         if faculty_name:
-            fac_clean = faculty_name.strip()
+            fac_clean = faculty_identity_key(faculty_name)
             if fac_clean:
                 fac_key = (day_norm, target_period, fac_clean)
                 if fac_key in self.faculty_index:

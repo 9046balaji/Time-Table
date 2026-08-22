@@ -69,7 +69,7 @@ class ToolRegistry:
                 "code": r.code,
                 "room_type": r.room_type,
                 "capacity": r.capacity,
-                "building_block": r.building_block
+                "building_block": getattr(r, "block", getattr(r, "building_block", "U-Block"))
             }
             for r in rooms
         ]
@@ -105,7 +105,7 @@ class ToolRegistry:
                 "id": f.id,
                 "name": f.name,
                 "designation": f.designation,
-                "max_weekly_hours": f.max_weekly_hours
+                "max_hours_per_week": f.max_hours_per_week
             }
             for f in facs
         ]
