@@ -30,6 +30,9 @@ class ClashDetail:
     section_b: str
     subject_b: str
     message: str
+    # False for informational rows (joint-section teaching), which are reported
+    # for transparency but are not hard-constraint violations.
+    is_violation: bool = True
 
 
 @dataclass
@@ -183,7 +186,13 @@ class ConflictChecker:
                         sub_a_norm = ConstraintRules.normalize_string(sub_a_code).replace("(P)", "").replace("(T)", "").replace("(L)", "").strip()
                         sub_b_norm = ConstraintRules.normalize_string(sub_b_code).replace("(P)", "").replace("(T)", "").replace("(L)", "").strip()
 
-                        is_physical_clash = (sub_a_norm != sub_b_norm)
+                        # Two sections share a room legitimately only when they are
+                        # provably in the same class. If either subject is unknown we
+                        # cannot prove that, so fail safe and report a real clash
+                        # rather than silently excusing it as joint teaching.
+                        is_physical_clash = (
+                            not sub_a_norm or not sub_b_norm or sub_a_norm != sub_b_norm
+                        )
                         if is_physical_clash:
                             report.physical_room_clashes += 1
                         else:
@@ -201,6 +210,7 @@ class ConflictChecker:
                                 section_b=self._get_attr(sb, "section", ""),
                                 subject_b=sub_b_code,
                                 message=f"[{clash_label}] {day} Period-{period}, Room {room} → {self._get_attr(sa, 'section', '')}: {sub_a_code} AND {self._get_attr(sb, 'section', '')}: {sub_b_code}",
+                                is_violation=is_physical_clash,
                             )
                         )
 
@@ -273,8 +283,13 @@ class ConflictChecker:
                             )
                         )
 
+        # room_clashes counts every room overlap, including joint-section teaching
+        # (two sections taking the same subject together in one room), which is
+        # legitimate and not a violation. On the V5 baseline 62 of 69 overlaps are
+        # joint sections, so counting them here made the consensus VALIDATOR veto
+        # schedules that are actually valid. Only physical clashes are violations.
         report.total_hard_violations = (
-            report.room_clashes
+            report.physical_room_clashes
             + report.faculty_clashes
             + report.student_clashes
             + report.break_clashes

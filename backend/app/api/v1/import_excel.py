@@ -78,7 +78,8 @@ async def import_excel_timetable(file: UploadFile = File(...)):
                 "subject_a": d.subject_a,
                 "section_b": d.section_b,
                 "subject_b": d.subject_b,
-                "message": d.message
+                "message": d.message,
+                "is_violation": d.is_violation
             }
             for d in report.details
         ]
@@ -232,6 +233,9 @@ async def import_excel_timetable(file: UploadFile = File(...)):
             "faculty_mappings": len(parsed_res.faculty_mappings),
             "hard_violations": report.total_hard_violations,
             "room_clashes": report.room_clashes,
+            # room_clashes counts every overlap; only physical ones are violations.
+            "physical_room_clashes": report.physical_room_clashes,
+            "joint_section_slots": report.joint_section_slots,
             "faculty_clashes": report.faculty_clashes,
             "status": "VALID" if report.total_hard_violations == 0 else "NEEDS_FIX",
             "clash_details": details_json,

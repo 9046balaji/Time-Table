@@ -45,7 +45,12 @@ def test_import_excel_api():
     # IOT in two rooms). This asserted 0 only while the parser left faculty_list
     # empty, which made HC-02 unable to see any instructor at all.
     assert data["faculty_clashes"] == 1
-    assert len(data["clash_details"]) == data["hard_violations"]
+    # clash_details also carries informational joint-section rows, so compare
+    # only the entries flagged as real violations.
+    violations = [d for d in data["clash_details"] if d.get("is_violation", True)]
+    assert len(violations) == data["hard_violations"]
+    assert data["physical_room_clashes"] == 7
+    assert data["joint_section_slots"] == 62
 
 
 if __name__ == "__main__":
