@@ -30,6 +30,33 @@ class MultiAgentConsensusEngine:
         if session is None:
             raise ValueError(f"Session {session_id} not found")
 
+        # The candidate schedule is the agent's own working memory, not something
+        # the caller supplies. Trusting the request body meant POSTing an empty body
+        # produced a unanimous 3/3 APPROVE over zero entries, which silently bypassed
+        # the VALIDATOR veto that is supposed to gate every publish.
+        context = session.context or {}
+        if not timetable_entries:
+            timetable_entries = context.get("candidate_entries") or []
+
+        if not timetable_entries:
+            # Nothing to verify. An agent must never report "approved" when it
+            # validated nothing, so this is a veto, not a pass.
+            return {
+                "session_id": session_id,
+                "consensus_passed": False,
+                "status": "VETOED",
+                "votes": [{
+                    "role": "VALIDATOR",
+                    "vote": "REJECT",
+                    "has_veto_power": True,
+                    "hard_violations": 0,
+                    "rationale": "VETO: no candidate schedule to verify. Run a repair "
+                                 "before requesting consensus.",
+                }],
+                "execution_time_ms": int((time.time() - start_time) * 1000),
+                "summary": "Multi-Agent Consensus VETOED: no candidate schedule available to verify.",
+            }
+
         # 1. VALIDATOR Sub-Agent (Ground-Truth Hard Conflict Analysis & VETO Power)
         checker = ConflictChecker()
         report = checker.detect(timetable_entries)
@@ -39,10 +66,11 @@ class MultiAgentConsensusEngine:
             "vote": "APPROVE" if validator_passed else "REJECT",
             "has_veto_power": True,
             "hard_violations": report.total_hard_violations,
-            "room_clashes": report.room_clashes,
+            "room_clashes": report.physical_room_clashes,
+            "joint_section_slots": report.joint_section_slots,
             "faculty_clashes": report.faculty_clashes,
             "student_clashes": report.student_clashes,
-            "rationale": "Zero hard constraint violations detected. Ground truth verified." if validator_passed else f"VETO: {report.total_hard_violations} hard violation(s) detected ({report.room_clashes} room, {report.faculty_clashes} faculty, {report.student_clashes} student)."
+            "rationale": "Zero hard constraint violations detected. Ground truth verified." if validator_passed else f"VETO: {report.total_hard_violations} hard violation(s) detected ({report.physical_room_clashes} room, {report.faculty_clashes} faculty, {report.student_clashes} student). {report.joint_section_slots} joint-section share(s) ignored as legitimate."
         }
 
         # 2. ARCHITECT Sub-Agent (Dynamic Database Room Queries & Type Compatibility)
@@ -108,6 +136,9 @@ class MultiAgentConsensusEngine:
             "session_id": session_id,
             "consensus_passed": consensus_passed,
             "status": "APPROVED" if consensus_passed else "HELD",
+            # Always state what was actually verified, so an approval can never
+            # look authoritative without disclosing its evidence base.
+            "entries_verified": len(timetable_entries),
             "votes": [validator_vote, architect_vote, solver_vote],
             "execution_time_ms": elapsed_ms,
             "summary": summary

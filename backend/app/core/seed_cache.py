@@ -10,6 +10,25 @@ IGNORED_ROOM_CODES = {
 }
 
 
+
+def _normalize_entry_faculty(entries):
+    """
+    Keep only unambiguous instructor assignments on each seeded entry.
+
+    The seed JSON stores every instructor associated with a section+subject, but
+    HC-02 reads `faculty` as the people teaching that one slot simultaneously.
+    450 of 610 seeded entries carry 2-6 names, which made the consensus VALIDATOR
+    report ~198 faculty double-bookings that do not exist. Move the pool to
+    `faculty_candidates` for planning and assert `faculty` only when it is certain.
+    """
+    for entry in entries or []:
+        names = entry.get("faculty") or []
+        if isinstance(names, str):
+            names = [n.strip() for n in names.split(",") if n.strip()]
+        entry["faculty_candidates"] = list(names)
+        entry["faculty"] = list(names) if len(names) == 1 else []
+    return entries
+
 def get_seed_data() -> Dict[str, Any]:
     global _SEED_CACHE
     if _SEED_CACHE:
@@ -124,6 +143,6 @@ def get_seed_data() -> Dict[str, Any]:
         "rooms": clean_rooms,
         "faculty": clean_fac,
         "subjects": clean_subjs,
-        "entries": raw_data.get("entries", [])
+        "entries": _normalize_entry_faculty(raw_data.get("entries", []))
     }
     return _SEED_CACHE
