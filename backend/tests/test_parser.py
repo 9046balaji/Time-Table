@@ -51,7 +51,24 @@ def test_v5_baseline_parsing():
     print(f"Total Hard Violations: {report.total_hard_violations}")
 
     assert report.room_clashes > 0, "Expected room clashes to be detected"
-    assert report.faculty_clashes == 0, f"Expected 0 faculty clashes, found {report.faculty_clashes}"
+
+    # The V5 room overlaps split into genuine physical clashes and legitimate
+    # joint-section shares (two sections taught together in one room).
+    assert report.physical_room_clashes == 7, (
+        f"Expected 7 true physical room clashes, found {report.physical_room_clashes}"
+    )
+
+    # This previously asserted 0, which only held because the parser never
+    # populated faculty_list, so HC-02 had nothing to check. With the legend
+    # joined onto slots, V5 reveals one real double-booking: Ms.G.Jyostna is
+    # scheduled for IOT in two different rooms (AFF-10 and 611) at THU P6.
+    assert report.faculty_clashes == 1, (
+        f"Expected 1 known V5 faculty clash, found {report.faculty_clashes}"
+    )
+    faculty_details = [d for d in report.details if d.clash_type == "FACULTY"]
+    assert len(faculty_details) == 1
+    assert "Jyostna" in faculty_details[0].key
+    assert faculty_details[0].day == "THU" and faculty_details[0].period == 6
 
 
 def test_4th_year_timetable_parsing():

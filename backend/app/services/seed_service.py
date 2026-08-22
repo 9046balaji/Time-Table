@@ -1,3 +1,4 @@
+import re
 import os
 import sys
 import json
@@ -18,9 +19,22 @@ from app.models.time_slot import TimeSlot
 from app.models.timetable import TimetableVersion, TimetableEntry
 
 from parser.excel_parser import ExcelTimetableParser
+from backend.solver.conflict_checker import faculty_identity_key
 
 V5_FILE_PATH = "time_table/ACSE TIMETABLE (V5)  - W.e.f 15-7-2026.xlsx"
 
+
+
+def _resolve_faculty_ids(names, faculty_map, faculty_by_identity):
+    """Map legend faculty names to seeded ids, falling back to canonical identity."""
+    resolved = []
+    for name in names or []:
+        fid = faculty_map.get(name)
+        if fid is None:
+            fid = faculty_by_identity.get(faculty_identity_key(name))
+        if fid is not None and fid not in resolved:
+            resolved.append(fid)
+    return resolved
 
 class SeedService:
     @staticmethod
@@ -189,7 +203,18 @@ class SeedService:
                 print(f"[Auto-Seed Warning] Could not parse 4th Year Excel: {ex}")
 
         # 6. Seed Faculty Mappings (All 116 Faculty Members & Workload Limits)
-        all_faculty_names = set(parsed_result.faculty_mappings.keys())
+        # faculty_mappings is {section: {subject: [faculty names]}} - the keys are
+        # SECTION names, not people. Seeding the keys put 45 sections ("II AIML-A",
+        # "I MSC(DS)") into the faculty table, so the agent could offer a section as
+        # a substitute instructor. The instructors are the nested values.
+        all_faculty_names = {
+            name
+            for subject_map in parsed_result.faculty_mappings.values()
+            for names in subject_map.values()
+            for name in names
+            # Drop legend placeholders like "***" that name no real person.
+            if name and re.search(r"[A-Za-z]{2}", str(name))
+        }
         seed_dir = os.path.abspath("data/seed")
         for sname_json in ["original_v5_faculty.json", "original_v4_faculty.json"]:
             spath = os.path.join(seed_dir, sname_json)
@@ -209,6 +234,8 @@ class SeedService:
 
 
         faculty_map = {}
+        # Legend spellings drift from seeded names, so resolve on identity too.
+        faculty_by_identity: Dict[str, int] = {}
         for fname in sorted(all_faculty_names):
             upper_name = fname.upper()
             if "DR." in upper_name or "DR " in upper_name or "PROF" in upper_name:
@@ -232,6 +259,7 @@ class SeedService:
             await db.commit()
             await db.refresh(fac)
             faculty_map[fname] = fac.id
+            faculty_by_identity[faculty_identity_key(fname)] = fac.id
 
 
         # 7. Seed All 40 Rooms & Building Blocks
@@ -388,7 +416,7 @@ class SeedService:
                     entry_type=slot.subject_type,
                     raw_subject_text=slot.subject_code,
                     raw_room_text=slot.room or "",
-                    faculty_ids=[faculty_map[f] for f in slot.faculty_list if f in faculty_map],
+                    faculty_ids=_resolve_faculty_ids(slot.faculty_list, faculty_map, faculty_by_identity),
                     span_periods=1
                 )
                 db.add(entry)
@@ -412,7 +440,7 @@ class SeedService:
                         entry_type=slot.subject_type,
                         raw_subject_text=slot.subject_code,
                         raw_room_text=slot.room or "",
-                        faculty_ids=[faculty_map[f] for f in slot.faculty_list if f in faculty_map],
+                        faculty_ids=_resolve_faculty_ids(slot.faculty_list, faculty_map, faculty_by_identity),
                         span_periods=1
                     )
                     db.add(entry)

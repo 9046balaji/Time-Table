@@ -50,7 +50,12 @@ class ParsedSlot:
     subject_code: str
     room: str
     subject_type: str = "L"  # L, T, P, LIBRARY, BREAK, LUNCH, MINORHONOR, PROJECT
+    # Instructors actually asserted for this slot. Only ever populated when the
+    # legend is unambiguous, because HC-02 treats these as simultaneous.
     faculty_list: List[str] = field(default_factory=list)
+    # Every instructor the legend associates with this section+subject. This is a
+    # candidate pool for planning, NOT a set of concurrent assignments.
+    faculty_candidates: List[str] = field(default_factory=list)
     raw_cell: str = ""
     sheet_name: str = ""
     time_window: str = ""
@@ -123,6 +128,12 @@ class ExcelTimetableParser:
             all_slots = [s for s in all_slots if s.section in sections_dict]
             faculty_map = {k: faculty_map[k] for k in target_keys if k in faculty_map}
 
+        # The faculty legend is parsed per (section, subject) but was never joined
+        # onto the individual slots, leaving every ParsedSlot.faculty_list empty.
+        # ConflictChecker keys HC-02 (faculty double-booking) off faculty_list, so
+        # without this join the validator can never see a double-booked instructor.
+        self.attach_faculty_to_slots(all_slots, faculty_map)
+
         result.raw_entries = all_slots
         result.sections = sections_dict
         result.total_sections = len(sections_dict)
@@ -130,6 +141,52 @@ class ExcelTimetableParser:
         result.faculty_mappings = faculty_map
 
         return result
+
+    @staticmethod
+    def resolve_slot_faculty(section: str, subject_code: str,
+                             faculty_map: Dict[str, Dict[str, List[str]]]) -> List[str]:
+        """
+        Resolve the instructors for one slot from the parsed faculty legend.
+
+        The legend is keyed by section and subject, but a slot may spell the
+        subject with or without its type suffix ("DS" vs "DS(P)"), so try the
+        exact code first, then the bare code, then each type-suffixed variant.
+        Returns [] for genuinely instructor-less slots (LIBRARY, CRT, OE,
+        MINORS/HONORS, SL/EL and similar self-study or global blocks).
+        """
+        subject_map = faculty_map.get(section) or {}
+        code = (subject_code or "").strip()
+        if not code:
+            return []
+        bare = re.sub(r"\((?:L|P|T|T&P)\)$", "", code).strip()
+        for candidate in (code, bare, f"{bare}(L)", f"{bare}(P)", f"{bare}(T)", f"{bare}(T&P)"):
+            names = subject_map.get(candidate)
+            if names:
+                return list(names)
+        return []
+
+    @classmethod
+    def attach_faculty_to_slots(cls, slots: List[ParsedSlot],
+                                faculty_map: Dict[str, Dict[str, List[str]]]) -> int:
+        """Attach legend faculty to slots. Returns how many got a definite instructor."""
+        resolved = 0
+        for slot in slots:
+            names = cls.resolve_slot_faculty(slot.section, slot.subject_code, faculty_map)
+            if not names:
+                continue
+            slot.faculty_candidates = names
+            # Only assert an instructor when the legend names exactly one. For a
+            # shared subject the legend lists every instructor teaching it across
+            # the section group; asserting all of them would tell HC-02 that four
+            # people teach the same slot at once and fabricate double-bookings.
+            # Measured on V5: asserting the whole pool reports 213 faculty clashes
+            # against 1 real one.
+            if len(names) == 1 and not slot.faculty_list:
+                slot.faculty_list = list(names)
+            if slot.faculty_list:
+                resolved += 1
+        return resolved
+
 
 
     def _parse_fourth_year_sheet(self, sheet: Any, sheet_name: str, all_slots: List[ParsedSlot],

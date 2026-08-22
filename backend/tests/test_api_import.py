@@ -41,7 +41,10 @@ def test_import_excel_api():
     assert data["total_sections"] >= 40
     assert data["total_slots"] >= 1000
     assert data["room_clashes"] > 0
-    assert data["faculty_clashes"] == 0
+    # V5 contains exactly one real faculty double-booking (Ms.G.Jyostna, THU P6,
+    # IOT in two rooms). This asserted 0 only while the parser left faculty_list
+    # empty, which made HC-02 unable to see any instructor at all.
+    assert data["faculty_clashes"] == 1
     assert len(data["clash_details"]) == data["hard_violations"]
 
 
