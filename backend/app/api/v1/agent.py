@@ -164,7 +164,10 @@ async def parse_natural_command(
     try:
         return await AgentService.parse_natural_command(db, session_id=session_id, command_text=command_text)
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        # An uninterpretable directive is a bad request, not a missing session.
+        message = str(exc)
+        status = 404 if "not found" in message.lower() else 400
+        raise HTTPException(status_code=status, detail=message) from exc
 
 
 @router.post("/sessions/{session_id}/repair-validation", response_model=Dict[str, Any])

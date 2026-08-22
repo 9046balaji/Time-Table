@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -46,37 +47,92 @@ class AgentService:
 
     @staticmethod
     async def parse_natural_command(db: AsyncSession, session_id: int, command_text: str) -> Dict[str, Any]:
-        """Parses natural language admin directives into structured disruption scenario triggers."""
-        text = str(command_text or "").strip().lower()
+        """
+        Parse a natural-language admin directive into a structured disruption trigger.
+
+        Targets are resolved against the real database, never guessed. The previous
+        implementation keyword-matched a scenario and then substituted a hardcoded
+        target, so "Room 611 is closed" triggered a room-604 failure, an unknown
+        instructor became Dr. S. Srikantha Reddy, and unparseable text silently ran
+        a room-604 failure. An agent that acts confidently on a target the operator
+        never named is worse than one that asks.
+        """
         from app.services.mission_simulator import MissionSimulator
+        from app.services.tool_registry import ToolRegistry
+        from backend.solver.conflict_checker import faculty_identity_key
 
-        if any(k in text for k in ["room", "lab", "604", "601", "aftf-12", "closed", "maintenance", "failure", "outage"]):
-            if "gpu" in text or "aftf" in text:
-                scenario = "gpu_lab_failure"
-                target = "AFTF-12"
-            else:
-                scenario = "room_failure"
-                target = "604" if "604" in text else ("601" if "601" in text else "604")
-        elif any(k in text for k in ["faculty", "dr.", "prof", "absent", "leave", "unavailable", "reddy"]):
-            scenario = "faculty_absence"
-            target = "Dr. S. Srikantha Reddy"
-        elif any(k in text for k in ["surge", "capacity", "crowded", "overflow"]):
-            scenario = "capacity_surge"
-            target = "601"
-        elif any(k in text for k in ["new class", "section", "add class"]):
-            scenario = "new_class_addition"
-            target = "II CSBS-B"
+        raw = str(command_text or "").strip()
+        text = raw.lower()
+        if not raw:
+            raise ValueError("Empty command")
+
+        rooms = await ToolRegistry.get_rooms(db)
+        faculty = await ToolRegistry.get_faculty(db)
+
+        # --- Resolve a room the operator actually named ---
+        matched_room = None
+        for room in rooms:
+            code = str(room.get("code") or "").strip()
+            if code and re.search(rf"\b{re.escape(code.lower())}\b", text):
+                # Prefer the longest code so "AFTF-12" wins over a bare "12".
+                if matched_room is None or len(code) > len(str(matched_room.get("code"))):
+                    matched_room = room
+
+        # --- Resolve an instructor the operator actually named ---
+        matched_faculty = None
+        text_identity = faculty_identity_key(raw)
+        for member in faculty:
+            name = str(member.get("name") or "").strip()
+            if len(name) < 4:
+                continue
+            surname = name.replace(".", " ").split()[-1]
+            if faculty_identity_key(name) and faculty_identity_key(name) in text_identity:
+                matched_faculty = member
+                break
+            if len(surname) >= 4 and re.search(rf"\b{re.escape(surname.lower())}\b", text):
+                matched_faculty = member
+                break
+
+        wants_faculty = any(k in text for k in ["faculty", "dr.", "prof", "absent", "leave", "sick", "instructor", "teacher"])
+        wants_capacity = any(k in text for k in ["surge", "capacity", "crowded", "overflow", "too many", "strength"])
+        wants_room = any(k in text for k in ["room", "lab", "closed", "maintenance", "failure", "outage", "unavailable", "down"])
+
+        if wants_faculty and matched_faculty:
+            scenario, target = "faculty_absence", str(matched_faculty["name"])
+        elif wants_capacity and matched_room:
+            scenario, target = "capacity_surge", str(matched_room["code"])
+        elif matched_room and (wants_room or not wants_faculty):
+            code = str(matched_room["code"])
+            is_gpu = "gpu" in text or code.upper().startswith("AFTF")
+            scenario = "gpu_lab_failure" if is_gpu else "room_failure"
+            target = code
+        elif wants_faculty and not matched_faculty:
+            raise ValueError(
+                "Could not identify that instructor. Name them as they appear in the "
+                "faculty list, for example: 'DR. P. Kalpana is on leave'."
+            )
+        elif wants_room and not matched_room:
+            raise ValueError(
+                "Could not identify that room. Use a room code that exists on campus, "
+                "for example: 'Room 611 is closed for maintenance'."
+            )
         else:
-            scenario = "room_failure"
-            target = "604"
+            raise ValueError(
+                "Could not interpret that directive. Name a room or an instructor, "
+                "for example: 'Room 604 is closed today' or "
+                "'DR. P. Kalpana is absent on Thursday'."
+            )
 
-        return await MissionSimulator.trigger_scenario(
+        result = await MissionSimulator.trigger_scenario(
             db,
             session_id=session_id,
             scenario_type=scenario,
             target_code=target,
             affected_sections=[]
         )
+        result["interpreted_command"] = raw
+        result["resolved_target"] = target
+        return result
 
     @staticmethod
     async def create_session(db: AsyncSession, goal: str, priority: Optional[List[str]] = None) -> Dict[str, Any]:
