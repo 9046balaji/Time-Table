@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Activity, AlertTriangle, CheckCircle2, RefreshCw, ShieldCheck, RotateCcw } from 'lucide-react';
-import { getApiBaseUrl } from '@/lib/api';
+import { getApiBaseUrl, getWsBaseUrl } from '@/lib/api';
 import { DecisionTrace } from '@/components/agent/DecisionTrace';
 import { MissionSimulator } from '@/components/agent/MissionSimulator';
 import { DiffView } from '@/components/agent/DiffView';
@@ -103,7 +103,9 @@ export default function AgentConsolePage() {
         }),
       });
       if (!res.ok) {
-        throw new Error(`Simulation failed for ${scenarioType}`);
+        const errJson = await res.json().catch(() => ({}));
+        const msg = errJson.detail || `Simulation failed for ${scenarioType}`;
+        throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
       }
       const result = await res.json();
       if (result.repair_recommendation?.entries) {
@@ -204,6 +206,27 @@ export default function AgentConsolePage() {
   useEffect(() => {
     createSession();
   }, []);
+
+  useEffect(() => {
+    if (!session?.id) return;
+    const wsUrl = `${getWsBaseUrl()}/api/v1/agent/stream/${session.id}`;
+    let socket: WebSocket | null = null;
+    try {
+      socket = new WebSocket(wsUrl);
+      socket.onmessage = (evt) => {
+        try {
+          const data = JSON.parse(evt.data);
+          if (data.type === 'AGENT_EVENT' || data.type === 'SESSION_UPDATE') {
+            loadSession(session.id);
+          }
+        } catch {}
+      };
+    } catch {}
+
+    return () => {
+      if (socket) socket.close();
+    };
+  }, [session?.id]);
 
   const eventList = (session?.events || []) as any[];
 

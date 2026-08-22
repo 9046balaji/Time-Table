@@ -10,8 +10,21 @@ from backend.solver.conflict_checker import ConflictChecker
 
 router = APIRouter()
 
+def get_root_dir() -> str:
+    base_file_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.abspath(os.path.join(base_file_dir, "..", "..", "..")),
+        os.path.abspath(os.path.join(base_file_dir, "..", "..", "..", "..")),
+        os.getcwd(),
+        "/app"
+    ]
+    for c in candidates:
+        if os.path.exists(os.path.join(c, "time_table")) or os.path.exists(os.path.join(c, "data")):
+            return c
+    return candidates[0]
+
 def get_source_filepath(dataset: str) -> str:
-    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+    root_dir = get_root_dir()
     file_map = {
         "4th_year": os.path.join(root_dir, "time_table", "4th yr TT 17TH JULY.xlsx"),
         "e2e_test": os.path.join(root_dir, "data", "test_outputs", "Test3_Focused10Sections_Cohort.xlsx"),
@@ -178,7 +191,7 @@ async def inspect_json_dataset(
     """
     Endpoint for serving pre-parsed seed and solver output JSON files directly.
     """
-    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+    root_dir = get_root_dir()
     json_map = {
         "demo": os.path.join(root_dir, "data", "seed", "demo_timetable_seed.json"),
         "v5_all": os.path.join(root_dir, "data", "seed", "original_v5_all_entries.json"),

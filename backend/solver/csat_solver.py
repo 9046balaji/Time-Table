@@ -610,7 +610,9 @@ class CPSATSolver:
                 day = str(e.get("day", "MON"))
                 period = int(e.get("period", 1))
                 sec = str(e.get("section", "Section"))
-                sub_type = str(e.get("type", "L")).upper()
+                sub_type = str(e.get("entry_type") or e.get("type") or "L").upper()
+                if "(P)" in str(e.get("subject", "")).upper() or "LAB" in str(e.get("subject", "")).upper():
+                    sub_type = "P"
 
                 # Multi-Stage Repair Fallback Search
                 assigned_room = None
@@ -625,9 +627,9 @@ class CPSATSolver:
                         continue
 
                     r_type = str(r.get("room_type", "classroom")).lower()
-                    if sub_type in ("P", "LAB") and r_type not in ("lab", "computer_lab", "gpu_lab"):
+                    if sub_type in ("P", "LAB", "PRACTICAL") and r_type not in ("lab", "computer_lab", "gpu_lab", "project_room"):
                         continue
-                    if sub_type in ("L", "T") and r_type in ("lab", "computer_lab", "gpu_lab"):
+                    if sub_type in ("L", "T", "LECTURE", "TUTORIAL") and r_type in ("lab", "computer_lab", "gpu_lab"):
                         continue
 
                     candidate_key = (day, period, r_code)

@@ -143,6 +143,26 @@ class MissionSimulator:
         await db.commit()
         await db.refresh(event)
 
+        # Broadcast live event via WebSocket manager
+        try:
+            from app.services.agent_websocket_manager import agent_ws_manager
+            await agent_ws_manager.broadcast_event(session_id, {
+                "type": "AGENT_EVENT",
+                "event_id": event.id,
+                "event_type": event_type,
+                "summary": summary,
+                "severity": severity,
+                "target": code_key,
+                "repair": {
+                    "moved_count": repair_res["moved_count"],
+                    "displaced_sections": repair_res["displaced_sections"],
+                    "stability_score": repair_res["stability_score"],
+                    "risk_level": repair_res["risk_level"]
+                }
+            })
+        except Exception as ws_err:
+            print(f"[WebSocket Broadcast Warning] {ws_err}")
+
         return {
             "incident_id": event.id,
             "session_id": session_id,

@@ -2082,3 +2082,404 @@ That is the transformation I would make.
 And importantly, **your current implementation gives you most of the hard deterministic infrastructure already**: the real dataset/problem, constraint model, CP-SAT/GA engine, validation, persistence, UI and deployment.  
 
 The work ahead is therefore primarily **agent orchestration + environmental events + adaptive repair + safety/approval + a convincing live demonstration**, rather than rebuilding your scheduler.
+
+
+
+
+
+
+
+
+
+
+
+Viewed plan.md:1-200
+Viewed reccomended_plan.md:1-329
+
+Here is an in-depth analysis of **`plan.md`**, **`reccomended_plan.md`**, and **`problems.md`**, mapped directly against our codebase implementation and architectural reality.
+
+---
+
+# 🏛️ In-Depth Architectural & Feature Review
+
+## 1. Executive Summary & Core Philosophy
+
+The fundamental shift across all three documents is moving from a **Static Solver Generator** (*Input → CP-SAT → Output*) to an **Adaptive Autonomous Agent Platform**:
+
+```
+Goal / Disruption Event
+         ↓
+  AGENT ORCHESTRATOR  ──►  Observe State (DB / Schedule / Rooms)
+         ↓
+    Reason & Plan     ──►  Select Repair Strategy (Local Scoped CP-SAT)
+         ↓
+   Execute Tools      ──►  Tool Registry (get_rooms, run_local_repair)
+         ↓
+  Validation Gate     ──►  ConflictChecker (Zero Hard Clashes Required)
+         ↓
+Multi-Agent Consensus ──►  3 Roles (VALIDATOR [Veto], ARCHITECT, SOLVER)
+         ↓
+ Human Approval Gate  ──►  Risk Score, Diff View, Approve or 1-Click Rollback
+```
+
+> **The Golden Rule (from `reccomended_plan.md`):**
+> *"Do not make the LLM or Solver the authority on validity. The Agent decides what to do, Tool calls execute, the Validator decides if it is valid (0 hard clashes), and only then apply/publish."*
+
+---
+
+## 2. In-Depth Breakdown of the 3 Blueprint Documents
+
+### 📄 Document A: `plan.md` (Master Agent Blueprint)
+* **Objective:** Upgrade the existing timetable optimization engine into an **Autonomous Adaptive Scheduling Agent**.
+* **Key Concept:** **Minimal Disruption Principle** — When a room breaks or a professor is absent, do **not** re-solve the entire 1,000-slot university schedule. Freeze 99% of unaffected entries and run a scoped CP-SAT repair only around the impacted cells.
+* **5 Key Phases Defined:**
+  1. *Agent Foundation:* Persistent DB state (`agent_sessions`, `agent_events`, `agent_actions`, `agent_decisions`, `agent_runs`).
+  2. *Local Adaptive Repair:* Freeze unaffected cells, run scoped CP-SAT local repair.
+  3. *Approval & Rollback Safety:* Risk-scoring, human approval gate, versioned schedule rollback.
+  4. *Event-Driven Mission Simulator:* Real-world campus disruption scenarios (`room_failure`, `gpu_lab_failure`, `faculty_absence`, `capacity_surge`, `priority_reroute`, `constraint_modification`).
+  5. *Agent Mission Console UI:* Dedicated `/agent` dashboard with decision trace telemetry, event stream, and diff view.
+
+---
+
+### 📄 Document B: `reccomended_plan.md` (Execution Strategy & Gap Analysis)
+* **Objective:** Reuse 100% of the solid existing foundation (FastAPI, Next.js, CP-SAT, PostgreSQL, Redis, Celery, 20 Constraints, V5 Baseline) rather than rebuilding.
+* **Key Guidance:**
+  - **Tool Registry:** The agent calls specialized tools (`get_rooms()`, `detect_conflicts()`, `run_local_repair()`, `rollback_schedule()`) instead of querying raw DB tables directly.
+  - **State Machine:** Enforce strict status loops: `OBSERVE` → `PLAN` → `VALIDATE` → `HUMAN_APPROVAL` → `APPLY`.
+
+---
+
+### 📄 Document C: `problems.md` (13-Point Risk & Reliability Audit)
+Surfaces critical production risks and technical safeguards:
+
+| Risk / Bottleneck | Identified Issue | Codebase Solution Implemented |
+|---|---|---|
+| **Risk G (Data Integrity)** | Raw text string mismatch vs DB foreign keys | Added `GET /api/v1/agent/health/data-integrity` to audit raw text resolution to FKs |
+| **Risk F (DoS Rate Limit)** | Rapid simulation calls exhausting CPU/RAM | Enforced 1-second simulation cooldown per session in [agent.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/api/v1/agent.py#L57) |
+| **Bottleneck 2.2 (Cell Overrides)** | Concurrent manual slot edits creating room clashes | Integrated `ConflictChecker` inside `update_timetable_slot()` transaction in [timetable.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/api/v1/timetable.py#L188) |
+| **Bottleneck 1.1 (CP-SAT Scale)** | `UNKNOWN` (timeout) vs `INFEASIBLE` (no solution) | Distinguish timeout retry vs `explain_infeasibility()` diagnostic |
+| **Risk E (Event Ordering)** | Near-simultaneous disruption ordering | Monotonically increasing `sequence_number` on `agent_events` |
+| **Risk A (State Corruption)** | Agent stuck in `REPAIRING` state | `session_timeout_at` detection and auto-recovery |
+
+---
+
+## 3. What Our Agents Do (Complete Feature Inventory)
+
+Here is the exact feature capability matrix built into the Agent platform:
+
+### 1. 🚨 Campus Disruption Perception & Local Repair
+* **Room / Infrastructure Failure (`room_failure`):** Detects emergency room lockouts (e.g., Room `604`) and automatically re-routes affected classes to open replacement rooms in the same time slot while maintaining 97%+ schedule stability.
+* **GPU High-Performance Lab Outage (`gpu_lab_failure`):** Re-routes AI/ML/DL practical sessions from an offline GPU lab (e.g., `AFTF-12`) to alternate GPU-capable lab blocks.
+* **Faculty Unplanned Absence (`faculty_absence`):** Re-allocates assigned slots when an instructor reports leave.
+* **Capacity Surge (`capacity_surge`):** Audits section enrollment surges exceeding room capacity (e.g., Room `601` with 95 students) and bumps the section to a larger venue.
+* **Cohort Priority Reroute (`priority_reroute`):** Re-aligns morning slot preferences for final-year cohorts.
+* **Global Constraint Shift (`constraint_adjustment`):** Dynamically applies or relaxes global constraint rules (e.g., `HC-08` lab consecutiveness).
+
+---
+
+### 2. 🏛️ Multi-Agent Consensus Protocol (3 Specialized Roles)
+When evaluating any schedule modification, 3 sub-agents vote:
+- **🧪 VALIDATOR (VETO Power):** Runs ground-truth constraint detection. Vetoes any candidate schedule with `> 0` hard violations (room clashes, faculty double-booking, section overlaps).
+- **🏗️ ARCHITECT:** Queries DB room metadata to verify capacity requirements and lab equipment compatibility.
+- **⚙️ SOLVER:** Evaluates soft constraint optimization (e.g., minimizing late P7-P8 period fatigue and faculty gap hours).
+
+---
+
+### 3. 📡 Live Telemetry & Real-Time Decision Trace
+- **WebSocket Streaming (`ws://.../api/v1/agent/stream/{session_id}`):** Pushes live incident events, repair progress, and status updates directly to connected frontend clients without manual page refreshes.
+- **Natural Language Directive Parser:** Converts natural admin text (e.g., `"Room 604 is closed for maintenance"`) into structured scenario parameters.
+
+---
+
+### 4. 🛡️ Human-in-the-Loop Approval & 1-Click Rollback
+- **Schedule Diff View:** Highlights exact slot movements (original vs. repaired room and time slot), weighted change costs, and affected sections.
+- **Human Gate:** Requires explicit coordinator approval (`Approve Local Repair`) before changes are committed to the master database.
+- **1-Click Rollback:** Instantly restores the pre-disruption timetable snapshot if a repair is rejected.
+
+---
+
+## 4. Codebase Mapping Reference
+
+| Architectural Component | Backend Implementation File | Frontend UI Component |
+|---|---|---|
+| **Agent State & Persistence** | [backend/app/models/agent.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/models/agent.py) | [Active Session Telemetry Card](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/frontend/src/app/agent/page.tsx#L282) |
+| **Agent Service & Commands** | [backend/app/services/agent_service.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/services/agent_service.py) | [Console Actions Header](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/frontend/src/app/agent/page.tsx#L213) |
+| **Disruption Simulator** | [backend/app/services/mission_simulator.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/services/mission_simulator.py) | [MissionSimulator.tsx](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/frontend/src/components/agent/MissionSimulator.tsx) |
+| **Multi-Agent Consensus** | [backend/app/services/multi_agent_consensus.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/services/multi_agent_consensus.py) | [DecisionTrace.tsx](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/frontend/src/components/agent/DecisionTrace.tsx) |
+| **Tool Registry & Local Repair** | [backend/app/services/tool_registry.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/services/tool_registry.py) | [DiffView.tsx](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/frontend/src/components/agent/DiffView.tsx) |
+| **WebSocket Streaming** | [backend/app/services/agent_websocket_manager.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/services/agent_websocket_manager.py) | `useEffect` WebSocket Stream in [page.tsx](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/frontend/src/app/agent/page.tsx#L205) |
+
+---
+
+## 5. Summary & Next Steps
+
+Our system fully implements the 5-phase roadmap from `plan.md`, the authoritative validation loop from `reccomended_plan.md`, and the technical safeguards from `problems.md`.
+
+All 6 Docker containers are **up and healthy**, and the Agent Mission Console (`/agent`) is live and operational.
+
+
+
+For an **Adaptive Academic Scheduling Agent** to operate reliably in a **real-world production environment** (managing ~2,360 students, ~80 faculty, 35+ venues, and 48 weekly slots across 44 sections), it cannot be a simple script or an unvalidated LLM wrapper. 
+
+It must act as an **autonomous, self-healing, human-gated co-pilot** that continuously perceives campus events, reasons about constraints, executes scoped repairs, verifies validity, and protects schedule stability.
+
+Here is the **complete, end-to-end production specification** of what our agent does, its core capabilities, and every feature required for enterprise deployment:
+
+---
+
+# 🤖 Production-Grade Agent Architecture & Capabilities
+
+```
+                  ┌──────────────────────────────────────────────┐
+                  │          CAMPUS DISRUPTION EVENTS            │
+                  │ (Room Outage, Faculty Leave, Enrollment)    │
+                  └──────────────────────┬───────────────────────┘
+                                         │
+                                         ▼
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│                           1. PERCEPTION & EVENT RADAR                             │
+│ • Natural Language Command Parser ("Room 604 is closed for repairs")              │
+│ • Monotonic Sequence Numbering & DoS Cooldown Protection                          │
+└────────────────────────────────────────┬──────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│                  2. AUTONOMOUS REASONING & LOCAL REPAIR ENGINE                    │
+│ • Minimal Disruption Principle: Freeze 99% of unaffected schedule                  │
+│ • Multi-Stage CP-SAT Repair: Same-Slot Swap ➔ Slot Relaxation ➔ Safe Fallback    │
+└────────────────────────────────────────┬──────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│               3. MULTI-AGENT CONSENSUS PROTOCOL (3 SPECIALIZED ROLES)             │
+│ 🧪 VALIDATOR (VETO Power): Ground-truth 0 Hard Violation Check                    │
+│ 🏗️ ARCHITECT: Capacity Audit, GPU/Computer Lab Equipment Matching                │
+│ ⚙️ SOLVER: Soft Constraint Optimization (SC-01..SC-10, Late Slot Penalties)       │
+└────────────────────────────────────────┬──────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│               4. RISK SCORING & HUMAN-IN-THE-LOOP APPROVAL GATE                   │
+│ • Risk Level Engine: Low / Medium / High (Weighted Change Cost Model)             │
+│ • Schedule Diff View: Interactive Before vs. After Cell Comparison                │
+│ • Human Gate: Coordinator Approval ➔ DB Publication | Rejection ➔ 1-Click Rollback│
+└────────────────────────────────────────┬──────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│                   5. LIVE TELEMETRY & WEBSOCKET STREAMING                         │
+│ • Live WebSocket Broadcasts (ws://.../api/v1/agent/stream/{session_id})           │
+│ • Audit Log Persistence (agent_sessions, agent_events, agent_actions, agent_runs) │
+└───────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🏛️ The 6 Core Production Pillars & Functionalities
+
+### Pillar 1: Perception & Disruption Ingestion (The Event Radar)
+In production, a schedule changes constantly throughout the semester. The agent must perceive and process 6 core disruption scenarios:
+1. **Emergency Room Lockouts (`room_failure`):** e.g., Room `604` undergoes urgent maintenance.
+2. **Hardware & GPU Outages (`gpu_lab_failure`):** e.g., Lab `AFTF-12` suffers a power failure; AI/ML sessions must move to GPU-capable replacement rooms.
+3. **Faculty Absences (`faculty_absence`):** e.g., An instructor takes sudden medical leave.
+4. **Student Capacity Surges (`capacity_surge`):** e.g., Section enrollment overflows room seating limits.
+5. **Cohort Priority Preference Realignment (`priority_reroute`):** e.g., Granting morning slot preference to final-year cohorts (`IV AIML-A`).
+6. **Global Constraint Shifts (`constraint_adjustment`):** Dynamically enforcing/relaxing constraint rules (e.g., `HC-08` lab consecutiveness).
+
+* **Natural Language Command Processing:** Administrators can type directives into the console (e.g., *"Room 604 is closed today"*), and the agent parses intent into structured parameters.
+
+---
+
+### Pillar 2: Scoped Minimal-Disruption Repair Engine
+* **The Minimal Disruption Principle:** Instead of re-solving the entire 1,000-slot university timetable (which would scramble everyone's schedule), the agent **freezes 99%+ of unaffected entries**.
+* **Multi-Stage CP-SAT Repair Search:**
+  - **Stage 1 (Strict Same-Slot Swap):** Re-allocates displaced classes to open rooms in the exact same time slot matching room type requirements.
+  - **Stage 2 (Time Slot Relaxation):** Searches adjacent period slots on the same day if no same-slot room is available.
+  - **Stage 3 (Safe Fallback Venue):** Assigns designated overflow venues if high congestion occurs.
+
+---
+
+### Pillar 3: Multi-Agent Consensus Protocol (Role-Based Voting)
+Before any schedule change is published, **3 specialized sub-agent roles** evaluate the candidate repair:
+
+1. **🧪 VALIDATOR Sub-Agent (Holds VETO Power):**
+   - Executes ground-truth hard conflict detection across all 10 Hard Constraints (`HC-01` to `HC-10`).
+   - **Veto Rule:** If `hard_violations > 0` (room clash, faculty double-booking, section conflict), the Validator immediately **VETOES** the repair.
+2. **🏗️ ARCHITECT Sub-Agent:**
+   - Queries PostgreSQL room metadata to verify seat capacity, floor accessibility, and specialized equipment (e.g., GPU support for AI labs).
+3. **⚙️ SOLVER Sub-Agent:**
+   - Evaluates soft constraint optimization (`SC-01` to `SC-10`), minimizing faculty gap hours and late-period (`P7-P8`) student fatigue.
+
+---
+
+### Pillar 4: Risk Scoring, Diff View & Human Approval Gate
+Production systems must protect against accidental or bad AI decisions:
+* **Weighted Change Cost Model & Risk Scoring:**
+  - Time slot change = `1.0` point
+  - Room change = `1.0` point
+  - Faculty reassignment = `5.0` points
+  - Multi-entry cascade = `1.5x` multiplier
+  - Classifies change risk as **LOW**, **MEDIUM**, or **HIGH**.
+* **Schedule Diff View:** Highlights exact slot movements (original vs. repaired room and time slot), showing stability percentage and displaced sections.
+* **Human Approval Gate:** High-risk repairs require explicit admin sign-off (**Approve Local Repair**) before writing to the database.
+* **1-Click Rollback:** Allows admins to instantly revert to the pre-disruption snapshot if a repair is rejected.
+
+---
+
+### Pillar 5: Production Reliability & Self-Healing Safeguards
+* **Startup Data Integrity Audit (`GET /api/v1/agent/health/data-integrity`):** Audits raw text strings (`raw_faculty_text`, `raw_room_text`) against database Foreign Key records to prevent silent parsing bugs.
+* **Transactional Conflict Validation:** When an admin performs a manual drag-and-drop cell edit, `ConflictChecker` runs within the same database transaction. If the move creates a clash, the transaction rolls back automatically.
+* **Dead Session Recovery:** Detects sessions stuck in `REPAIRING` state past timeout thresholds and auto-recovers them.
+* **DoS Cooldown Protection:** Enforces rate-limiting on simulation endpoints to prevent solver memory exhaustion.
+
+---
+
+### Pillar 6: Live Telemetry & Mission Control UI (`/agent`)
+* **Real-Time WebSocket Streaming (`ws://.../api/v1/agent/stream/{session_id}`):** Streams decision logs, solver progress, and incident alerts live to the browser.
+* **State Machine Telemetry:** Tracks the orchestration lifecycle: `OBSERVE` → `PLAN` → `VALIDATE` → `HUMAN_APPROVAL` → `APPLY`.
+* **Persistent Audit Trail:** Logs all events, actions, decisions, and validations in dedicated database tables (`agent_sessions`, `agent_events`, `agent_actions`, `agent_decisions`, `agent_runs`).
+
+---
+
+## 📊 Complete Production Feature Summary Table
+
+| Feature Domain | Production Functionality | Codebase File Location |
+|---|---|---|
+| **Disruption Ingestion** | Perception loop for room failures, lab outages, faculty leave & capacity surges | [mission_simulator.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/services/mission_simulator.py) |
+| **Local Repair Engine** | Minimal disruption CP-SAT solver freezing unaffected cells | [csat_solver.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/solver/csat_solver.py) |
+| **Multi-Agent Consensus** | 3-role voting (Validator [Veto], Architect, Solver) | [multi_agent_consensus.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/services/multi_agent_consensus.py) |
+| **Tool Registry** | Decoupled state inspection, conflict checking & repair tools | [tool_registry.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/services/tool_registry.py) |
+| **Human Approval & Rollback** | Risk classification, Diff View, 1-Click Rollback to pre-incident snapshot | [agent_service.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/services/agent_service.py) |
+| **Data Integrity Audit** | Raw text → FK resolution health endpoint | [timetable_service.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/services/timetable_service.py) |
+| **WebSocket Streaming** | Real-time event broadcasting to agent console | [agent_websocket_manager.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/services/agent_websocket_manager.py) |
+| **Mission Control Dashboard** | Next.js frontend with Decision Trace, Simulator & Diff View | [page.tsx](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/frontend/src/app/agent/page.tsx) |
+
+---
+
+## 🎯 Why This Architecture Wins Competitions & Enterprise Audits
+
+1. **It is Authoritative, Not Probabilistic:** Hard constraint validation is determined by deterministic algorithms (`ConflictChecker`), not LLM text generation.
+2. **It Preserves Schedule Stability:** University operations do not collapse when one room fails because 99% of the timetable remains frozen.
+3. **It Keeps Humans in Control:** High-impact changes require explicit approval, backed by a 1-click safety rollback mechanism.
+4. **It is Fully Auditable:** Every event, decision, tool invocation, and validation result is recorded in PostgreSQL.
+
+In AI Agent architecture, **Memory** is what separates a simple "one-off solver script" from a **true autonomous production agent**. 
+
+For a production agent in an enterprise environment (like university academic scheduling), the agent requires **4 distinct types of memory systems**, plus **memory retention and performance safeguards**.
+
+Here is the complete breakdown of what memory an agent should have in production:
+
+---
+
+# 🧠 Production Agent Memory Architecture
+
+```
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│                              AGENT MEMORY ARCHITECTURE                            │
+├───────────────────────────────────────────────────────────────────────────────────┤
+│ 1. WORKING MEMORY (Short-Term State)                                              │
+│    • Active Session Context, Goal, Current Step (OBSERVE ➔ PLAN ➔ VALIDATE ➔ APPLY)   │
+│    • Live Disruption Parameters & Candidate Repair Entries                        │
+├───────────────────────────────────────────────────────────────────────────────────┤
+│ 2. EPISODIC MEMORY (Event & Action History)                                       │
+│    • Sequential Disruption Event Log (agent_events with sequence_number)          │
+│    • Tool Execution Audit Trail (agent_actions: tool_name, args, time_ms, status) │
+│    • Decision Log (agent_decisions: rationale, consensus votes, risk score)       │
+├───────────────────────────────────────────────────────────────────────────────────┤
+│ 3. INSTITUTIONAL & SEMANTIC MEMORY (Long-Term Knowledge)                          │
+│    • Campus Entity Graph: Rooms (type, capacity, GPU), Faculty (max hours, rank)  │
+│    • Constraint Rules Engine: Hard Constraints (HC-01..HC-10) & Soft (SC-01..SC-10)│
+│    • Versioned Snapshot Store: Historical pre-disruption timetable checkpoints    │
+├───────────────────────────────────────────────────────────────────────────────────┤
+│ 4. PROCEDURAL MEMORY (Repair Policies & Heuristics)                               │
+│    • Minimal Disruption Policy (Freeze 99% of entries, repair affected 1%)        │
+│    • Multi-stage venue search (Same-slot swap ➔ Slot relaxation ➔ Overflow venue) │
+│    • Consensus Voting Rules (Validator VETO power, Architect capacity check)      │
+└───────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 1. ⚡ Working Memory (Short-Term / Active Session State)
+
+**What it is:** The agent's immediate scratchpad for the current mission or disruption cycle.
+
+* **Session Context Object (`session.context`):**
+  - **Goal & Priority:** e.g., `"Goal: Repair Room 604 failure | Priority: [hard_constraints, minimal_disruption]"`
+  - **Active Step:** Current state in the state machine (`OBSERVE`, `PLAN`, `VALIDATE`, `HUMAN_APPROVAL`, `APPLY`).
+  - **Active Disruption Parameters:** Affected room/faculty target, severity, and impacted sections list.
+  - **Transient Candidate Entries:** The candidate timetable entries generated by the local solver before human approval.
+* **Database Representation:** Stored in `agent_sessions.context` (JSONB) in PostgreSQL for real-time querying.
+
+---
+
+## 2. 📜 Episodic Memory (Event, Action & Decision Audit Trail)
+
+**What it is:** A complete, chronological history of everything that happened during a session. This makes the agent **100% auditable and reproducible**.
+
+* **Event Log (`agent_events`):**
+  - Records every perception event with a monotonically increasing `sequence_number` (e.g., `MISSION_STARTED`, `ROOM_UNAVAILABLE`, `LOCAL_REPAIR_PROPOSED`, `CONSENSUS_APPROVED`).
+* **Tool Execution Audit (`agent_actions`):**
+  - Records every tool function called by the agent (e.g., `get_rooms`, `detect_conflicts`, `run_local_repair`, `rollback_schedule`).
+  - Stores: `tool_name`, `arguments`, `execution_time_ms`, `status` (`success`/`failed`), and `result_payload`.
+* **Decision History (`agent_decisions`):**
+  - Stores the rationale behind actions, multi-agent consensus votes, risk levels, and human approval/rejection outcomes.
+
+---
+
+## 3. 📚 Institutional & Semantic Memory (Long-Term Knowledge)
+
+**What it is:** The permanent knowledge base about the campus environment, domain rules, and historical schedule checkpoints.
+
+* **Campus Infrastructure Graph:**
+  - **Room Capabilities:** Capacities, floor levels, building blocks (`U-Block`, `Block-VI`), and hardware profiles (standard classroom vs computer lab vs high-performance GPU lab `AFTF-12`).
+  - **Faculty Profiles:** Designation max weekly teaching hours (Prof: 12h, Assoc Prof: 14h, Asst Prof: 16h) and subject specializations.
+  - **Section Cohorts:** Department sections, student counts, and special cohort restrictions (e.g., 4th Year `SL/EL` blocks, `MINORS/HONORS` global slots).
+* **Constraint Knowledge Base:**
+  - Hard Constraints (`HC-01` to `HC-10`: room conflicts, faculty double-booking, capacity limits, break times).
+  - Soft Constraints (`SC-01` to `SC-10`: faculty gap hours, daily workload balance, late period `P7-P8` penalties).
+* **Versioned Snapshot Store:**
+  - Stores complete JSON snapshots of past valid schedules (`V1` through `V5` baselines and `pre_incident` checkpoints) enabling **1-Click Safety Rollback**.
+
+---
+
+## 4. ⚙️ Procedural Memory (Policies & Solver Heuristics)
+
+**What it is:** The "how-to" knowledge — embedded algorithms and decision rules that tell the agent how to solve problems efficiently.
+
+* **Minimal Disruption Policy:** Rule stating: *"When repairing an outage, freeze 99% of unaffected timetable entries and re-allocate only impacted cells."*
+* **Multi-Stage Repair Search Heuristic:**
+  - *Stage 1 (Strict Same-Slot Swap):* Look for open rooms of identical type in the exact same day/period.
+  - *Stage 2 (Time Slot Relaxation):* Look for open rooms in adjacent periods on the same day.
+  - *Stage 3 (Overflow Venue Fallback):* Move to designated fallback venues if high room saturation exists.
+* **Multi-Agent Consensus Voting Rules:**
+  - `VALIDATOR` holds **VETO** power (0 hard violations required).
+  - `ARCHITECT` enforces capacity and equipment matching.
+  - `SOLVER` enforces soft constraint thresholds (e.g., SC-07 late period fatigue $\le 40\%$).
+
+---
+
+## 🛡️ Memory Governance, Pruning & Performance Safeguards
+
+In production, unmanaged memory causes database bloat, slow queries, and memory leaks. The agent implements 4 critical safeguards:
+
+1. **Snapshot Retention Policy:**
+   - Keeps only the last **10 candidate snapshots** per session in `session.context`. Older snapshots are automatically pruned to prevent database bloat.
+2. **Session Timeouts & Dead Session Recovery (`session_timeout_at`):**
+   - If an agent session crashes or gets stuck in `REPAIRING` state longer than 300 seconds, a background recovery process automatically marks the session `FAILED` and restores the last clean snapshot.
+3. **DoS Cooldown & Rate Limiting:**
+   - Enforces a 1-second cooldown per session on simulation triggers to prevent memory exhaustion from rapid API calls.
+4. **Data Integrity Audit (`/health/data-integrity`):**
+   - Startup health check auditing raw text entries vs database Foreign Key relations, ensuring memory references resolve accurately.
+
+---
+
+## 📊 Summary of Agent Memory Implementation in Our Codebase
+
+| Memory Type | What it Stores | Implementation File |
+|---|---|---|
+| **Working Memory** | Active session goal, step, active disruption parameters, candidate repair | [backend/app/models/agent.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/models/agent.py#L7) (`AgentSession`) |
+| **Episodic Memory** | Monotonic event log, tool audit trail, consensus decision votes | [backend/app/models/agent.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/models/agent.py#L33-L75) (`AgentEvent`, `AgentAction`, `AgentDecision`) |
+| **Semantic Memory** | Room capacities, faculty max hours, versioned schedule snapshots | [backend/app/services/tool_registry.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/services/tool_registry.py#L367) (`save_schedule_snapshot`) |
+| **Procedural Memory** | Minimal disruption CP-SAT solver heuristics & multi-stage fallback | [backend/solver/csat_solver.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/solver/csat_solver.py#L558) (`solve_local_repair`) |
+| **Memory Safeguards** | Snapshot retention pruning, data integrity health audit, session timeouts | [backend/app/services/timetable_service.py](file:///c:/Users/ggvfj/Downloads/All%20Projects/Time_Table/backend/app/services/timetable_service.py#L231) (`check_data_integrity`) |
