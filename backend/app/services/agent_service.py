@@ -403,23 +403,69 @@ class AgentService:
             "status": normalized_decision,
         }
 
+        # Approving used to emit an event reading "Local repair approved and
+        # schedule updated" while leaving every timetable row untouched. The
+        # candidate lived in session.context and died there. Actually write it.
+        apply_result = None
+        apply_error = None
+        if normalized_decision == "approved":
+            candidate = (session.context or {}).get("candidate_entries") or []
+            if not candidate:
+                apply_error = "No candidate repair to apply; nothing was written."
+            else:
+                from app.services.tool_registry import ToolRegistry
+                try:
+                    apply_result = await ToolRegistry.apply_timetable_change(
+                        db,
+                        session_id=session.id,
+                        entries=candidate,
+                        reason="human_approved_repair",
+                    )
+                except ValueError as exc:
+                    # The validator refused the write. Report the refusal
+                    # rather than claiming the schedule was updated.
+                    apply_error = str(exc)
+                    session.approval_status = "rejected"
+                    session.approval_required = True
+
+            payload["apply_result"] = apply_result
+            payload["apply_error"] = apply_error
+
+            # Re-load the session: apply_timetable_change commits, which
+            # expires the instance we are still mutating below.
+            session = (await db.execute(
+                select(AgentSession).where(AgentSession.id == session_id)
+            )).scalar_one()
+
+        # State the outcome of the write, never assume it. An approval that the
+        # validator refused must not be reported as a successful update.
+        applied_ok = bool(apply_result) and apply_error is None
+        if normalized_decision != "approved":
+            summary = "Local repair rejected; snapshot retained."
+            severity = "medium"
+        elif applied_ok:
+            summary = (
+                f"Local repair approved and applied: {apply_result['updated']} entry/entries "
+                f"updated, {apply_result['hard_violations_after']} hard violation(s) remaining."
+            )
+            severity = "low"
+        else:
+            summary = f"Local repair approved but NOT applied. {apply_error}"
+            severity = "high"
+
         event = AgentEvent(
             session_id=session.id,
             event_type="REPAIR_DECISION",
             source="human",
-            severity="low" if normalized_decision == "approved" else "medium",
+            severity=severity,
             affected_sections=list((session.context or {}).get("affected_sections") or []),
-            summary=(
-                "Local repair approved and schedule updated."
-                if normalized_decision == "approved"
-                else "Local repair rejected; snapshot retained."
-            ),
+            summary=summary,
             payload=payload,
         )
         db.add(event)
 
-        session.current_step = "validate" if normalized_decision == "approved" else "observe"
-        session.status = "active" if normalized_decision == "approved" else "blocked"
+        session.current_step = "validate" if applied_ok else "observe"
+        session.status = "active" if applied_ok else "blocked"
         session.summary = event.summary
         session.context = {
             **(session.context or {}),
