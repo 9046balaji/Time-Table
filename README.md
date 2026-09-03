@@ -1,686 +1,995 @@
-# 🎓 VFSTR ACSE Timetable Scheduler — Complete Feature & Sub-Feature Report
+# VFSTR ACSE Automated Timetable Scheduler
 
-> **System:** VFSTR Automated Timetable Scheduler  
-> **Institution:** Vignan's Foundation for Science, Technology & Research, Vadlamudi, Guntur  
-> **Stack:** Next.js 14 (App Router) + FastAPI + PostgreSQL + Celery + OR-Tools  
-> **Version:** Production Build (Docker Compose)  
-> **Date:** July 2026  
+> Production-grade, constraint-solving timetable automation platform for Vignan's Foundation for Science, Technology and Research (Vadlamudi, Guntur) - ACSE Department.
 
----
-
-## System Topology Overview
-
-```mermaid
-graph TD
-    subgraph "Browser (Next.js 14)"
-        P1["/ Dashboard"] --> P2["/import Excel"]
-        P1 --> P3["/configure Data"]
-        P1 --> P4["/schedule Workbench"]
-        P1 --> P5["/export Downloads"]
-    end
-
-    subgraph "FastAPI Backend (port 8000)"
-        API1["POST /api/v1/import/excel"]
-        API2["GET/POST /api/v1/configure/*"]
-        API3["GET /api/v1/timetable/version/:id"]
-        API4["POST /api/v1/solve"]
-        API5["WS /api/v1/solve/:id/stream"]
-        API6["POST /api/v1/export/excel/cohort/:key"]
-        API7["POST /api/v1/export/pdf/*"]
-        API8["POST /api/v1/solve/generate-from-wizard"]
-        API9["GET /api/v1/validate/:version_id"]
-        API10["GET /api/v1/timetable/faculty/:id"]
-    end
-
-    subgraph "Solver Engine (Celery Worker)"
-        SOL1["CP-SAT Solver (OR-Tools)"]
-        SOL2["Genetic Algorithm"]
-        SOL3["Hybrid CP-SAT + GA"]
-        SOL4["Constraint Checker (20 rules)"]
-        SOL5["Fitness Evaluator"]
-        SOL6["Incremental Validator"]
-        SOL7["Infeasibility Diagnostics"]
-    end
-
-    subgraph "Parser / Exporter"
-        PAR1["Excel Parser (openpyxl) — V3/V5"]
-        EXP1["Excel Exporter — per-cohort multi-section"]
-        EXP2["PDF Exporter — per-section / per-faculty"]
-    end
-
-    subgraph "PostgreSQL (port 5432)"
-        DB1["timetable_entries — 1000 slots"]
-        DB2["faculty — 80+ records"]
-        DB3["sections — 44 sections"]
-        DB4["rooms — 35 venues"]
-        DB5["solver_runs — version history"]
-        DB6["clash_reports — violation log"]
-        DB7["section_subjects — assignments"]
-        DB8["multi_faculty_assignments"]
-    end
-
-    P4 --> API4
-    P4 --> API5
-    P2 --> API1
-    P3 --> API2
-    P4 --> API3
-    P5 --> API6
-    P5 --> API7
-    API4 --> SOL1
-    API1 --> PAR1
-    API6 --> EXP1
-    API7 --> EXP2
-    SOL1 --> DB1
-    SOL1 --> DB5
-```
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green?logo=fastapi)](https://fastapi.tiangolo.com)
+[![Next.js](https://img.shields.io/badge/Next.js-14.2-black?logo=next.js)](https://nextjs.org)
+[![OR-Tools](https://img.shields.io/badge/OR--Tools-CP--SAT-orange)](https://developers.google.com/optimization)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql)](https://www.postgresql.org)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://docs.docker.com/compose)
 
 ---
 
-## 1. 🏠 Dashboard Page (`/`)
+## Table of Contents
 
-> Entry point for the entire application. Shows live system status, version history, and quick actions.
+1. [Problem Statement](#problem-statement)
+2. [What We Built](#what-we-built)
+3. [Architecture Overview](#architecture-overview)
+4. [Tech Stack](#tech-stack)
+5. [Project Structure](#project-structure)
+6. [Database Schema](#database-schema)
+7. [Feature Index](#feature-index)
+8. [Hard and Soft Constraints](#hard-and-soft-constraints)
+9. [API Reference](#api-reference)
+10. [Constraint Engine Details](#constraint-engine-details)
+11. [Domain Knowledge](#domain-knowledge)
+12. [Docker and Infrastructure](#docker-and-infrastructure)
+13. [Environment Setup](#environment-setup)
+14. [Running the Project](#running-the-project)
+15. [Test Suite](#test-suite)
+16. [Timetable Versions](#timetable-versions)
 
-### 1.1 KPI Stats Row
-- **Sections badge** — 44 active ACSE sections
-- **Faculty badge** — ~80 faculty members tracked
-- **Rooms badge** — 35 venue slots (classrooms + labs)
-- **Slots badge** — 1,000 weekly timetable slots (V5 baseline)
+---
 
-### 1.2 Clash Summary Card
-- Live red badge showing **51 hard violations** in V5 (room clash baseline)
-- Color: `--color-danger` red when violations > 0, `--color-success` green when 0
-- Pulls from `GET /api/v1/validate/5` on mount
+## Problem Statement
 
-### 1.3 Version Timeline
-- Horizontal card row: **V1 (10-Jul)**, **V2 (11-Jul)**, **V3 (13-Jul)**, **V4 (14-Jul)**, **V5 (15-Jul)**
-- Each card shows: date, slot count, hard violation count
-- V5 highlighted as current baseline
-- Source: `GET /api/v1/timetable/versions`
+The ACSE Department timetable was manually assembled in Excel. Version 5 (current baseline):
 
-### 1.4 Quick Action Buttons
-| Button | Action |
+| Metric | Value |
 |---|---|
-| Import Excel | → `/import` |
-| View Timetable | → `/schedule` |
-| Export | → `/export` |
-| Run AI Solver | → `/schedule` (triggers solver) |
+| Total slots | **1,000** |
+| Sections | **44-60** (multi-year/multi-branch) |
+| Faculty | **~80-160** |
+| Rooms | **35-71** |
+| Hard violations (V5) | **51 room clashes** |
+| Revision cycles | **5 versions in 5 days** |
 
-### 1.5 AI Solver CTA Banner
-- Gradient blue-to-indigo card showing system readiness
-- "Run CP-SAT Solver" primary button
-- Sub-text: "591,360 binary variables · 44 ACSE sections"
+The goal: replace this error-prone manual process with an automated, constraint-satisfying, production-ready web platform.
 
 ---
 
-## 2. 📥 Import Page (`/import`)
+## What We Built
 
-> Parse existing VFSTR Excel timetable files (V3/V5 format) into the PostgreSQL database.
+A full-stack SaaS platform that:
 
-### 2.1 Drag-and-Drop File Upload Zone
-- Accepts `.xlsx` files only
-- Visual drag-highlight with dashed amber border
-- File size display once dropped
-- Internally calls `POST /api/v1/import/excel` (multipart form)
+- **Parses** real VFSTR Excel timetable workbooks (multi-sheet, complex structure)
+- **Detects** all 51 room clashes and 0 faculty clashes in the V5 baseline
+- **Generates** clash-free schedules using Google OR-Tools CP-SAT
+- **Repairs** conflicts autonomously via a multi-agent system with consensus voting
+- **Exports** timetables to Excel (section tabs, faculty legend, merged lab cells) and PDF
+- **Runs** fully containerized via Docker Compose with zero-trust Nginx gateway
 
-### 2.2 Excel Parser Engine (`backend/parser/excel_parser.py`)
+---
 
-#### 2.2.1 Sheet Detection
-- Reads all sheets from uploaded workbook
-- Identifies section sheets vs. `MINORHONORS` master sheet
-- Handles V3 and V5 format differences automatically
+## Architecture Overview
 
-#### 2.2.2 Cell Anatomy Parser
-- **Row 7–12** → Day rows (MON–SAT)
-- **Period columns** → Periods 1–8 with BREAK and LUNCH detection
-- **Each cell** → extracts: Subject Code, Room Code (red font), Faculty name (below grid)
-
-#### 2.2.3 Subject Type Detection
-```python
-# Auto-detected from subject code suffix
-"DS"      → Lecture (L)
-"DS(T)"   → Tutorial (T)
-"DS(P)"   → Practical/Lab (P)
-"DS(T&P)" → Tutorial + Practical combined
-"LIBRARY" → Library slot (blocked)
-"BREAK"   → 09:55-10:10 (blocked)
-"LUNCH"   → 12:40-13:40 (blocked)
+```
+Browser (Next.js 14)
+      |  HTTP / WebSocket
+      v
+  Nginx (Port 80)  <-- Rate limiting, gzip, zero-trust single entrypoint
+      |
+  FastAPI (Port 8000)
+  API v1 Router -> 16 route modules
+  Services -> Business Logic
+  SQLAlchemy Async ORM -> PostgreSQL
+  Celery -> async solver tasks via Redis
+      |
+  Solver Layer
+  - CP-SAT (OR-Tools 9.11)
+  - Genetic Algorithm
+  - Conflict Checker (single-pass O(n))
+  - Incremental Validator (O(1) swap check)
 ```
 
-#### 2.2.4 Faculty Legend Parser
-- Reads 2-column faculty table below the grid (rows 14–22)
-- Maps `Subject(L)` → Lead Professor
-- Maps `Subject(P)/(T&P)` → Lab team (comma-separated names)
-
-#### 2.2.5 MINORHONORS Sheet Parser
-- Reads the special synchronized cross-section sheet
-- Extracts department headers (AIML, CS, CSBS, DS, IoT)
-- Records room numbers and instructor assignments
-
-### 2.3 Parse Progress Display
-- Step-by-step progress: "Reading sheets... Found 44 sections... Extracted 1,000 slots..."
-- Count summary: sections parsed, faculty mappings, room codes detected
-
-### 2.4 Clash Report Preview
-- Live clash table before confirmation: `Day | Period | Room | Section A | Section B | Conflict`
-- Badge count: "51 Room Clashes Detected in V5"
-- Source: `conflict_checker.py` → `detect_room_clashes()`
-
-### 2.5 Version Save
-- Creates a new `solver_runs`/version record in DB
-- Labels it with effective date and slot count
-- Confirm / Cancel buttons
+**Layered rule**: UI -> API -> Services -> Solver -> DB.
+Solver logic never bleeds into routes. DB queries never appear in React components.
 
 ---
 
-## 3. ⚙️ Configure Page (`/configure`)
+## Tech Stack
 
-> Master data management for all entities required before solver can run.
+### Backend
 
-### 3.1 Faculty Management Tab
-
-#### 3.1.1 Faculty Table
-- Columns: Emp ID | Name | Designation | AICTE Max Hrs/Week | Max Daily Cap | Type | Availability | Actions
-- Sorted by designation rank (Professor → Associate → Assistant)
-
-#### 3.1.2 Add / Edit Faculty Modal
-- Fields: Full Name, Employee ID, Designation (Professor / Associate / Assistant), Max Hours/Week (12/14/16), Max Daily Classes, External toggle
-- Calls `POST /api/v1/configure/faculty` or `PATCH /api/v1/configure/faculty/:id`
-
-#### 3.1.3 Delete Faculty
-- Confirmation prompt
-- Calls `DELETE /api/v1/configure/faculty/:id`
-
-#### 3.1.4 Faculty Availability Grid Modal
-- 6×8 day-period clickable matrix (MON–SAT × Periods 1–8)
-- Click a cell → toggle unavailable (grey) / available (green)
-- Stored as `availability: {day: [period_ids_blocked]}`
-
-#### 3.1.5 Bulk CSV Import
-- Upload faculty CSV → batch insert via `POST /api/v1/configure/faculty/bulk-csv`
-
-#### 3.1.6 Search & Filter
-- Real-time search by name, employee ID, or designation
-
-### 3.2 Venues (Rooms) Tab
-
-#### 3.2.1 Rooms Table
-- Columns: Room Code | Building Block | Floor | Room Type | Capacity | GPU Capable | Status | Actions
-
-#### 3.2.2 Room Types Supported
-| Type | Code Examples | Notes |
+| Package | Version | Role |
 |---|---|---|
-| Classroom | 601, 602, 619 | Standard lecture halls |
-| Computer Lab | 604, 605, 611 | Standard PC labs |
-| GPU Lab | AFTF-12, AFTF-13, AFTF-14 | High-performance DL/CV labs |
-| Project Room | AFF-09, AFF-10 | Small group project rooms |
+| FastAPI | 0.115.0 | Async REST API + WebSocket |
+| SQLAlchemy asyncio | 2.0.35 | ORM with async session |
+| asyncpg | 0.29.0 | PostgreSQL async driver |
+| OR-Tools | 9.11 | CP-SAT constraint solver |
+| Celery + Redis | 5.4.0 | Async task queue for solver |
+| Pydantic | 2.9.0 | Schema validation |
+| openpyxl | 3.1.5 | Excel parsing and export |
+| pandas | 2.2.3 | Data processing |
+| reportlab | 4.0+ | PDF generation |
+| psutil | 6.0+ | System telemetry |
+| aiosqlite | 0.19+ | SQLite fallback for tests |
+| ruff | 0.6.9 | Linting |
+| mypy | 1.11.0 | Type checking |
+| pytest-asyncio | 0.24.0 | Async test runner |
 
-#### 3.2.3 Add / Edit Room Modal
-- Fields: Room Code, Building Block, Floor, Room Type, Capacity, GPU Capable toggle, Available toggle
-- Calls `POST /api/v1/configure/rooms` or `PATCH /api/v1/configure/rooms/:id`
+### Frontend
 
-#### 3.2.4 GPU Capability Flag
-- When `gpu_capable = true` → solver preferentially assigns DL/CV/GenAI labs to these rooms
-- Rooms: `AFTF-12`, `AFTF-13`, `AFTF-14` (HC-06 enforcement)
+| Package | Version | Role |
+|---|---|---|
+| Next.js | 14.2 | App Router SSR/CSR |
+| React | 18.3 | Component framework |
+| TanStack Query | 5.59 | Server state management |
+| Zustand | 4.5.5 | Client state store |
+| Axios | 1.7.7 | HTTP client |
+| Recharts | 2.12.7 | Analytics charts |
+| Lucide React | 0.446 | Icon system |
+| Tailwind CSS | 3.4 | Utility styling |
+| Vitest | 2.1.9 | Unit testing |
+| Playwright | 1.61.1 | E2E testing |
+| TypeScript | 5.6.2 | Type safety |
 
-### 3.3 Curriculum (Subjects) Tab
+### Infrastructure
 
-#### 3.3.1 Subjects Table
-- Columns: Course Code | Course Title | L-T-P Split | Slot Type | Continuous Lock | GPU Required | Actions
-
-#### 3.3.2 L-T-P Credit System
-- **L (Lecture):** Single periods, any classroom
-- **T (Tutorial):** Single periods, requires tutorial room
-- **P (Practical):** 2-period consecutive blocks, requires lab room
-- Each subject stores: `lecture_hours`, `tutorial_hours`, `lab_hours`
-
-#### 3.3.3 Consecutive Period Lock
-- `requires_consecutive: 2` → solver guarantees 2 back-to-back periods
-- `requires_consecutive: 3` → for 3-hour lab blocks
-- Enforced by HC-08 in the solver
-
-#### 3.3.4 Add / Edit Subject Modal
-- Fields: Course Code, Full Name, L hours, T hours, P hours, GPU Required, Slot Type dropdown
-
-### 3.4 Section Team Mapping Tab
-
-> The **assignment engine** — defines which faculty teaches which subject to which section.
-
-#### 3.4.1 Target Section Selector
-- Dropdown of all 44 sections fetched from `GET /api/v1/sections`
-
-#### 3.4.2 Curriculum Subject Selector
-- Dropdown of all subjects with code + full name
-
-#### 3.4.3 Weekly Credit Slot Allocation
-- Number inputs: Lecture Slots (L), Tutorial Slots (T), Lab Block Slots (P)
-- Total guard: errors if > 40 slots/week
-
-#### 3.4.4 Theory Lead Professor (L)
-- Single-select dropdown from faculty pool
-- This faculty appears in lecture cells and the legend `Subject(L): Dr. Name`
-
-#### 3.4.5 Practical Lab Lead Professor (P)
-- Single-select dropdown
-- This faculty leads the lab session
-
-#### 3.4.6 Lab Assistant Instructors / TAs
-- Checkbox multi-select from full faculty pool
-- Up to 3 co-faculty
-- Stored in `multi_faculty_assignments` table
-- Appear in right column of legend as `Subject(T&P): Lead, TA1, TA2, TA3`
-
-#### 3.4.7 Save Assignment
-- Calls `POST /api/v1/section-subjects/batch-assign`
-- Creates `section_subjects` record + `multi_faculty_assignments` records
+| Service | Image | Role |
+|---|---|---|
+| PostgreSQL | postgres:16-alpine | Primary DB |
+| Redis | redis:7-alpine | Celery broker + cache |
+| Nginx | nginx:alpine | Reverse proxy, rate limiting |
+| Celery Worker | backend image | Async solver tasks |
 
 ---
 
-## 4. 📅 Schedule Workbench (`/schedule`)
+## Project Structure
 
-> The main timetable viewer, editor, and AI solver control center. Has 4 view modes.
-
-### 4.1 Version Selector Bar
-- Dropdown shows all saved versions with date + hard violation count
-- Switching version reloads all slot data for selected version
-- Source: `GET /api/v1/timetable/versions`
-
-### 4.2 Mode 1: Single Section Grid View
-
-#### 4.2.1 Section Selector
-- Dropdown grouped by cohort: II AIML (A-L), III AIML (A-G), IV AIML (A-E), CS/DS, CSBS/IOT
-- Selecting a section loads slots from `GET /api/v1/timetable/version/:id?section_name=...`
-
-#### 4.2.2 TimetableGrid Component (`TimetableGrid.tsx`)
-
-##### Cell Anatomy (3-Line Display)
 ```
-┌──────────────────────┐
-│ DS           Line 1  │  ← Subject Code (Bold Black)
-│ 619          Line 2  │  ← Room Code (Bold Red)
-│ Dr. Reddy    Line 3  │  ← Faculty Short Name (Italic Grey)
-└──────────────────────┘
-```
-
-##### Special Column Handling
-- **BREAK column** (09:55–10:10): Merged across all 6 rows with "B R E A K" vertical text (grey bg)
-- **LUNCH column** (12:40–1:40): Merged across all 6 rows with "L U N C H" vertical text (grey bg)
-
-##### Lab Cell Spanning
-- Lab slots with `spanPeriods: 2` use `colSpan={2}` to span two period columns
-- Visually indicates 2-period consecutive lab block
-
-##### Clash Highlighting
-- Clash cells: `bg-red-100` + `border-l-4 border-l-red-600`
-- Hover tooltip: "CLASH: Room 604 double-booked"
-
-##### Drag-and-Drop Slot Swap
-- Dragging a cell → fires `onSlotSwap(entryId, targetDay, targetPeriod)`
-- Calls `PATCH /api/v1/timetable/entries/:id` with new time slot
-
-#### 4.2.3 Faculty Legend Below Grid (2-Column Table)
-- Left column: `Subject Name(L): Dr. Lead Faculty` — all lecture assignments
-- Right column: `Subject Name(P): Lead, TA1, TA2...` — all lab team assignments
-- Auto-generated from slot data, de-duplicated by subject code
-
-#### 4.2.4 Section Stats Sidebar Card
-- Section name, total slots, Lab (P) count, Hard Clashes (green if 0 / red if > 0), Version
-
-#### 4.2.5 AI Solver Panel (Sidebar)
-- Algorithm selector: CP-SAT / Genetic Algorithm / Hybrid CP-SAT+GA
-- **"Run AI Solver Engine"** button → `POST /api/v1/solve`
-- Progress bar: animates as Celery task progresses via WebSocket
-- Status: Generation N • Runtime Ns • Hard Clashes: N badge
-- On complete: "100% Clash-Free Timetable Generated!" emerald badge
-
-### 4.3 Mode 2: Vertical Stack View
-
-#### 4.3.1 Cohort Selector
-- Dropdown: II AIML (A-L), III AIML (A-G), IV AIML (A-E), CS/DS, CSBS/IOT
-
-#### 4.3.2 Stacked Section Rendering
-- All sections in the selected cohort rendered vertically
-- Each section block follows this layout:
-  1. **Academic year header** (Academic year 2026-27 I Semester)
-  2. **Purple section banner** (e.g. `II AIML-A`)
-  3. **Period header row** (Periods 1–8 + BREAK + LUNCH)
-  4. **Time range row** (8:15-9:05 etc.)
-  5. **MON–SAT grid** with cell data
-  6. **2-column faculty legend** (L left, P right)
-  7. **3 blank spacer rows** before next section
-
-#### 4.3.3 Excel Export Match
-- Stack view visually mirrors the Excel export format exactly
-- Purple banner = `#C084FC` fill
-- Red font = `text-red-600` for room codes
-- Vertical BREAK/LUNCH = matching Excel merged cell style
-
-### 4.4 Mode 3: Faculty Schedules View
-
-#### 4.4.1 Faculty Selector
-- Dropdown of all faculty members from `GET /api/v1/faculty`
-- Shows designation in option label
-
-#### 4.4.2 Faculty Timetable Grid
-- Loads from `GET /api/v1/timetable/faculty/:id?version_id=N`
-- Same `TimetableGrid` component with `sectionName = "Dr. Name Schedule"`
-- Each cell shows: subject code, room code, section name (instead of faculty name)
-
-#### 4.4.3 Faculty Header Card
-- Name + Designation + Department
-- Weekly Teaching Load vs Max (e.g. "14 Hours / Max 16 Hours")
-
-#### 4.4.4 Download Faculty PDF
-- Button: `GET /api/v1/export/pdf/faculty/:id?version_id=N`
-- Downloads: `VFSTR_V5_Schedule_Dr_Reddy.pdf`
-- Individual A4 portrait PDF with the faculty's week grid
-
-### 4.5 Mode 4: Create Timetable Wizard
-
-#### Step 1 — Academic Scope & Faculty Workload Cap
-- **Branch selector**: AIML / CS / DS / CSBS / IOT
-- **Year level**: II Year / III Year / IV Year
-- **Section checkboxes**: tick any combination of available sections
-- **Max daily teaching hours slider**: 3–6 (enforced per faculty per day)
-
-#### Step 2 — Multi-Faculty Lab Team Assignments
-- Pre-loaded with year-level curriculum template (editable)
-- Per-subject row: Subject Code | Type | Lead Faculty | Co-Faculty checkboxes | Weekly Hours | Consecutive Slots
-- "Add Subject" button → creates new blank assignment row
-- Validates each subject has at least one faculty assigned
-
-#### Step 3 — Venue Matrix & Period Locks
-- **Preferred Block**: Block-VI (601-619) / Block-II (215-218) / NB-Block / AFTF
-- **Period lock pins**: fixed specific subject-to-period assignments
-- Room type auto-matching: GPU labs preferred for DL/CV/GenAI
-
-#### Step 4 — 0-Clash AI Solve
-- Review summary: sections, subjects, faculty count
-- **"Generate Clash-Free Timetable"** → `POST /api/v1/solve/generate-from-wizard`
-- Loading spinner with status messages
-- On success → auto-switches to Single Section Grid mode with fresh data
-- On INFEASIBLE → shows detailed error with suggested fixes
-
----
-
-## 5. 📤 Export Page (`/export`)
-
-> Download timetable data in multiple formats for printing, distribution, and archiving.
-
-### 5.1 Excel Exports
-
-#### 5.1.1 Single Version Full Excel (`POST /api/v1/export/excel?version_id=N`)
-- All 44 sections in one workbook
-- Each section on a separate sheet tab
-- Sheet name = section name (e.g. `II AIML-A`)
-
-#### 5.1.2 Cohort Excel Export (`POST /api/v1/export/excel/cohort/:key?version_id=N`)
-- One workbook per cohort group: II_AIML, III_AIML, IV_AIML, CS_DS, CSBS_IOT
-- Sections stacked **vertically** on a single sheet (not separate tabs)
-- **Section layout per block:**
-  - Row 2: "Academic year 2026-27 (I Semester)" centered header
-  - Row 4: Purple banner `#C084FC` with section name
-  - Row 5: Period numbers 1–8 + BREAK/LUNCH merged
-  - Row 6: Time strings (8:15-9:05, etc.)
-  - Rows 7–12: MON–SAT grid cells (Black subject, Red room font)
-  - Rows 14+: 2-column faculty legend (L left / P right)
-  - 3 blank spacer rows before next section
-
-#### 5.1.3 Minors/Honors Master Sheet Export (`POST /api/v1/export/excel/minors-honors?version_id=N`)
-- Exports the department-wide synchronized Minors/Honors slots
-- Yellow headers (`#FACC15`) per department (AIML, CS, CSBS, DS, IoT)
-- Shows room codes and instructor assignments
-
-### 5.2 PDF Exports
-
-#### 5.2.1 All Sections PDF Bundle (`POST /api/v1/export/pdf/sections?version_id=N`)
-- One PDF with all 44 sections
-- A4 portrait, 1 section per page
-- Purple banner, grid with colour-coded slot types
-
-#### 5.2.2 Faculty Weekly Schedules PDF Bundle (`POST /api/v1/export/pdf/faculty?version_id=N`)
-- One PDF with all faculty individual schedules
-- Each faculty: header card (name, load) + 6×8 grid
-
-#### 5.2.3 Single Faculty PDF (`GET /api/v1/export/pdf/faculty/:id?version_id=N`)
-- Individual download for one faculty member
-- Available from Faculty Schedules mode on `/schedule`
-
-### 5.3 Room Utilization Report (planned)
-- Which rooms are free vs. occupied each period
-- Coverage: all 35 rooms × 6 days × 8 periods
-
----
-
-## 6. 🧠 AI Solver Engine
-
-> The constraint-solving core that generates clash-free timetables.
-
-### 6.1 Solver Algorithms
-
-#### 6.1.1 CP-SAT Solver (`backend/solver/csat_solver.py`)
-- Uses **Google OR-Tools CP-SAT** engine
-- 591,360 binary decision variables
-- Variables: `x[section][subject][day][period][room]`
-- Hard constraint propagation with backtracking
-- Default timeout: 120 seconds
-- Best for: guaranteed optimal or near-optimal solutions
-
-#### 6.1.2 Genetic Algorithm (`backend/solver/genetic_algorithm.py`)
-- Population-based evolutionary search
-- Config: `population=200, generations=1000, mutation_rate=0.05, elite_count=10`
-- Selection: tournament selection with elitism
-- Crossover: uniform crossover on day-period genes
-- Mutation: random slot reassignment
-
-#### 6.1.3 Hybrid CP-SAT + GA
-- Phase 1: GA finds a feasible initial solution
-- Phase 2: CP-SAT polishes it to minimize soft violations
-- Best for: large instances where pure CP-SAT times out
-
-### 6.2 Hard Constraints (NEVER violated in final output)
-
-| ID | Constraint | Description |
-|---|---|---|
-| HC-01 | Room Conflict | No two sections in same room at same time |
-| HC-02 | Faculty Double-Book | No faculty teaching two sections simultaneously |
-| HC-03 | Student Conflict | Sections sharing students cannot overlap |
-| HC-04 | Subject Frequency | Each subject taught exactly N times/week per section |
-| HC-05 | Room Capacity | Room capacity ≥ section strength |
-| HC-06 | Room Type Match | Labs only in lab rooms, GPU subjects only in GPU labs |
-| HC-07 | Break/Lunch Block | BREAK (09:55-10:10) and LUNCH (12:40-13:40) always blocked |
-| HC-08 | Lab Consecutiveness | Lab subjects always in 2+ consecutive periods |
-| HC-09 | Faculty Availability | Faculty not assigned during marked unavailable slots |
-| HC-10 | No 4-Consecutive Teaching | Faculty cannot teach 4+ consecutive periods |
-
-### 6.3 Soft Constraints (Minimized, not guaranteed)
-
-| ID | Weight | Description |
-|---|---|---|
-| SC-01 | 50 | Prefer mornings for theory lectures |
-| SC-02 | 30 | Spread lab slots across the week |
-| SC-03 | 10 | Balance faculty daily load |
-| SC-04 | 5  | Avoid first/last periods for senior faculty |
-| SC-05 | 20 | Keep same-subject slots on different days |
-| SC-06 | 5  | Prefer section rooms within same block |
-| SC-07 | 100| Respect faculty preference days |
-| SC-08 | 15 | Minimize room changes per section per day |
-| SC-09 | 10 | Prefer tutorial immediately after lecture |
-| SC-10 | 5  | Balance load across rooms |
-
-### 6.4 Fitness Evaluator (`backend/solver/fitness.py`)
-- `fitness = -(HC_violations × 10000) - sum(SC_weight × SC_violations)`
-- Perfect score: 0 (no violations of any kind)
-- V5 baseline fitness: -510,000 (51 room clashes × 10,000)
-
-### 6.5 Incremental Validator (`backend/solver/incremental_validator.py`)
-- **O(1) move validation** — validates a single slot swap without re-running full solver
-- Used by drag-and-drop in the grid
-- Checks: HC-01, HC-02, HC-03 only (fast path)
-- Returns: `{valid: bool, violations: [{type, message}]}`
-
-### 6.6 Infeasibility Diagnostics (`backend/solver/diagnostics.py`)
-- When solver returns INFEASIBLE, runs diagnostic pass
-- Identifies: over-subscribed faculty, impossible room requirements, period quota impossibilities
-- Returns human-readable suggestion list
-
-### 6.7 Conflict Checker (`backend/solver/conflict_checker.py`)
-- Standalone, no-DB-dependency module
-- `detect_room_clashes(entries)` → returns list of room double-bookings
-- `detect_faculty_clashes(entries)` → returns list of faculty double-bookings
-- Baseline validation: V5 must return exactly 51 room clashes
-
-### 6.8 Real-Time Progress WebSocket
-- Frontend connects to `WS /api/v1/solve/:run_id/stream`
-- Celery worker emits messages as solver progresses:
-```typescript
-// Message protocol
-{ type: 'status',   message: string }
-{ type: 'progress', generation: N, fitness: F, hard_violations: N, soft_violations: N }
-{ type: 'feasible', message: string, hard_violations: 0 }
-{ type: 'complete', hard_violations: 0, timetable_version_id: N }
-{ type: 'error',    message: string }
+vfstr-timetable-scheduler/
+|-- AGENTS.md                          <- AI agent governance rules
+|-- README.md                          <- This file
+|-- Makefile                           <- dev shortcuts (up/down/seed/test/validate)
+|-- docker-compose.yml                 <- Dev compose (6 services)
+|-- docker-compose.prod.yml            <- Production compose
+|-- nginx.conf                         <- Rate-limiting, gzip, WebSocket proxy
+|-- .env / .env.example                <- Environment variables
+|
+|-- backend/
+|   |-- main.py                        <- FastAPI app entry + lifespan startup
+|   |-- requirements.txt
+|   |-- Dockerfile
+|   |-- seed.py                        <- CLI seed utility
+|   |-- remediate_data_integrity.py    <- Data integrity repair script
+|   |
+|   |-- app/
+|   |   |-- api/v1/                    <- Route handlers ONLY (thin controllers)
+|   |   |   |-- router.py              <- Central router (16 modules)
+|   |   |   |-- agent.py               <- Autonomous agent API (508 LOC)
+|   |   |   |-- configure.py           <- CRUD: faculty, rooms, subjects, sections
+|   |   |   |-- export.py              <- Excel / PDF / JSON exports
+|   |   |   |-- import_excel.py        <- Secure file upload + parsing
+|   |   |   |-- solve.py               <- CP-SAT solver trigger
+|   |   |   |-- wizard_solve.py        <- Wizard-driven generation (260 LOC)
+|   |   |   |-- wizard_defaults.py     <- Wizard seed data
+|   |   |   |-- timetable.py           <- Read, validate-move, faculty/room views
+|   |   |   |-- testing.py             <- Testing lab benchmarks (222 LOC)
+|   |   |   |-- telemetry.py           <- System health metrics
+|   |   |   |-- validate.py            <- Full constraint validation
+|   |   |   |-- sections.py
+|   |   |   |-- faculty.py
+|   |   |   `-- rooms.py
+|   |   |
+|   |   |-- models/                    <- SQLAlchemy ORM (19 model files)
+|   |   |-- schemas/                   <- Pydantic request/response schemas
+|   |   |-- services/                  <- Business logic (19 service files)
+|   |   |   |-- agent_service.py       <- Agent session + NLP command parsing (693 LOC)
+|   |   |   |-- multi_agent_scheduler.py  <- 4-agent audit system (684 LOC)
+|   |   |   |-- multi_agent_consensus.py  <- 3-role consensus voting (171 LOC)
+|   |   |   |-- tool_registry.py       <- 19 read tools + write tools (524 LOC)
+|   |   |   |-- write_tools.py         <- Mutations gated by ConflictChecker (481 LOC)
+|   |   |   |-- mission_simulator.py   <- Campus disruption simulation (183 LOC)
+|   |   |   |-- export_service.py      <- Excel + PDF generation (674 LOC)
+|   |   |   |-- timetable_service.py   <- Core timetable queries + validation
+|   |   |   |-- seed_service.py        <- Auto-seed from V5 Excel on first boot
+|   |   |   |-- configure_service.py   <- CRUD business logic
+|   |   |   |-- solve_service.py       <- Solver orchestration
+|   |   |   |-- wizard_defaults_service.py <- Dynamic seed data for wizard
+|   |   |   |-- preflight_analyzer.py  <- Pre-solve capacity/workload diagnostic
+|   |   |   `-- validate_service.py    <- Constraint validation service
+|   |   |
+|   |   `-- core/
+|   |       |-- config.py              <- Settings (pydantic-settings, .env)
+|   |       |-- database.py            <- Async engine + session factory
+|   |       |-- auth.py                <- JWT authentication
+|   |       |-- exceptions.py          <- RFC 7807 problem+json handler
+|   |       |-- migrations.py          <- Alembic migration helper
+|   |       |-- seed_cache.py          <- In-memory seed cache (fast wizard)
+|   |       `-- seed_full_database.py  <- Complete DB seeding from V5 Excel
+|   |
+|   |-- solver/
+|   |   |-- constraints.py             <- HC-01 to HC-13 + SC-01 to SC-10
+|   |   |-- csat_solver.py             <- OR-Tools CP-SAT solver (687 LOC)
+|   |   |-- conflict_checker.py        <- High-performance clash detector (389 LOC)
+|   |   |-- genetic_algorithm.py       <- GA solver (alternative algorithm)
+|   |   |-- fitness.py                 <- GA fitness function
+|   |   |-- incremental_validator.py   <- O(1) drag-drop swap validator
+|   |   `-- diagnostics.py             <- Solver diagnostics + reporting
+|   |
+|   |-- parser/
+|   |   |-- excel_parser.py            <- Multi-sheet VFSTR Excel parser (20K bytes)
+|   |   |-- excel_exporter.py          <- Excel workbook exporter (24K bytes)
+|   |   `-- normalizer.py              <- Faculty/subject name normalization
+|   |
+|   |-- tasks/
+|   |   |-- celery_app.py              <- Celery app factory
+|   |   `-- solver_tasks.py            <- Async solver Celery tasks
+|   |
+|   `-- tests/                         <- 35 test files
+|       |-- conftest.py
+|       |-- test_constraints.py
+|       |-- test_solver.py
+|       |-- test_parser.py
+|       |-- test_e2e_timetable_suite.py (34K bytes)
+|       |-- test_multi_agent_scheduler.py
+|       |-- test_agent_phase1_models.py
+|       |-- test_agent_phase2_consensus_approval.py
+|       |-- test_agent_phase3_tools_quality.py
+|       |-- test_agent_phase4_fallback_diagnostics.py
+|       |-- test_agent_phase5_mission_multicycle.py
+|       |-- test_agent_phase6_celery_schema_audit.py
+|       |-- test_agent_phase7_nlp_notifications.py
+|       |-- test_agent_phase8_security_priority.py
+|       |-- test_agent_phase9_production_safeguards.py
+|       |-- test_agent_phase10_resilience_locks.py
+|       |-- test_agent_phase11_production_perfection.py
+|       `-- ... (18 more test files)
+|
+|-- frontend/
+|   |-- src/
+|   |   |-- app/                       <- Next.js App Router pages
+|   |   |   |-- page.tsx               <- Dashboard (23K bytes)
+|   |   |   |-- schedule/page.tsx      <- Timetable Viewer (69K bytes, 1418 lines)
+|   |   |   |-- import/page.tsx        <- Excel Import
+|   |   |   |-- configure/page.tsx     <- Master Data CRUD (22K bytes)
+|   |   |   |-- export/page.tsx        <- Export Hub (33K bytes)
+|   |   |   |-- agent/page.tsx         <- Agent Console (16K bytes)
+|   |   |   |-- ai-scheduler/page.tsx  <- AI Scheduler / Wizard
+|   |   |   |-- testing/page.tsx       <- Testing Lab (41K bytes, 859 lines)
+|   |   |   |-- settings/page.tsx      <- Settings + Telemetry (29K bytes)
+|   |   |   |-- layout.tsx             <- Root layout + dark mode init
+|   |   |   |-- error.tsx
+|   |   |   |-- loading.tsx
+|   |   |   `-- not-found.tsx
+|   |   |
+|   |   |-- components/
+|   |   |   |-- timetable/
+|   |   |   |   |-- TimetableGrid.tsx  <- 6x8 grid (drag-drop, clash highlight, spans)
+|   |   |   |   `-- SlotEditorModal.tsx <- Inline slot editing modal
+|   |   |   |-- agent/
+|   |   |   |   |-- MultiAgentSynthesisWorkspace.tsx (33K bytes, 755 lines)
+|   |   |   |   |-- DecisionTrace.tsx  <- Agent decision log viewer
+|   |   |   |   |-- DiffView.tsx       <- Before/after timetable diff
+|   |   |   |   `-- MissionSimulator.tsx <- Campus disruption simulator UI
+|   |   |   |-- wizard/
+|   |   |   |   `-- ScheduleSetupWizard.tsx (35K bytes, 701 lines)
+|   |   |   |-- analytics/
+|   |   |   |   |-- BuildingBlockChart.tsx
+|   |   |   |   |-- ClashAnalyticsChart.tsx
+|   |   |   |   |-- FacultyWorkloadChart.tsx
+|   |   |   |   `-- RoomUtilizationHeatmap.tsx
+|   |   |   |-- solver/SolverProgress.tsx
+|   |   |   |-- layout/
+|   |   |   |   |-- AppShell.tsx
+|   |   |   |   |-- Sidebar.tsx
+|   |   |   |   `-- TopBar.tsx
+|   |   |   |-- faculty/FacultyMasterProfile.tsx
+|   |   |   |-- rooms/VenueMasterProfile.tsx
+|   |   |   `-- subjects/CurriculumMasterProfile.tsx
+|   |   |
+|   |   |-- hooks/
+|   |   |   |-- useSolver.ts           <- WebSocket solver progress state
+|   |   |   |-- useTimetable.ts        <- Timetable fetch + cache
+|   |   |   |-- useTimetableQuery.ts   <- TanStack Query wrapper
+|   |   |   |-- useAgentStream.ts      <- Agent WebSocket stream
+|   |   |   |-- useTheme.ts            <- Dark/light mode toggle
+|   |   |   `-- useToast.ts            <- Toast notification system
+|   |   |
+|   |   |-- lib/
+|   |   |   |-- api.ts                 <- Axios instance + all API call functions
+|   |   |   |-- types.ts               <- TypeScript types (mirrors Pydantic schemas)
+|   |   |   `-- store.ts               <- Zustand global store
+|   |   |
+|   |   `-- design-system/             <- CSS tokens (single source of truth)
+|   |
+|   `-- e2e/                           <- Playwright E2E tests
+|
+|-- data/
+|   |-- seed/                          <- JSON seed data from V5
+|   `-- test_outputs/                  <- Solver test output Excel files
+|
+|-- docs/
+|   |-- system_architecture.md
+|   |-- v2_architecture_blueprint.md
+|   `-- vfstr_academic_regulations_spec.md
+|
+`-- time_table/                        <- Source Excel workbooks (V3, V5, 4th Year)
 ```
 
 ---
 
-## 7. 🗄️ Database Schema (PostgreSQL)
+## Database Schema
 
-### 7.1 Core Entity Tables
-
-| Table | Rows (approx.) | Purpose |
-|---|---|---|
-| `departments` | 1 | ACSE department |
-| `branches` | 5 | AIML, CS, DS, CSBS, IOT |
-| `academic_years` | 3 | II, III, IV year |
-| `sections` | 44 | All ACSE sections (A-L per year/branch) |
-| `faculty` | 80+ | Full faculty roster with AICTE caps |
-| `rooms` | 35 | Classrooms + labs + GPU labs |
-| `subjects` | 50+ | L/T/P subjects with credit hours |
-| `time_slots` | 48 | 6 days × 8 periods |
-
-### 7.2 Assignment Tables
+**15 core tables** + agent/audit tables:
 
 | Table | Purpose |
 |---|---|
-| `section_subjects` | Maps section → subject → lead faculty + L/T/P hours |
-| `multi_faculty_assignments` | Co-faculty/TA team for lab sessions |
+| `departments` | Department master |
+| `branches` | Branch master (AIML, CS, DS, CSBS, IOT) |
+| `academic_years` | Academic year periods |
+| `faculty` | Faculty master (name, designation, max hours) |
+| `rooms` | Room master (code, type, capacity) |
+| `subjects` | Subject master (code, L/T/P credits, room type) |
+| `sections` | Section master (name, year, branch, strength) |
+| `section_subjects` | Section-Subject-Faculty assignments |
+| `multi_faculty_assignments` | Co-faculty for shared classes |
+| `time_slots` | Day x Period grid (48 slots/week) |
+| `timetable_versions` | V1-V5 + solver-generated versions |
+| `timetable_entries` | Individual slot allocations |
+| `timetable_entry_faculty` | Per-entry faculty junction table |
+| `solver_runs` | Solver execution records |
+| `constraint_definitions` | HC/SC constraint registry |
+| `agent_sessions` | Autonomous agent session state |
+| `agent_events` | Agent event log |
+| `agent_actions` | Tool execution audit trail |
+| `agent_decisions` | Agent decision trace |
+| `approval_requests` | Human-in-the-loop approval gate |
+| `audit_log` | Change audit log |
+| `clash_reports` | Persisted clash report snapshots |
 
-### 7.3 Timetable Tables
+Key model features:
+- `timetable_entries.span_periods` (1-4): consecutive lab block support
+- `timetable_entries.is_global_sync`: cohort-wide slot flag
+- Dual FK + raw_subject_text/raw_room_text fields for import compatibility
+- DB indexes: `idx_tt_entries_room_slot`, `idx_tt_entries_section_slot`
+- Unique constraint: one entry per (version, section, time_slot)
 
-| Table | Rows (V5) | Purpose |
-|---|---|---|
-| `timetable_entries` | 1,000 | Every slot: section × day × period × room × faculty |
-| `solver_runs` | N | Version history: start/end/violations/config |
-| `clash_reports` | 51 (V5) | Detailed violation records |
+---
 
-### 7.4 Audit & Config Tables
+## Feature Index
 
-| Table | Purpose |
+### 1. Dashboard (`/`)
+
+Live stats pulled from `/api/v1/telemetry/metrics`:
+
+| Sub-feature | Detail |
 |---|---|
-| `audit_log` | Every create/update/delete action with timestamp |
-| `constraint_definitions` | 20 constraint rules with weights |
+| Live KPI cards | Sections, Faculty, Rooms, Total slots |
+| Clash summary card | Hard violations with colour-coded badge |
+| Version timeline | V1 to V5 cards showing date and violation count |
+| Dataset selector | Switch between 4th_year, multi_branch_e2e, v5_baseline |
+| BuildingBlockChart | Room utilization by building/floor |
+| ClashAnalyticsChart | Clash distribution by type |
+| Quick action links | Import, View Schedule, Export, Configure |
+| Feature overview grid | CP-SAT Engine, Multi-Agent AI, Conflict Detection, Export |
 
 ---
 
-## 8. 🧪 Test Suite (29 tests passing)
+### 2. Excel Import Pipeline (`/import`)
 
-| Test File | Tests | What it covers |
-|---|---|---|
-| `test_api_routes.py` | 6 | Health check, faculty/rooms/sections list, validate, solve trigger |
-| `test_api_import.py` | 1 | Excel import API end-to-end |
-| `test_configure_api.py` | 1 | Faculty/room/subject CRUD via API |
-| `test_export.py` | 3 | Excel export, PDF export, SmartClass sync |
-| `test_ga_solver.py` | 2 | Fitness evaluator, GA optimizer |
-| `test_incremental_validator.py` | 3 | Store construction, valid swap, room conflict detection |
-| `test_parser.py` | 1 | V5 baseline: parses V5 Excel → finds exactly 51 room clashes |
-| `test_services.py` | 7 | All service layer methods |
-| `test_solver.py` | 1 | CP-SAT basic solve |
-| `test_wizard_solve.py` | 3 | Wizard endpoint, multi-faculty lab, III-year minor honors |
+**API:** `POST /api/v1/import/excel`
 
----
-
-## 9. 🎨 UI Component Inventory
-
-### 9.1 Page Components
-
-| Route | File | Size |
-|---|---|---|
-| `/` | `app/page.tsx` | 10 kB |
-| `/import` | `app/import/page.tsx` | ~8 kB |
-| `/configure` | `app/configure/page.tsx` | 57 kB |
-| `/schedule` | `app/schedule/page.tsx` | 28 kB |
-| `/export` | `app/export/page.tsx` | ~18 kB |
-
-### 9.2 Shared Components
-
-| Component | Path | Purpose |
-|---|---|---|
-| `TimetableGrid` | `components/timetable/TimetableGrid.tsx` | Full week grid with cells, legend, drag-drop |
-| `ClashInspector` | `components/clash/ClashInspector.tsx` | Filterable clash report table |
-| `SolverProgress` | `components/solver/SolverProgress.tsx` | Progress bar + metrics display |
-| `ScheduleSetupWizard` | `components/wizard/ScheduleSetupWizard.tsx` | 4-step timetable creation wizard |
-| `AppShell` | `components/layout/AppShell.tsx` | Root layout wrapper |
-| `Sidebar` | `components/layout/Sidebar.tsx` | Navigation sidebar |
-| `TopBar` | `components/layout/TopBar.tsx` | Top navigation bar |
-
-### 9.3 Hooks
-
-| Hook | File | Purpose |
-|---|---|---|
-| `useSolver` | `hooks/useSolver.ts` | WebSocket solver state + startSolver() |
-| `useTimetable` | `hooks/useTimetable.ts` | Timetable data fetching + caching |
+| Sub-feature | Detail |
+|---|---|
+| File validation | Extension (.xlsx/.xls), 15 MB limit, byte-level OOXML magic number check |
+| Filename sanitisation | Path-traversal-safe rename, truncated to 100 chars |
+| Multi-sheet parsing | ExcelTimetableParser reads all section tabs in V3/V5 workbooks |
+| Faculty normalisation | normalize_faculty_name() collapses spelling variants into canonical keys |
+| Clash detection on import | ConflictChecker.detect() runs immediately after parse |
+| Section extraction | Parses class teacher name + phone from cell headers |
+| Import summary | Returns sections_found, total_slots, room_clashes, faculty_clashes |
+| Baseline validation | V5 must produce exactly 51 room clashes, 0 faculty clashes |
 
 ---
 
-## 10. 🐳 Infrastructure (Docker Compose)
+### 3. Timetable Viewer and Schedule Page (`/schedule`)
 
-| Container | Image | Port | Purpose |
+1,418 lines of timetable viewer:
+
+| Sub-feature | Detail |
+|---|---|
+| Section tree sidebar | Year -> Branch -> Section navigation (collapsible) |
+| TimetableGrid | 6-column (MON-SAT) x 8-row (P1-P8) grid with break/lunch rows |
+| Slot cell anatomy | Subject code, room code, faculty name, colour by type |
+| Slot type colour coding | Lecture=blue, Lab=purple, Tutorial=green, Library=amber, Clash=red |
+| Clash highlighting | Red left-border + red background on clash cells |
+| Lab cell spanning | span_periods support for 2-3 consecutive lab blocks |
+| Drag-and-drop swap | POST /api/v1/timetable/validate-move (O(1) validation < 5ms) |
+| Inline slot editor | SlotEditorModal - edit subject, room, faculty for any slot |
+| Section compare mode | Side-by-side two-section comparison |
+| Faculty view | Filter timetable by faculty member |
+| Room view | Filter timetable by room code |
+| Version selector | Switch between V3, V5, solver-generated versions |
+| Cohort view | View all sections in a cohort simultaneously |
+| Solver trigger | Inline Run Solver button with live progress |
+| Export from view | Per-section PDF download |
+| Fullscreen mode | Toggle fullscreen grid |
+| Clash panel | Side panel showing clash details for selected section |
+
+---
+
+### 4. CP-SAT Solver Engine
+
+**File:** `backend/solver/csat_solver.py` (687 LOC)
+
+| Sub-feature | Detail |
+|---|---|
+| Algorithm | Google OR-Tools CP-SAT (constraint programming) |
+| Hard constraint enforcement | HC-01 through HC-13 |
+| Soft constraint optimization | Minimises penalty-weighted objective function |
+| Room assignment | Matches room type to subject type |
+| GPU lab preference | DL, CV, MLOP subjects prefer AFTF-12/13/14 |
+| Virtual library room | VIRTUAL_LIBRARY room for LIBRARY/IIC/SL_EL slots |
+| Self-directed slot types | LIBRARY, IIC, SL/EL, OE, CRT, MINORS/HONORS without room clash |
+| Faculty uniqueness | Double-booking enforced via canonical identity key |
+| Break guard | Periods 2->3 and 5->6 transitions blocked |
+| Lab consecutiveness | Lab sessions must use consecutive periods (HC-08) |
+| Minors/Honors slots | Restricted to WED/THU P7-P8 (HC-09) |
+| 4th Year SL/EL | Restricted to P1-P2 MON-SAT (HC-10) |
+| Live progress callback | LiveSolutionCallback streams solutions via WebSocket |
+| Configurable timeout | Default 120s, max 8 workers |
+| SolverConfig schema | Pydantic model for algorithm, scope, timeout, penalty weights |
+| Preflight barrier | PreflightAnalyzer checks capacity/workload before launching |
+
+---
+
+### 5. Multi-Agent Scheduling System
+
+**File:** `backend/app/services/multi_agent_scheduler.py` (684 LOC)
+
+Four-agent specialised audit pipeline before any solver output is committed:
+
+| Agent | Role | Veto Power |
+|---|---|---|
+| SectionCurriculumAgent | Section weekly quotas, library hours, cohort block protection | Hard veto if deviation >= 5 |
+| FacultyWorkloadAgent | Faculty hour limits by rank (Prof=12h, Assoc=14h, Asst=16h) | Soft penalty |
+| RoomCompatibilityAgent | Room type match, capacity, GPU lab preferences | Hard veto on type mismatch |
+| HardConstraintAgent | HC-01/02/03/07 detection | VETO power (any violation = reject) |
+
+Consensus voting sub-features:
+
+| Sub-feature | Detail |
+|---|---|
+| APPROVE / REJECT votes | Each agent casts a typed vote with rationale |
+| Veto power | HardConstraintAgent REJECT blocks any publish |
+| AgentCritique objects | rule_id, severity, message, suggested_action, affected_slot |
+| AgentVote objects | agent_name, vote, has_veto_power, violations_detected, rationale, metrics |
+| Consensus threshold | Requires 3/4 APPROVE + zero hard vetoes |
+| Multi-cycle repair | Agent iterates repair -> re-audit up to N cycles |
+
+---
+
+### 6. Autonomous Agent Console (`/agent`)
+
+| Sub-feature | Detail |
+|---|---|
+| Session creation | POST /api/v1/agent/sessions with goal + priority list |
+| WebSocket stream | Real-time event stream via useAgentStream hook |
+| Decision trace | Chronological log of agent decisions with risk levels |
+| Diff view | Before/after timetable comparison (original vs repaired) |
+| Mission simulator UI | Trigger campus disruption scenarios |
+| Multi-agent workspace | Full 755-line agent orchestration UI |
+| Repair suggestions | POST /api/v1/agent/sessions/{id}/repair-suggestion |
+| Consensus voting display | Per-agent vote cards with rationale |
+| NLP command parser | Parse natural language into disruption triggers |
+| Room failure simulation | POST /api/v1/agent/simulate-room-failure (1s cooldown) |
+| Data integrity health | GET /api/v1/agent/health/data-integrity |
+| Write tools | Every mutation gated by ConflictChecker, rolled back if violations increase |
+| Approval gate | High-risk repairs require human approval before commit |
+
+MissionSimulator scenarios:
+
+- `room_failure` - Emergency room maintenance
+- `gpu_lab_failure` - GPU lab outage (AFTF-12/13/14)
+- `faculty_absence` - Faculty unavailable
+- `capacity_surge` - Student count overflow
+- `new_class_addition` - New section added mid-semester
+- `priority_reroute` - Priority re-scheduling request
+- `constraint_adjustment` / `constraint_modification` - Policy change
+
+---
+
+### 7. Wizard Solver (`/ai-scheduler`)
+
+**API:** `POST /api/v1/solve/generate-from-wizard`
+
+| Sub-feature | Detail |
+|---|---|
+| Section selector | Filter by Year (II/III/IV) and Branch (AIML/CS/DS/CSBS/IOT) |
+| Course assignment builder | Per-subject: faculty, type, weekly hours, continuous slots |
+| Wizard defaults API | GET /api/v1/configure/wizard-defaults |
+| Seed cache | In-memory cache maps (section_norm, subject_norm) -> faculty pool |
+| CP-SAT invocation | Directly calls CPSATSolver with wizard-derived section subjects |
+| Real-time preview | Solver result rendered in TimetableGrid inline |
+| Hard constraints display | HC-01 through HC-10 shown as badges |
+| Algorithm toggle | CP-SAT or Genetic Algorithm selector |
+| Config panel | Timeout, penalty weights (collapsible) |
+| Success to export link | After generation, link to Export page |
+
+---
+
+### 8. Configure Page - Master Data CRUD (`/configure`)
+
+Four-tab master data panel backed by ConfigureService:
+
+**Faculty Tab:**
+
+| Sub-feature | Detail |
+|---|---|
+| List / Search | Name search with designation filter |
+| Create | Employee ID, designation, max weekly hours, contact |
+| Update | Edit workload caps, rank, availability |
+| Delete | Remove from master records |
+| CSV bulk import | POST /api/v1/configure/faculty/csv-import |
+| Faculty workload chart | Current vs max hours bar chart |
+| FacultyMasterProfile | Detailed profile panel component |
+
+**Rooms Tab:**
+
+| Sub-feature | Detail |
+|---|---|
+| List / Search | Code, type (classroom/computer_lab/gpu_lab/project_lab), capacity |
+| Create / Update / Delete | Full CRUD |
+| Room type filter | Lab vs classroom segregation |
+| VenueMasterProfile | Detailed venue panel |
+| Building block chart | Room utilization heatmap |
+
+**Subjects Tab:**
+
+| Sub-feature | Detail |
+|---|---|
+| List | Code, title, L/T/P credits, room type requirement |
+| Create / Update / Delete | Full CRUD |
+| CurriculumMasterProfile | Detailed curriculum panel |
+
+**Sections Tab:**
+
+| Sub-feature | Detail |
+|---|---|
+| List with search | Paginated (10 per page) |
+| Year/Branch metadata | Year level, branch, student strength |
+| Create / Update / Delete | Full CRUD |
+| Section subject mapping | POST /api/v1/configure/section-subjects |
+
+---
+
+### 9. Export Engine (`/export`)
+
+**Service:** `backend/app/services/export_service.py` (674 LOC)
+**Exporter:** `backend/parser/excel_exporter.py` (24K bytes)
+
+| Export Type | API Endpoint | Detail |
+|---|---|---|
+| Full Excel | POST /api/v1/export/excel | All sections, section tabs, faculty legend, merged lab cells |
+| Cohort Excel | POST /api/v1/export/excel/cohort/{key} | II_AIML, III_AIML, IV_AIML, CS_DS, CSBS_IOT, SPECIAL_PG |
+| Minors/Honors Excel | POST /api/v1/export/excel/minors-honors | Global Minors/Honors master sheet |
+| Section PDFs | POST /api/v1/export/pdf/sections | All sections, A4 printable via ReportLab |
+| Faculty PDFs | POST /api/v1/export/pdf/faculty | All faculty weekly schedules |
+| Single Faculty PDF | GET /api/v1/export/pdf/faculty/{id} | One faculty member schedule |
+| JSON export | Frontend button | Raw timetable JSON |
+| Room Utilization | Frontend button | Room occupancy statistics |
+| SmartClass sync | POST /api/v1/timetable/sync-master | Push to SmartClass digital display |
+
+All exports support `?version_id=5` (or 3) to export any historical version.
+
+---
+
+### 10. Testing Lab (`/testing`)
+
+859-line testing page:
+
+| Sub-feature | Detail |
+|---|---|
+| Dataset selector | 4th_year, multi_branch_e2e, v5_baseline, v5_ground_truth, e2e_test |
+| Parse and display | GET /api/v1/testing/tested-data?dataset=X |
+| TimetableGrid render | Renders selected section in grid component |
+| Class teacher display | Name + phone parsed from Excel cell header |
+| Clash detection report | Room, faculty, student clashes with details |
+| Filter by year/section | Search and filter parsed sections |
+| Export from lab | Download parsed data as Excel |
+| Constraint badge list | HC badges displayed per section |
+| Co-faculty display | Multi-faculty slot cards with phone numbers |
+
+---
+
+### 11. Settings and Telemetry (`/settings`)
+
+Four-tab settings panel:
+
+**Profile Tab:** Name, Employee ID, Designation, Department, Email, Phone, Office Location
+
+**Academic Policy Tab:** Academic Year, Max Professor hours (12), Max Assoc. Prof hours (14), Max Asst. Prof hours (16), Max daily classes, max section slots per week
+
+**Solver Engine Tab:** Algorithm (CP-SAT default), Timeout (120s), Search workers (8), Enable preflight barrier toggle, Hard penalty weight (10,000)
+
+**Telemetry Tab** (live from GET /api/v1/telemetry/metrics):
+
+| Metric | Detail |
+|---|---|
+| System | CPU %, Memory MB, Thread count, OS platform |
+| Services | PostgreSQL, Redis, Celery workers, BTree-GiST extension |
+| Database | 15 tables, Total sections, Faculty, Rooms, Entries |
+| Containers | Status + uptime for all 5 Docker services |
+| Python version | Runtime info |
+
+---
+
+### 12. AI Scheduler Page (`/ai-scheduler`)
+
+Entry point to the **ScheduleSetupWizard** - a multi-step guided flow to generate a new clash-free timetable from scratch without needing to import an existing Excel file.
+
+---
+
+## Hard and Soft Constraints
+
+### Hard Constraints (HC) - Never Violated in Valid Output
+
+| ID | Constraint | Relaxable |
+|---|---|---|
+| HC-01 | Room conflict - no two sections in same room at same time | NEVER |
+| HC-02 | Faculty double-booking - faculty in two places at once | NEVER |
+| HC-03 | Student conflict - same section scheduled twice in one slot | NEVER |
+| HC-04 | Subject weekly frequency - L/T/P hours per week match curriculum | NEVER |
+| HC-05 | Room capacity - section student count <= room capacity | Last resort |
+| HC-06 | Room type match - lab subjects must be in lab rooms | Last resort |
+| HC-07 | Break/Lunch blocking - P2->P3 and P5->P6 transitions protected | NEVER |
+| HC-08 | Lab consecutiveness - lab sessions span 2-3 consecutive periods | Relax for 3h if no room |
+| HC-09 | Minors/Honors slot protection - WED/THU P7-P8 only | Cohort block only |
+| HC-10 | 4th Year SL/EL block - P1-P2 MON-SAT, SAT P6-P8 afternoon | Block only |
+| HC-11 | Section weekly quota - 2nd Yr: 36, 3rd Yr: 45, 4th Yr: 39 slots | |
+| HC-12 | Library allocation - 1 Library hour for 2nd Year, 0 for 3rd/4th | |
+| HC-13 | Valid lab start periods - {1, 3, 4, 6, 7} only | |
+
+### Soft Constraints (SC) - Optimized, Not Enforced
+
+| ID | Constraint | Default Penalty |
+|---|---|---|
+| SC-01 | Faculty preference (morning vs afternoon) | 50 |
+| SC-02 | Minimize faculty travel between buildings | 30 |
+| SC-03 | Spread subjects evenly across week | 10 |
+| SC-04 | Avoid isolated single-period classes | 5 |
+| SC-05 | Prefer GPU labs for DL/CV/MLOP subjects | 20 |
+| SC-06 | Balance workload across days | 5 |
+| SC-07 | Keep co-taught sections in compatible rooms | 100 |
+| SC-08 | Minimize room switches for same section | 15 |
+| SC-09 | Consecutive class preference for faculty | 10 |
+| SC-10 | Compact scheduling (minimize gaps) | 5 |
+
+---
+
+## API Reference
+
+All endpoints prefixed with `/api/v1`.
+
+### Timetable
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /timetable | Get timetable for version + optional section filter |
+| GET | /timetable/versions | List all timetable versions |
+| GET | /timetable/version/{version_id} | Get specific version |
+| GET | /timetable/faculty/{faculty_id} | Faculty weekly timetable |
+| GET | /timetable/room/{room_code} | Room weekly schedule |
+| POST | /timetable/validate-move | O(1) drag-drop swap validation |
+| POST | /timetable/sync-master | SmartClass digital display sync |
+
+### Import
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | /import/excel | Upload Excel, parse, clash-detect |
+
+### Solver
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | /solve | Trigger CP-SAT solver (Celery async) |
+| POST | /solve/generate-from-wizard | Wizard-driven generation |
+| GET | /solve/{run_id}/stream | WebSocket solver progress |
+
+### Export
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | /export/excel | Full department Excel workbook |
+| POST | /export/excel/cohort/{key} | Cohort-specific Excel |
+| POST | /export/excel/minors-honors | Minors/Honors master sheet |
+| GET | /export/excel/cohorts | List cohort group definitions |
+| POST | /export/pdf | All section PDFs |
+| POST | /export/pdf/faculty | All faculty PDFs |
+| GET | /export/pdf/faculty/{id} | Single faculty PDF |
+
+### Configure
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET/POST | /configure/faculty | List / Create faculty |
+| PUT/DELETE | /configure/faculty/{id} | Update / Delete faculty |
+| POST | /configure/faculty/csv-import | Bulk CSV import |
+| GET/POST | /configure/rooms | List / Create rooms |
+| PUT/DELETE | /configure/rooms/{id} | Update / Delete room |
+| GET/POST | /configure/subjects | List / Create subjects |
+| PUT/DELETE | /configure/subjects/{id} | Update / Delete subject |
+| GET/POST | /configure/sections | List / Create sections |
+| PUT/DELETE | /configure/sections/{id} | Update / Delete section |
+| POST | /configure/section-subjects | Map subjects to section |
+| GET | /configure/wizard-defaults | Wizard seed data |
+
+### Agent
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | /agent/sessions | Create agent session |
+| GET | /agent/sessions/{id} | Get session state |
+| POST | /agent/sessions/{id}/repair-suggestion | Generate repair |
+| POST | /agent/sessions/{id}/consensus | Multi-agent consensus vote |
+| POST | /agent/simulate-room-failure | Trigger room disruption |
+| WS | /agent/sessions/{id}/stream | Real-time event stream |
+| GET | /agent/health/data-integrity | FK vs raw-text audit |
+
+### Utility
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /validate | Full hard constraint validation |
+| GET | /testing/tested-data | Parse + clash-check a dataset |
+| GET | /telemetry/metrics | System + DB + Docker health |
+| GET | /sections | List sections |
+| GET | /faculty | List faculty |
+| GET | /rooms | List rooms |
+| GET | /health | FastAPI health check |
+
+---
+
+## Constraint Engine Details
+
+### ConflictChecker - High-Performance Clash Detector
+
+Location: `backend/solver/conflict_checker.py`
+
+- **Single-pass indexing** into room_map, faculty_map, section_map buckets
+- **Faculty identity key**: collapses name variants (e.g. "DR. P. KALPANA" == "Dr.P.Kalpana")
+- **Joint-section transparency**: shared teaching slots flagged as is_violation=False
+- **Ignored room codes**: LIBRARY, BREAK, LUNCH, SL/EL, MINORS/HONORS, ONLINE - no physical conflict
+- **Returns ClashReport**: room_clashes, physical_room_clashes, joint_section_slots, faculty_clashes, student_clashes, break_clashes, total_hard_violations
+- **Baseline**: V5 -> 51 room clashes, 0 faculty clashes (always verified in test suite)
+
+### ScheduleIndexStore - O(1) Incremental Validator
+
+Location: `backend/solver/incremental_validator.py`
+
+- Builds inverted hash index on (day, period, room/fac/sec) -> entry
+- validate_move() checks a proposed swap without CP-SAT re-solve
+- Supports DragDropSwapRequest schema
+- Enforced in POST /api/v1/timetable/validate-move
+
+---
+
+## Domain Knowledge
+
+### Period to Time Mapping
+
+| Period | Time |
+|---|---|
+| P1 | 08:15 - 09:05 |
+| P2 | 09:05 - 09:55 |
+| BREAK | 09:55 - 10:10 |
+| P3 | 10:10 - 11:00 |
+| P4 | 11:00 - 11:50 |
+| P5 | 11:50 - 12:40 |
+| LUNCH | 12:40 - 13:40 |
+| P6 | 13:40 - 14:30 |
+| P7 | 14:30 - 15:20 |
+| P8 | 15:20 - 16:05 |
+
+Days: MON, TUE, WED, THU, FRI, SAT (6-day week)
+
+### Room Types
+
+| Type | Codes |
+|---|---|
+| Computer Labs | 604, 605, 606, 611, 612, 615, 616, 617 |
+| GPU Labs (DL/CV/MLOP preferred) | AFTF-12, AFTF-13, AFTF-14 |
+| Project Rooms | AFF-09, AFF-10 |
+| Classrooms | 601-603, 607-610, 613-614, 618-619, 215-218, 514-A, 514-B, 518, 401, 402, 418, 501 |
+
+### Faculty Workload Limits
+
+| Designation | Max Hours/Week |
+|---|---|
+| Professor | 12 |
+| Associate Professor | 14 |
+| Assistant Professor | 16 |
+
+### Subject Code Conventions
+
+| Suffix | Type |
+|---|---|
+| DS | Lecture |
+| DS(T) | Tutorial |
+| DS(P) | Practical/Lab |
+| DS(T&P) | Combined Tutorial + Practical |
+
+### Section Weekly Quotas
+
+| Year | Teaching Slots | Library | IIC |
 |---|---|---|---|
-| `vfstr_postgres` | postgres:16 | 5432 | Primary database |
-| `vfstr_redis` | redis:7 | 6379 | Celery broker + result backend |
-| `vfstr_backend` | FastAPI (Python 3.13) | 8000 | REST API + WebSocket |
-| `vfstr_celery_worker` | Same as backend | — | Async solver tasks |
-| `vfstr_frontend` | Node 20 + Next.js 14 | 3000 | React web UI |
+| 2nd Year | 36 | 1 | 1 |
+| 3rd Year | 45 | 0 | 0 |
+| 4th Year | 39 | 0 | 0 |
 
-### Startup Commands
+---
+
+## Docker and Infrastructure
+
+### Services
+
+```yaml
+postgres:   postgres:16-alpine   # Internal only (no host port)
+redis:      redis:7-alpine        # Internal only (no host port)
+backend:    ./backend             # Exposed on :8000 internally
+celery:     ./backend             # Worker: concurrency=2, max-tasks=100
+frontend:   ./frontend            # Exposed on :3000 internally
+nginx:      nginx:alpine          # Public entrypoint on :80
+```
+
+### Nginx Features
+
+- Rate limiting: 100 req/min for API, 1 req/min for solver endpoint
+- Gzip compression (level 6, all text/JSON/JS types)
+- WebSocket proxy (Upgrade / Connection headers)
+- JSON-structured access logging
+- Docker internal DNS resolver (127.0.0.11)
+- server_tokens off (security hardening)
+- Zero-trust: no service exposes host ports except Nginx on :80
+
+### Security Hardening (all containers)
+
+- security_opt: no-new-privileges:true
+- cap_drop: ALL + minimal cap_add
+- tmpfs for /tmp and /var/cache/nginx
+- Read-only mounts for time_table/ and data/
+
+---
+
+## Environment Setup
+
 ```bash
-docker compose up -d --build   # Build and start all 5 containers
-docker compose down            # Stop and remove containers
-docker compose logs -f backend # Stream backend logs
+# Copy environment template
+cp .env.example .env
+
+# Required variables
+DATABASE_URL=postgresql+asyncpg://vfstr:password@localhost:5432/timetable_db
+REDIS_URL=redis://localhost:6379/0
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/1
+SECRET_KEY=<openssl rand -hex 32>
+
+# Optional
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=ws://localhost:8000
+SOLVER_DEFAULT_TIMEOUT=120
+SOLVER_MAX_WORKERS=8
+MAX_UPLOAD_SIZE_BYTES=15728640
 ```
 
 ---
 
-## 11. 📊 Feature Status Summary
+## Running the Project
 
-| Feature | Status | Notes |
-|---|---|---|
-| Dashboard KPI stats | ✅ Live | Pulls from API |
-| Version timeline V1-V5 | ✅ Live | DB-backed |
-| Excel import (V3/V5) | ✅ Live | 51 clash detection validated |
-| Faculty CRUD | ✅ Live | Full CRUD + availability grid |
-| Room CRUD | ✅ Live | Full CRUD |
-| Subject CRUD | ✅ Live | L-T-P system |
-| Section-Subject mapping | ✅ Live | Multi-faculty lab teams |
-| Single section grid | ✅ Live | Drag-drop + clash highlight |
-| Faculty name in cells | ✅ Live | 3-line cell anatomy |
-| 2-column faculty legend | ✅ Live | Matches screenshot exactly |
-| Vertical stack view | ✅ Live | Per-cohort stacked sections |
-| Faculty schedules view | ✅ Live | Individual grid + PDF download |
-| Create Timetable Wizard | ✅ Live | 4-step, calls solver |
-| CP-SAT Solver | ✅ Live | OR-Tools, 10 HC + 10 SC |
-| Genetic Algorithm | ✅ Live | 200 population, 1000 generations |
-| Hybrid Solver | ✅ Live | GA + CP-SAT phases |
-| Real-time WebSocket progress | ✅ Live | Celery → WS stream |
-| Incremental drag-drop validation | ✅ Live | O(1) per-move check |
-| Infeasibility diagnostics | ✅ Live | Human-readable suggestions |
-| Excel cohort export | ✅ Live | Vertical stacked, purple banner |
-| Minors/Honors export | ✅ Live | Yellow dept headers |
-| PDF section bundle | ✅ Live | All 44 sections |
-| PDF faculty bundle | ✅ Live | All faculty individual |
-| Single faculty PDF | ✅ Live | From schedule page |
-| Version tracking | ✅ Live | solver_runs table |
-| 29 automated tests | ✅ All passing | Including V5 baseline (51 clashes) |
-| Room Utilization Report | 🔜 Planned | Not yet implemented |
-| Mobile responsive grid | 🔜 Planned | Accordion collapse < 768px |
-| Dark mode | 🔜 Planned | Token counterparts needed |
+### One-command Docker start
+
+```bash
+make up           # docker compose up -d (all 6 services)
+make seed         # auto-seed DB from V5 Excel
+make test         # pytest backend/tests/ -v --tb=short
+make validate     # Parse V5 - expect: Room clashes: 51, Faculty clashes: 0
+make lint         # ruff check backend/ && npm run lint
+make type-check   # mypy backend/ --strict && npm run type-check
+make down         # docker compose down
+make clean        # remove __pycache__ and .pytest_cache
+```
+
+### Local development (without Docker)
+
+```bash
+# Backend
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+
+# Frontend
+cd frontend
+npm install
+npm run dev   # http://localhost:3000
+
+# Celery worker (separate terminal)
+cd backend
+celery -A tasks.celery_app worker --loglevel=info
+```
+
+---
+
+## Test Suite
+
+**35 test files** in `backend/tests/`:
+
+| Test File | Coverage Area |
+|---|---|
+| test_constraints.py | All HC/SC constraint rule functions |
+| test_solver.py | CP-SAT solver end-to-end |
+| test_parser.py | Excel parser: section/slot/faculty extraction |
+| test_e2e_timetable_suite.py | Full pipeline E2E (34K bytes) |
+| test_multi_agent_scheduler.py | 4-agent audit pipeline |
+| test_multi_agent_consensus.py | 3-role consensus voting |
+| test_agent_phase1_models.py | Agent DB model structure |
+| test_agent_phase2_consensus_approval.py | Consensus approval gate |
+| test_agent_phase3_tools_quality.py | Tool registry quality |
+| test_agent_phase4_fallback_diagnostics.py | Fallback and diagnostics |
+| test_agent_phase5_mission_multicycle.py | Multi-cycle mission simulation |
+| test_agent_phase6_celery_schema_audit.py | Celery schema audit |
+| test_agent_phase7_nlp_notifications.py | NLP command parsing |
+| test_agent_phase8_security_priority.py | Security and priority gating |
+| test_agent_phase9_production_safeguards.py | Production safeguards |
+| test_agent_phase10_resilience_locks.py | Resilience and session locks |
+| test_agent_phase11_production_perfection.py | Production perfection audit |
+| test_agent_api.py | Agent REST API routes |
+| test_agent_websocket.py | Agent WebSocket stream |
+| test_agent_orchestrator.py | Orchestrator integration |
+| test_wizard_solve.py | Wizard-driven CP-SAT generation |
+| test_configure_api.py | Configure CRUD routes |
+| test_layered_api.py | API layering validation |
+| test_services.py | Service layer unit tests |
+| test_export.py | Excel/PDF export |
+| test_export_devops.py | Export DevOps checks |
+| test_incremental_validator.py | O(1) swap validator |
+| test_mission_simulator.py | Campus disruption scenarios |
+| test_stress_5d_audit.py | 5-day stress audit |
+| test_unified_creation_lifecycle.py | Full create->solve->export lifecycle |
+| test_api_routes.py | All API route smoke tests |
+| test_api_import.py | Import API validation |
+| test_ga_solver.py | Genetic algorithm solver |
+| test_solver_benchmark.py | Solver performance benchmarks |
+| test_layered_api.py | Layered architecture validation |
+
+```bash
+# Run all tests
+pytest backend/tests/ -v --tb=short --cov=backend --cov-report=term-missing
+
+# Baseline validation (must output: Room clashes: 51)
+python backend/parser/excel_parser.py \
+  --input "time_table/ACSE TIMETABLE (V5)  - W.e.f 15-7-2026.xlsx" \
+  --validate-only
+```
+
+---
+
+## Timetable Versions
+
+| Version | Date | Slots | Key Change | Room Clashes |
+|---|---|---|---|---|
+| V1 | 10-Jul-2026 | 894 | Initial release | Unknown |
+| V2 | 11-Jul-2026 | ~900 | Minor slot adjustments | Unknown |
+| V3 | 13-Jul-2026 | ~950 | Significant room reassignments | 64 |
+| V4 | 14-Jul-2026 | ~980 | Faculty allocation fixes | Unknown |
+| V5 | 15-Jul-2026 | **1,000** | Added MINORHONORS sheet | **51** |
+
+**V5 is the ground truth.** All parser tests, baseline clash counts (51 room clashes), and slot counts (1,000) are verified against V5. The solver goal is to generate a V6 with 0 hard violations.
+
+---
+
+## Contributing
+
+This project follows the agent roles and conventions defined in `AGENTS.md`. Before contributing:
+
+1. Read `AGENTS.md` in full
+2. Declare your role (ARCHITECT / DESIGNER / SOLVER / VALIDATOR)
+3. Run `make test` - all tests must pass before any commit
+4. Use Conventional Commits: `feat(solver): implement HC-01`
+5. Leave a handoff note in your PR if handing off to another role
+
+---
+
+*Built for VFSTR ACSE Department - Vignan Foundation for Science, Technology and Research, Vadlamudi, Guntur, Andhra Pradesh.*
