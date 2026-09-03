@@ -7,6 +7,7 @@ import { getApiBaseUrl, getWsBaseUrl } from '@/lib/api';
 import { DecisionTrace } from '@/components/agent/DecisionTrace';
 import { MissionSimulator } from '@/components/agent/MissionSimulator';
 import { DiffView } from '@/components/agent/DiffView';
+import { MultiAgentSynthesisWorkspace } from '@/components/agent/MultiAgentSynthesisWorkspace';
 
 type AgentEvent = {
   id: number;
@@ -279,7 +280,17 @@ export default function AgentConsolePage() {
         </div>
       )}
 
-      {/* Simulator Section */}
+      {/* Autonomous Collaborative Multi-Agent Synthesis Section */}
+      <MultiAgentSynthesisWorkspace
+        versionId={12}
+        onSynthesisComplete={(entries) => {
+          if (entries && entries.length > 0) {
+            setRepairedEntries(entries);
+          }
+        }}
+      />
+
+      {/* Disruption Simulator Section */}
       <MissionSimulator onTriggerScenario={triggerScenario} loading={loading} />
 
       {/* Main Grid Layout */}

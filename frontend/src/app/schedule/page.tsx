@@ -34,6 +34,7 @@ import { timetableApi } from "@/lib/api";
 
 import { Faculty } from "@/lib/types";
 import { useSolver } from "@/hooks/useSolver";
+import { useSearchParams } from "next/navigation";
 
 const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT"];
 const PERIODS_LIST = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -78,7 +79,8 @@ export default function SchedulePage() {
   } | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // AI Solver Hook
+  const searchParams = useSearchParams();
+  const urlVersionId = searchParams?.get("version_id");
   const { state: solverState, startSolver } = useSolver();
   const [facultyList, setFacultyList] = useState<Faculty[]>([]);
   const [selectedFacultyId, setSelectedFacultyId] = useState<number | null>(null);
@@ -115,6 +117,13 @@ export default function SchedulePage() {
           { id: 3, version_label: 'V3', effective_date: '13-07-2026', hard_violations_count: 64, notes: 'Previous revision imported from V3 Excel dataset' }
         ];
         setVersions(vList);
+        if (urlVersionId) {
+          const matched = vList.find((v: any) => String(v.id) === String(urlVersionId));
+          if (matched) {
+            setSelectedVersionId(matched.id);
+            return;
+          }
+        }
         setSelectedVersionId(vList[0].id);
       })
       .catch(() => {
@@ -648,13 +657,13 @@ export default function SchedulePage() {
 
     if ((!raw || raw.length === 0) && activeFacultyObject && cohortAllSlots.length > 0) {
       const facNameClean = activeFacultyObject.name.replace(/^(Dr|Mr|Ms|Prof)\.?\s*/i, '').trim().toLowerCase();
-      const tokens = facNameClean.split(/\s+/).filter(t => t.length >= 3);
+      const tokens = facNameClean.split(/\s+/).filter((t: string) => t.length >= 3);
 
       raw = cohortAllSlots.filter(s => {
         const sFac = String(s.faculty || s.faculty_names || '').toLowerCase();
         if (!sFac) return false;
         if (sFac.includes(facNameClean) || facNameClean.includes(sFac)) return true;
-        return tokens.some(t => sFac.includes(t));
+        return tokens.some((t: string) => sFac.includes(t));
       });
     }
 
@@ -816,7 +825,14 @@ export default function SchedulePage() {
             href="/ai-scheduler"
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/60"
           >
-            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" /> Open AI Auto-Scheduler
+            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" /> AI Draft Wizard
+          </Link>
+
+          <Link
+            href="/agent"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/60"
+          >
+            <Bot className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> 7-Agent Policy Studio
           </Link>
         </div>
       </div>
