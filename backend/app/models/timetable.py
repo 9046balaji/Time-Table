@@ -15,7 +15,7 @@ class TimetableVersion(BaseModel):
     notes = Column(Text, nullable=True)
 
     __table_args__ = (
-        Index('uq_active_version_per_year', 'academic_year_id', unique=True, postgresql_where=(is_current == True)),
+        Index('uq_active_version_per_year', 'academic_year_id', unique=True, postgresql_where=(is_current == True), sqlite_where=(is_current == True)),
     )
 
     academic_year = relationship("AcademicYear", back_populates="timetable_versions")
