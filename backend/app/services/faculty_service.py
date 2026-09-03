@@ -42,16 +42,36 @@ class FacultyService:
                 pass
 
 
-        default_faculty = [
-            {"id": 1, "name": "Dr. P. Kalpana", "designation": "Professor", "max_hours": 12, "hours_this_week": 10},
-            {"id": 2, "name": "Dr. Bandi Guravaiah", "designation": "Professor", "max_hours": 12, "hours_this_week": 11},
-            {"id": 3, "name": "Dr. Rushi Prasad Sahoo", "designation": "Associate Professor", "max_hours": 14, "hours_this_week": 13},
-            {"id": 4, "name": "Dr. B. N. Naveen Kumar", "designation": "Associate Professor", "max_hours": 14, "hours_this_week": 12},
-            {"id": 5, "name": "Dr. Ankamma Rao Mallela", "designation": "Professor", "max_hours": 12, "hours_this_week": 12},
-            {"id": 6, "name": "Dr. S. Srikantha Reddy", "designation": "Associate Professor", "max_hours": 14, "hours_this_week": 14},
-            {"id": 7, "name": "Dr. B. Sudha Rani", "designation": "Assistant Professor", "max_hours": 16, "hours_this_week": 15},
-        ]
-        return {"total": 80, "count": len(default_faculty), "items": default_faculty}
+        # Fallback to seed data if DB table uninitialized
+        from app.core.seed_cache import get_seed_data
+        seed = get_seed_data()
+        raw_facs = seed.get("faculty", [])
+        items = []
+        for idx, f in enumerate(raw_facs, start=1):
+            if isinstance(f, dict):
+                name = f.get("name", "")
+                desig = f.get("designation", "Assistant Professor")
+                max_h = f.get("max_hours_per_week", 16)
+            else:
+                name = str(f)
+                desig = "Assistant Professor"
+                max_h = 16
+            if name:
+                items.append({
+                    "id": idx,
+                    "name": name,
+                    "designation": desig,
+                    "max_hours": max_h,
+                    "hours_this_week": 12,
+                    "dept_id": 1
+                })
+
+        if designation:
+            items = [f for f in items if f["designation"] == designation]
+        if search:
+            items = [f for f in items if search.lower() in f["name"].lower()]
+
+        return {"total": len(items), "count": len(items), "items": items}
 
     @staticmethod
     async def get_by_id(db: AsyncSession, faculty_id: int) -> Optional[Faculty]:
