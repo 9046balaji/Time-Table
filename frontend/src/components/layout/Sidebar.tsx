@@ -7,9 +7,9 @@ import { LayoutDashboard, Calendar, Upload, Settings, Download, Cpu, FlaskConica
 
 const NAV_ITEMS = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/ai-scheduler', label: 'AI Auto-Scheduler', icon: Sparkles },
-  { href: '/agent', label: 'Agent Mission Console', icon: Bot },
-  { href: '/schedule', label: 'Timetable Grid', icon: Calendar },
+  { href: '/ai-scheduler', label: 'AI Draft Generator', icon: Sparkles },
+  { href: '/agent', label: '7-Agent Policy Studio', icon: Bot },
+  { href: '/schedule', label: 'Schedule Workbench', icon: Calendar },
   { href: '/testing', label: 'Testing Lab (10 Sec)', icon: FlaskConical },
   { href: '/import', label: 'Import Excel', icon: Upload },
   { href: '/configure', label: 'Data Management', icon: Settings },

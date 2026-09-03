@@ -580,18 +580,25 @@ export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSucc
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
+                    type="button"
                     onClick={() => triggerExcelDownload(result.version_id || 5)}
                     className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer"
                   >
-                    <Zap className="w-3 h-3 text-amber-300" /> Download Excel (.xlsx)
+                    <Zap className="w-3 h-3 text-amber-300" /> Excel (.xlsx)
                   </button>
                   <Link
-                    href="/schedule"
+                    href={`/agent?version_id=${result.version_id || 5}`}
+                    className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors"
+                  >
+                    Audit in 7-Agent Studio <ArrowRight className="w-3 h-3" />
+                  </Link>
+                  <Link
+                    href={`/schedule?version_id=${result.version_id || 5}`}
                     className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs font-bold hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition-colors"
                   >
-                    Open Full Grid <ArrowRight className="w-3 h-3" />
+                    Open Workbench <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
               </div>
