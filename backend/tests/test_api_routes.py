@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
 from main import app
+from backend.solver.conflict_checker import faculty_identity_key
 
 
 @pytest.mark.asyncio
@@ -32,7 +33,7 @@ async def test_list_faculty_api():
         data = response.json()
         assert "items" in data
         assert data["count"] > 0
-        assert any(f["name"] == "Dr. P. Kalpana" for f in data["items"])
+        assert any(faculty_identity_key(f["name"]) == faculty_identity_key("Dr. P. Kalpana") for f in data["items"])
 
 
 @pytest.mark.asyncio

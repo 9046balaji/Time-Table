@@ -35,7 +35,21 @@ def test_sync_smartclass_endpoint():
     assert data["master_slots_synced"] == 1000
 
 
+def test_export_excel_lab_horizontal_merge():
+    """Verify continuous lab sessions are horizontally merged in Excel export."""
+    import io
+    import openpyxl
+
+    response = client.post("/api/v1/export/excel")
+    assert response.status_code == 200
+    wb = openpyxl.load_workbook(io.BytesIO(response.content))
+    assert len(wb.sheetnames) >= 1
+    has_merged = any(len(ws.merged_cells.ranges) > 0 for ws in wb.worksheets)
+    assert has_merged is True
+
+
 if __name__ == "__main__":
     test_export_excel_endpoint()
     test_export_pdf_endpoint()
     test_sync_smartclass_endpoint()
+    test_export_excel_lab_horizontal_merge()

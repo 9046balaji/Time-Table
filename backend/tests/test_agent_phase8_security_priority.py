@@ -18,9 +18,14 @@ async def test_phase8_solver_policy_alignment_and_priority():
     rooms = [{"code": "601", "room_type": "classroom", "capacity": 60}]
 
     from app.core.database import ensure_database, AsyncSessionLocal
+    from app.models.agent import AgentSession
     await ensure_database()
     async with AsyncSessionLocal() as db:
-        res = await MultiAgentConsensusEngine.evaluate_consensus(db=db, session_id=1, timetable_entries=entries)
+        sess = AgentSession(goal="Test Phase 8", status="active", current_step="observe")
+        db.add(sess)
+        await db.commit()
+        await db.refresh(sess)
+        res = await MultiAgentConsensusEngine.evaluate_consensus(db=db, session_id=sess.id, timetable_entries=entries)
     solver_vote = next(v for v in res["votes"] if v["role"] == "SOLVER")
     assert solver_vote["policy_rule"] == "SC-07"
     assert solver_vote["vote"] == "APPROVE"
