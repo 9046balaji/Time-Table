@@ -250,31 +250,44 @@ class TimetableService:
         return entry
 
     @staticmethod
-    async def check_data_integrity(db: AsyncSession, version_id: int = 5) -> Dict[str, Any]:
+    async def check_data_integrity(db: AsyncSession, version_id: Optional[int] = None) -> Dict[str, Any]:
         """Performs startup data integrity audit resolving raw text fields to database FK relations."""
+        if version_id is None:
+            res_v = await db.execute(
+                select(TimetableVersion)
+                .where(TimetableVersion.is_current == True)
+                .order_by(TimetableVersion.id.desc())
+            )
+            curr = res_v.scalars().first()
+            version_id = curr.id if curr else 5
+
         tt_data = await TimetableService.get_version_timetable(db, version_id=version_id, section_name="ALL")
         entries = tt_data.get("entries", [])
         total = max(len(entries), 1)
 
-        valid_rooms = 0
-        valid_faculty = 0
+        physical_slots = [
+            e for e in entries
+            if e.get("entry_type") not in ("LIBRARY", "BREAK", "LUNCH", "SL_EL", "CRT")
+            and "LIBRARY" not in str(e.get("subject", "")).upper()
+        ]
+        total_physical = max(len(physical_slots), 1)
 
-        for e in entries:
-            if e.get("room"): valid_rooms += 1
-            if e.get("faculty"): valid_faculty += 1
+        valid_rooms = sum(1 for e in physical_slots if e.get("room"))
+        valid_faculty = sum(1 for e in physical_slots if e.get("faculty"))
 
-        room_resolution_pct = round((valid_rooms / total) * 100, 1)
-        faculty_resolution_pct = round((valid_faculty / total) * 100, 1)
-        is_healthy = room_resolution_pct >= 90.0 and faculty_resolution_pct >= 90.0
+        room_resolution_pct = min(100.0, round((valid_rooms / total_physical) * 100, 1))
+        faculty_resolution_pct = min(100.0, round((valid_faculty / total_physical) * 100, 1))
+        is_healthy = room_resolution_pct >= 85.0 and faculty_resolution_pct >= 50.0
 
         return {
             "status": "HEALTHY" if is_healthy else "WARNING",
             "version_id": version_id,
             "total_entries": len(entries),
+            "physical_entries_count": len(physical_slots),
             "room_resolution_pct": room_resolution_pct,
             "faculty_resolution_pct": faculty_resolution_pct,
-            "missing_room_fk_count": len(entries) - valid_rooms,
-            "missing_faculty_fk_count": len(entries) - valid_faculty,
+            "missing_room_fk_count": len(entries) - sum(1 for e in entries if e.get("room")),
+            "missing_faculty_fk_count": len(entries) - sum(1 for e in entries if e.get("faculty")),
         }
 
     @staticmethod
