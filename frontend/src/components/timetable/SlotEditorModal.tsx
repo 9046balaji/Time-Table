@@ -349,19 +349,12 @@ export const SlotEditorModal: React.FC<SlotEditorModalProps> = ({
               >
                 {roomList.length > 0 ? (
                   roomList.map((rm) => (
-                    <option key={rm.id} value={rm.code}>
-                      {rm.code} ({rm.room_type || rm.type || "room"}) - Cap: {rm.capacity || 60}
+                    <option key={rm.id || rm.code} value={rm.code || rm.id}>
+                      {rm.code || rm.id} ({rm.room_type || rm.type || "room"}) - Cap: {rm.capacity || 60}
                     </option>
                   ))
                 ) : (
-                  <>
-                    <option value="601">601 (Classroom) - Cap: 66</option>
-                    <option value="604">604 (Computer Lab) - Cap: 60</option>
-                    <option value="AFTF-12">AFTF-12 (GPU Compute Lab) - Cap: 72</option>
-                    <option value="AFTF-13">AFTF-13 (GPU Compute Lab) - Cap: 72</option>
-                    <option value="611">611 (Computer Lab) - Cap: 60</option>
-                    <option value="612">612 (Computer Lab) - Cap: 60</option>
-                  </>
+                  <option value={roomCode || "601"}>{roomCode || "Select Venue"}</option>
                 )}
               </select>
             </div>
