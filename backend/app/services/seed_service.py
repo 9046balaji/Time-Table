@@ -416,7 +416,11 @@ class SeedService:
                     entry_type=slot.subject_type,
                     raw_subject_text=slot.subject_code,
                     raw_room_text=slot.room or "",
-                    faculty_ids=_resolve_faculty_ids(slot.faculty_list, faculty_map, faculty_by_identity),
+                    faculty_ids=_resolve_faculty_ids(
+                        slot.faculty_list or (slot.faculty_candidates[:1] if slot.faculty_candidates else []),
+                        faculty_map,
+                        faculty_by_identity
+                    ),
                     span_periods=1
                 )
                 db.add(entry)
@@ -440,7 +444,11 @@ class SeedService:
                         entry_type=slot.subject_type,
                         raw_subject_text=slot.subject_code,
                         raw_room_text=slot.room or "",
-                        faculty_ids=_resolve_faculty_ids(slot.faculty_list, faculty_map, faculty_by_identity),
+                        faculty_ids=_resolve_faculty_ids(
+                            slot.faculty_list or (slot.faculty_candidates[:1] if slot.faculty_candidates else []),
+                            faculty_map,
+                            faculty_by_identity
+                        ),
                         span_periods=1
                     )
                     db.add(entry)

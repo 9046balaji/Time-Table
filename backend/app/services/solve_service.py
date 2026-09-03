@@ -55,27 +55,52 @@ class SolveService:
 
     @classmethod
     async def _execute_solver_async(cls, run_id: str, config: SolverConfig, db: Optional[AsyncSession]):
-        sample_sections = [{"id": f"sec_{i}", "student_count": 60} for i in range(1, 10)]
-        sample_subjects = []
-        for sec in sample_sections:
-            for sub_id in [101, 102, 103, 104]:
-                sample_subjects.append({
-                    "section_id": sec["id"],
-                    "subject_id": sub_id,
-                    "subject_code": f"SUBJ_{sub_id}",
-                    "subject_type": "P" if sub_id == 104 else "L",
-                    "total_slots_needed": 2 if sub_id == 104 else 3
-                })
-        sample_rooms = [{"id": f"r_{i}", "capacity": 60, "room_type": "gpu_lab" if i > 5 else "classroom"} for i in range(1, 12)]
-        sample_time_slots = []
+        from app.core.seed_cache import get_seed_data
+        seed = get_seed_data()
+
+        # Real sections
+        sections_raw = seed.get("sections", [])
+        if not sections_raw:
+            sections_raw = [
+                {"id": "II AIML-A", "student_count": 60},
+                {"id": "II AIML-B", "student_count": 60},
+                {"id": "II AIML-C", "student_count": 60},
+            ]
+
+        scope = getattr(config, "scope", "ALL") or "ALL"
+        if scope != "ALL" and "II" in scope:
+            sections_to_solve = [s for s in sections_raw if "II " in s.get("id", "")]
+        elif scope != "ALL" and "III" in scope:
+            sections_to_solve = [s for s in sections_raw if "III " in s.get("id", "")]
+        else:
+            sections_to_solve = sections_raw[:12] if len(sections_raw) > 12 else sections_raw
+
+        rooms_to_solve = seed.get("rooms", [])
+        if not rooms_to_solve:
+            rooms_to_solve = [{"id": f"60{i}", "capacity": 60, "room_type": "classroom"} for i in range(1, 10)]
+
+        time_slots = []
         for day in ["MON", "TUE", "WED", "THU", "FRI", "SAT"]:
             for p in range(1, 9):
-                sample_time_slots.append({
+                time_slots.append({
                     "id": f"{day}_{p}",
                     "day": day,
                     "period": p,
                     "is_blocked": False
                 })
+
+        section_subjects = seed.get("section_subjects", [])
+        if not section_subjects:
+            section_subjects = []
+            for sec in sections_to_solve:
+                for s_idx, (code, stype, slots) in enumerate([("DS", "L", 4), ("DS(P)", "P", 2), ("SFCDS", "L", 4), ("DMS", "L", 4)]):
+                    section_subjects.append({
+                        "section_id": sec["id"],
+                        "subject_id": f"{sec['id']}_{code}_{s_idx}",
+                        "subject_code": code,
+                        "subject_type": stype,
+                        "total_slots_needed": slots
+                    })
 
         def progress_cb(update: dict):
             if run_id in cls._solver_runs_memory:
@@ -89,10 +114,10 @@ class SolveService:
         solver = CPSATSolver(config)
         result = await asyncio.to_thread(
             solver.solve,
-            sections=sample_sections,
-            section_subjects=sample_subjects,
-            rooms=sample_rooms,
-            time_slots=sample_time_slots,
+            sections=sections_to_solve,
+            section_subjects=section_subjects,
+            rooms=rooms_to_solve,
+            time_slots=time_slots,
             faculty_subject_map={},
             progress_callback=progress_cb
         )
@@ -107,18 +132,19 @@ class SolveService:
                 "entries_count": result.get("entries_count", 0)
             })
 
-            # Create new TimetableVersion V6_AUTO when solver succeeds
+            # Save version and entries to DB
             if status_str == "COMPLETED" and db is not None:
                 try:
-                    new_version = TimetableVersion(
-                        academic_year_id=1,
-                        version_label="V6_AUTO",
-                        is_current=True
+                    from app.services.write_tools import publish_schedule
+                    await publish_schedule(
+                        db=db,
+                        session_id=1,
+                        entries=result.get("entries", []),
+                        version_label=f"SOLVER-{run_id.upper()}",
+                        notes=f"Auto-generated via {config.algorithm} engine"
                     )
-                    db.add(new_version)
-                    await db.commit()
-                except Exception:
-                    pass
+                except Exception as ex:
+                    print(f"[SolveService Publish Warning] {ex}")
 
     @classmethod
     def get_run_status(cls, run_id: str) -> Optional[Dict[str, Any]]:

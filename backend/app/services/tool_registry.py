@@ -9,6 +9,7 @@ from app.models.room import Room
 from app.models.section import Section
 from app.models.faculty import Faculty
 from app.services.timetable_service import TimetableService
+from app.services import write_tools as _write_tools
 from backend.solver.conflict_checker import ConflictChecker
 
 
@@ -362,6 +363,18 @@ class ToolRegistry:
             "risk_level": metrics["risk_level"],
             "diffs": diffs
         }
+
+    # =================================================================
+    # WRITE TOOLS
+    # Defined in app/services/write_tools.py and re-exported here so the
+    # agent reaches every capability through one registry. These are the
+    # only paths that mutate the timetable; each re-validates with
+    # ConflictChecker and rolls back if hard violations increase.
+    # =================================================================
+    apply_timetable_change = staticmethod(_write_tools.apply_timetable_change)
+    publish_schedule = staticmethod(_write_tools.publish_schedule)
+    assign_faculty_to_entry = staticmethod(_write_tools.assign_faculty_to_entry)
+    create_timetable_entry = staticmethod(_write_tools.create_timetable_entry)
 
     @staticmethod
     async def save_schedule_snapshot(db: AsyncSession, session_id: int, entries: List[Dict[str, Any]], label: str = "checkpoint") -> Dict[str, Any]:
