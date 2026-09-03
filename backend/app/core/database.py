@@ -13,12 +13,22 @@ engine = create_async_engine(
     pool_recycle=settings.DB_POOL_RECYCLE,
 )
 
-AsyncSessionLocal = async_sessionmaker(
+_default_sessionmaker = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
     expire_on_commit=False,
     autoflush=False,
 )
+_CURRENT_SESSION_MAKER = _default_sessionmaker
+
+class _SessionLocalProxy:
+    def __call__(self, *args, **kwargs):
+        return _CURRENT_SESSION_MAKER(*args, **kwargs)
+    def __getattr__(self, name):
+        return getattr(_CURRENT_SESSION_MAKER, name)
+
+AsyncSessionLocal = _SessionLocalProxy()
+async_session_factory = _SessionLocalProxy()
 
 Base = declarative_base()
 
@@ -35,28 +45,18 @@ async def ensure_database() -> None:
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-            from sqlalchemy import text
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS iteration INTEGER DEFAULT 1 NOT NULL;"))
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS total_iterations INTEGER DEFAULT 1 NOT NULL;"))
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS approval_required BOOLEAN DEFAULT FALSE NOT NULL;"))
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS approval_status VARCHAR(30) DEFAULT 'none' NOT NULL;"))
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS completed_actions JSON DEFAULT '[]'::json NOT NULL;"))
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS failed_actions JSON DEFAULT '[]'::json NOT NULL;"))
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS session_timeout_at TIMESTAMP WITHOUT TIME ZONE;"))
-            await conn.execute(text("ALTER TABLE agent_events ADD COLUMN IF NOT EXISTS sequence_number INTEGER DEFAULT 1 NOT NULL;"))
-    except (RuntimeError, Exception):
-        await engine.dispose()
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-            from sqlalchemy import text
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS iteration INTEGER DEFAULT 1 NOT NULL;"))
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS total_iterations INTEGER DEFAULT 1 NOT NULL;"))
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS approval_required BOOLEAN DEFAULT FALSE NOT NULL;"))
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS approval_status VARCHAR(30) DEFAULT 'none' NOT NULL;"))
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS completed_actions JSON DEFAULT '[]'::json NOT NULL;"))
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS failed_actions JSON DEFAULT '[]'::json NOT NULL;"))
-            await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS session_timeout_at TIMESTAMP WITHOUT TIME ZONE;"))
-            await conn.execute(text("ALTER TABLE agent_events ADD COLUMN IF NOT EXISTS sequence_number INTEGER DEFAULT 1 NOT NULL;"))
+            if conn.dialect.name == "postgresql":
+                from sqlalchemy import text
+                await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS iteration INTEGER DEFAULT 1 NOT NULL;"))
+                await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS total_iterations INTEGER DEFAULT 1 NOT NULL;"))
+                await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS approval_required BOOLEAN DEFAULT FALSE NOT NULL;"))
+                await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS approval_status VARCHAR(30) DEFAULT 'none' NOT NULL;"))
+                await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS completed_actions JSON DEFAULT '[]'::json NOT NULL;"))
+                await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS failed_actions JSON DEFAULT '[]'::json NOT NULL;"))
+                await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS session_timeout_at TIMESTAMP WITHOUT TIME ZONE;"))
+                await conn.execute(text("ALTER TABLE agent_events ADD COLUMN IF NOT EXISTS sequence_number INTEGER DEFAULT 1 NOT NULL;"))
+    except (RuntimeError, Exception) as ex:
+        print(f"[ensure_database Warning] {ex}")
 
 
 async def get_db():
