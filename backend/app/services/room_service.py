@@ -2,25 +2,35 @@ from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.room import Room
+from app.core.seed_cache import get_seed_data
 
 
 class RoomService:
-    DEFAULT_ROOMS = [
-        {"id": 1, "code": "601", "type": "classroom", "capacity": 60, "floor": 6, "block": "U-Block"},
-        {"id": 2, "code": "602", "type": "classroom", "capacity": 60, "floor": 6, "block": "U-Block"},
-        {"id": 3, "code": "603", "type": "classroom", "capacity": 60, "floor": 6, "block": "U-Block"},
-        {"id": 4, "code": "604", "type": "computer_lab", "capacity": 60, "floor": 6, "block": "U-Block"},
-        {"id": 5, "code": "605", "type": "computer_lab", "capacity": 60, "floor": 6, "block": "U-Block"},
-        {"id": 6, "code": "606", "type": "computer_lab", "capacity": 60, "floor": 6, "block": "U-Block"},
-        {"id": 7, "code": "AFTF-12", "type": "gpu_lab", "capacity": 60, "floor": 4, "block": "AFTF"},
-        {"id": 8, "code": "AFTF-13", "type": "gpu_lab", "capacity": 60, "floor": 4, "block": "AFTF"},
-        {"id": 9, "code": "AFTF-14", "type": "gpu_lab", "capacity": 60, "floor": 4, "block": "AFTF"},
-    ]
+    @classmethod
+    def _get_seed_rooms(cls) -> List[Dict[str, Any]]:
+        seed = get_seed_data()
+        rooms = seed.get("rooms", [])
+        if rooms:
+            return [
+                {
+                    "id": idx + 1,
+                    "code": str(r.get("code") or r.get("id")),
+                    "type": r.get("room_type", "classroom"),
+                    "room_type": r.get("room_type", "classroom"),
+                    "capacity": r.get("capacity", 60),
+                    "floor": r.get("floor", "6"),
+                    "block": r.get("block", "U-Block"),
+                    "gpu_capable": r.get("gpu_capable", False),
+                    "is_available": True,
+                }
+                for idx, r in enumerate(rooms)
+            ]
+        return []
 
     @classmethod
     async def list_rooms(cls, db: Optional[AsyncSession], type_filter: Optional[str] = None) -> Dict[str, Any]:
-        """Fetch rooms from DB asynchronously or fall back to default catalog."""
-        items = cls.DEFAULT_ROOMS
+        """Fetch rooms from DB asynchronously or fall back to seed catalog."""
+        items: List[Dict[str, Any]] = []
         if db is not None:
             try:
                 stmt = select(Room)
@@ -45,6 +55,9 @@ class RoomService:
                     ]
             except Exception as ex:
                 print(f"[RoomService Warning] DB fetch error: {ex}")
+
+        if not items:
+            items = cls._get_seed_rooms()
 
         if type_filter:
             items = [r for r in items if r.get("type") == type_filter or r.get("room_type") == type_filter]
