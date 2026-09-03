@@ -125,25 +125,9 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
         if seed_rooms:
             rooms_list = [{"id": str(r.get("code") or r.get("id")), "capacity": r.get("capacity", 66), "room_type": r.get("room_type", "classroom")} for r in seed_rooms]
         else:
-            rooms_list = [
-                {"id": "601", "capacity": 66, "room_type": "classroom"},
-                {"id": "602", "capacity": 66, "room_type": "classroom"},
-                {"id": "603", "capacity": 66, "room_type": "classroom"},
-                {"id": "607", "capacity": 66, "room_type": "classroom"},
-                {"id": "608", "capacity": 66, "room_type": "classroom"},
-                {"id": "614", "capacity": 66, "room_type": "classroom"},
-                {"id": "619", "capacity": 66, "room_type": "classroom"},
-                {"id": "215", "capacity": 66, "room_type": "classroom"},
-                {"id": "218", "capacity": 66, "room_type": "classroom"},
-                {"id": "604", "capacity": 60, "room_type": "computer_lab"},
-                {"id": "605", "capacity": 60, "room_type": "computer_lab"},
-                {"id": "606", "capacity": 60, "room_type": "computer_lab"},
-                {"id": "611", "capacity": 60, "room_type": "computer_lab"},
-                {"id": "616", "capacity": 60, "room_type": "computer_lab"},
-                {"id": "AFTF-12", "capacity": 72, "room_type": "gpu_lab"},
-                {"id": "AFTF-13", "capacity": 72, "room_type": "gpu_lab"},
-                {"id": "AFTF-14", "capacity": 72, "room_type": "gpu_lab"},
-            ]
+            from app.services.room_service import RoomService
+            seed_r = RoomService._get_seed_rooms()
+            rooms_list = [{"id": str(r["code"]), "capacity": r.get("capacity", 66), "room_type": r.get("room_type", "classroom")} for r in seed_r]
 
     # 4. Build Time Slots (MON..SAT, Periods 1..8)
     time_slots = []
@@ -189,13 +173,30 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
             from app.models.room import Room
             from sqlalchemy import select
 
+            from app.models.solver_run import SolverRun
+            from datetime import date
             async with async_session_factory() as db_session:
+                # Record solver run
+                run_rec = SolverRun(
+                    scope_json={"scope": req.year_level or "WIZARD_SECTIONS"},
+                    algorithm="CP-SAT",
+                    status="completed" if is_ok else "failed",
+                    hard_violations=result.get("hard_violations", 0),
+                    soft_violations=result.get("soft_violations", 0),
+                    runtime_seconds=elapsed,
+                    config={"sections": req.sections, "max_daily_hours": req.max_daily_teaching_hours}
+                )
+                db_session.add(run_rec)
+                await db_session.flush()
+
                 new_ver = TimetableVersion(
                     academic_year_id=1,
-                    version_label=f"AI-{int(time.time()) % 1000}",
-                    source="SOLVER",
+                    version_label=f"AI-WIZARD-V{int(time.time()) % 10000}",
+                    source="WIZARD",
+                    valid_from=date.today(),
                     is_current=True,
-                    notes=f"AI Auto-Generated for {', '.join(req.sections[:4])}"
+                    solver_run_id=run_rec.id,
+                    notes=f"AI Draft for {', '.join(req.sections[:4])} ({len(req.sections)} sections)"
                 )
                 db_session.add(new_ver)
                 await db_session.flush()
