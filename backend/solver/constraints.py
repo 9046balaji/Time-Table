@@ -145,10 +145,156 @@ class ConstraintRules:
         
         day_norm = cls.normalize_string(day)
         is_allowed_period = (period in (1, 2)) or (day_norm in ("SAT", "SATURDAY") and period in (6, 7, 8))
-
         if is_slel_code and not is_allowed_period:
             return False
         return True
+
+    # Campus Building Block Partitioning (SC-09 Locality & Transit Minimization)
+    U_BLOCK_ROOMS: Set[str] = {
+        "601", "602", "603", "604", "605", "606", "607", "608", "609", "610",
+        "611", "612", "613", "614", "615", "616", "617", "618", "619", "619A",
+        "401", "402", "418", "501", "501A", "502", "514", "514-A", "514-B",
+        "514A", "514B", "518", "AFTF-12", "AFTF-13", "AFTF-14", "AFF-09", "AFF-10", "AFF-9"
+    }
+    H_BLOCK_ROOMS: Set[str] = {"215", "216", "217", "218"}
+    A_BLOCK_ROOMS: Set[str] = {"/AL/IL", "A-Block First Floor"}
+
+    GPU_PRIORITY_SUBJECTS: Set[str] = {"DL", "CV", "MLOP", "GENAI"}
+
+    @classmethod
+    def get_room_block(cls, room_obj: Any) -> str:
+        """Returns the campus building block for a given room code or room dict/model."""
+        if not room_obj:
+            return "UNKNOWN"
+        
+        if isinstance(room_obj, dict):
+            blk = room_obj.get("block") or room_obj.get("building_block")
+            if blk:
+                return cls.normalize_string(str(blk))
+            room_code = str(room_obj.get("code") or room_obj.get("id") or "")
+        elif hasattr(room_obj, "block") and getattr(room_obj, "block"):
+            return cls.normalize_string(str(getattr(room_obj, "block")))
+        else:
+            room_code = str(room_obj)
+
+        r_norm = cls.normalize_string(room_code).replace(" ", "")
+        if r_norm in cls.H_BLOCK_ROOMS or "21" in r_norm:
+            return "H-BLOCK"
+        if r_norm in cls.A_BLOCK_ROOMS or "A-BLOCK" in r_norm:
+            return "A-BLOCK"
+        if r_norm in cls.U_BLOCK_ROOMS or "AFTF" in r_norm or "AFF" in r_norm or (len(r_norm) >= 3 and r_norm[0] in "456"):
+            return "U-BLOCK"
+        return "EXTERNAL"
+
+    @classmethod
+    def calculate_block_transit_score(cls, slots: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Audits SC-09: Inter-block student and faculty transit between adjacent periods."""
+        slots_by_sec_day: Dict[Tuple[str, str], Dict[int, str]] = {}
+        for s in slots:
+            sec = str(s.get("section") or s.get("sectionName") or "")
+            day = str(s.get("day") or "")
+            period = int(s.get("period") or 1)
+            room = str(s.get("room") or s.get("roomCode") or "")
+            if sec and day and room and room not in cls.IGNORED_ROOM_CODES:
+                slots_by_sec_day.setdefault((sec, day), {})[period] = room
+
+        cross_block_sprints = 0
+        total_transitions = 0
+        details = []
+
+        for (sec, day), period_rooms in slots_by_sec_day.items():
+            sorted_periods = sorted(period_rooms.keys())
+            for i in range(len(sorted_periods) - 1):
+                p1 = sorted_periods[i]
+                p2 = sorted_periods[i + 1]
+                if p2 == p1 + 1:  # Consecutive periods
+                    total_transitions += 1
+                    b1 = cls.get_room_block(period_rooms[p1])
+                    b2 = cls.get_room_block(period_rooms[p2])
+                    if b1 != "UNKNOWN" and b2 != "UNKNOWN" and b1 != b2:
+                        cross_block_sprints += 1
+                        details.append({
+                            "section": sec,
+                            "day": day,
+                            "from_period": p1,
+                            "to_period": p2,
+                            "from_room": period_rooms[p1],
+                            "to_room": period_rooms[p2],
+                            "from_block": b1,
+                            "to_block": b2,
+                        })
+
+        transit_ratio = round((cross_block_sprints / max(total_transitions, 1)) * 100.0, 1)
+        return {
+            "total_consecutive_transitions": total_transitions,
+            "cross_block_sprints": cross_block_sprints,
+            "cross_block_pct": transit_ratio,
+            "is_optimal": cross_block_sprints <= 5,
+            "details": details[:10]
+        }
+
+    @classmethod
+    def validate_section_weekly_quotas(cls, slots: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Validates academic section teaching quotas:
+        - 2nd Year: exactly 36 teaching slots
+        - 3rd Year: exactly 45 teaching slots
+        - 4th Year: exactly 39 teaching slots
+        """
+        counts_by_sec: Dict[str, int] = {}
+        for s in slots:
+            sec = str(s.get("section") or s.get("sectionName") or "")
+            stype = str(s.get("type") or s.get("entry_type") or "L").upper()
+            code = cls.normalize_string(str(s.get("subject") or s.get("subjectCode") or ""))
+            if code not in ("LIBRARY", "BREAK", "LUNCH") and stype not in ("BREAK", "LUNCH", "LIBRARY"):
+                counts_by_sec[sec] = counts_by_sec.get(sec, 0) + 1
+
+        deviations = {}
+        for sec, count in counts_by_sec.items():
+            expected = 36 if "II " in sec else (45 if "III " in sec else (39 if "IV " in sec else 36))
+            if count != expected:
+                deviations[sec] = {"actual": count, "expected": expected, "diff": count - expected}
+
+        return {
+            "total_sections_checked": len(counts_by_sec),
+            "quota_compliant_count": len(counts_by_sec) - len(deviations),
+            "deviation_count": len(deviations),
+            "is_compliant": len(deviations) == 0,
+            "deviations": deviations
+        }
+
+    @classmethod
+    def validate_library_allocation(cls, slots: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Validates Library rules (SC-04):
+        - 2nd Year: exactly 1 Library slot per week, ideally in P4 or P5.
+        - 3rd & 4th Year: 0 Library slots.
+        """
+        lib_slots_by_sec: Dict[str, List[int]] = {}
+        for s in slots:
+            sec = str(s.get("section") or s.get("sectionName") or "")
+            code = cls.normalize_string(str(s.get("subject") or s.get("subjectCode") or ""))
+            stype = str(s.get("type") or s.get("entry_type") or "").upper()
+            if "LIBRARY" in code or stype == "LIBRARY":
+                lib_slots_by_sec.setdefault(sec, []).append(int(s.get("period") or 1))
+
+        violations = []
+        for sec, p_list in lib_slots_by_sec.items():
+            if "III " in sec or "IV " in sec:
+                violations.append(f"{sec} has {len(p_list)} Library slot(s) (Expected: 0 for 3rd/4th Year)")
+            elif "II " in sec:
+                if len(p_list) != 1:
+                    violations.append(f"{sec} has {len(p_list)} Library slot(s) (Expected: 1 for 2nd Year)")
+                elif p_list[0] not in (4, 5):
+                    # Soft warning: preferably midday
+                    pass
+
+        return {
+            "total_sections_with_library": len(lib_slots_by_sec),
+            "violation_count": len(violations),
+            "is_valid": len(violations) == 0,
+            "violations": violations
+        }
 
 
 
