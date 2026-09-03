@@ -13,30 +13,35 @@ router = APIRouter()
 def get_root_dir() -> str:
     base_file_dir = os.path.dirname(os.path.abspath(__file__))
     candidates = [
-        os.path.abspath(os.path.join(base_file_dir, "..", "..", "..")),
+        "/app",
         os.path.abspath(os.path.join(base_file_dir, "..", "..", "..", "..")),
+        os.path.abspath(os.path.join(base_file_dir, "..", "..", "..")),
         os.getcwd(),
-        "/app"
     ]
     for c in candidates:
-        if os.path.exists(os.path.join(c, "time_table")) or os.path.exists(os.path.join(c, "data")):
+        v5_check = os.path.join(c, "time_table", "ACSE TIMETABLE (V5)  - W.e.f 15-7-2026.xlsx")
+        if os.path.exists(v5_check):
+            return c
+        if os.path.exists(os.path.join(c, "time_table")) and any(os.listdir(os.path.join(c, "time_table"))):
             return c
     return candidates[0]
 
 def get_source_filepath(dataset: str) -> str:
     root_dir = get_root_dir()
+    v5_path = os.path.join(root_dir, "time_table", "ACSE TIMETABLE (V5)  - W.e.f 15-7-2026.xlsx")
     file_map = {
         "4th_year": os.path.join(root_dir, "time_table", "4th yr TT 17TH JULY.xlsx"),
         "e2e_test": os.path.join(root_dir, "data", "test_outputs", "Test3_Focused10Sections_Cohort.xlsx"),
-        "multi_branch_e2e": os.path.join(root_dir, "time_table", "ACSE TIMETABLE (V5)  - W.e.f 15-7-2026.xlsx"),
-        "multi_year_e2e": os.path.join(root_dir, "time_table", "ACSE TIMETABLE (V5)  - W.e.f 15-7-2026.xlsx"),
-        "test5_dept": os.path.join(root_dir, "time_table", "ACSE TIMETABLE (V5)  - W.e.f 15-7-2026.xlsx"),
-        "v5_baseline": os.path.join(root_dir, "time_table", "ACSE TIMETABLE (V5)  - W.e.f 15-7-2026.xlsx")
+        "multi_branch_e2e": v5_path,
+        "multi_year_e2e": v5_path,
+        "test5_dept": v5_path,
+        "v5_baseline": v5_path,
+        "v5_ground_truth": v5_path,
     }
 
     file_path = file_map.get(dataset, file_map["v5_baseline"])
     if not os.path.exists(file_path):
-        for alt in [file_map["4th_year"], file_map["v5_baseline"], os.path.join(root_dir, "4th yr TT 17TH JULY.xlsx")]:
+        for alt in [file_map["4th_year"], v5_path, os.path.join(root_dir, "4th yr TT 17TH JULY.xlsx")]:
             if os.path.exists(alt):
                 file_path = alt
                 break
