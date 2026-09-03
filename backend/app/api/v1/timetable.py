@@ -78,7 +78,11 @@ async def validate_slot_move(req: Dict[str, Any], db: AsyncSession = Depends(get
     store.index_timetable(entries)
 
     entry_id = str(req.get("entry_id") or "")
-    sec_name = str(req.get("section_name") or "II AIML-A")
+    sec_name = str(req.get("section_name") or "")
+    if not sec_name:
+        from app.services.section_service import SectionService
+        secs = await SectionService.list_sections(db)
+        sec_name = secs["items"][0]["name"] if secs["items"] else "II AIML-A"
     fac_names = req.get("faculty_names") or []
     if isinstance(fac_names, str):
         fac_names = [f.strip() for f in fac_names.split(",") if f.strip()]
@@ -103,7 +107,11 @@ async def update_timetable_slot(req: Dict[str, Any], db: AsyncSession = Depends(
     """
     version_id = req.get("version_id", 5)
     entry_id = req.get("entry_id")
-    sec_name = str(req.get("section_name") or "II AIML-A")
+    sec_name = str(req.get("section_name") or "")
+    if not sec_name:
+        from app.services.section_service import SectionService
+        secs = await SectionService.list_sections(db)
+        sec_name = secs["items"][0]["name"] if secs["items"] else "II AIML-A"
     subj_code = str(req.get("subject_code") or "LECTURE")
     room_code = str(req.get("room_code") or "")
     day = str(req.get("day") or "MON")
