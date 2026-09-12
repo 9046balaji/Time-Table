@@ -588,9 +588,25 @@ class MasterArbiterAgent:
 
                 # Repair primary conflict
                 first_conflict = hard_vetoes[0]
+                disrupted_room = None
+                disrupted_fac = None
+                if first_conflict.affected_slot:
+                    disrupted_room = first_conflict.affected_slot.get("room") or first_conflict.affected_slot.get("roomCode")
+                    disrupted_fac = first_conflict.affected_slot.get("faculty")
+                if not disrupted_room and first_conflict.message:
+                    rm_m = re.search(r'Room\s+([A-Za-z0-9\-]+)', first_conflict.message)
+                    if rm_m:
+                        disrupted_room = rm_m.group(1)
+                if not disrupted_fac and first_conflict.message:
+                    fac_m = re.search(r'Faculty\s+([A-Za-z\.\s]+?)(?:→|has|is|\.|$)', first_conflict.message)
+                    if fac_m:
+                        disrupted_fac = fac_m.group(1).strip()
+
                 repair_result = solver.solve_local_repair(
                     current_entries=candidate_entries,
                     available_rooms=rooms,
+                    disrupted_room_code=disrupted_room,
+                    disrupted_faculty_name=disrupted_fac,
                     priority_level="P1_CRITICAL"
                 )
                 if repair_result and repair_result.get("entries"):
