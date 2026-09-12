@@ -214,6 +214,11 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
                 room_res = await db_session.execute(select(Room))
                 room_map = {r.code: r.id for r in room_res.scalars().all()}
 
+                from app.models.faculty import Faculty
+                from app.models.timetable_entry_faculty import TimetableEntryFaculty
+                fac_res = await db_session.execute(select(Faculty))
+                fac_map = {f.name.upper().strip(): f.id for f in fac_res.scalars().all()}
+
                 for e in result.get("entries", []):
                     s_name = e.get("section")
                     sec_id = sec_map.get(s_name)
@@ -224,6 +229,9 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
                     if sec_id and ts_id:
                         sub_code = e.get("subject")
                         room_code = e.get("room")
+                        fac_val = e.get("faculty")
+                        fac_names = fac_val if isinstance(fac_val, list) else [f.strip() for f in str(fac_val or "").split(",") if f.strip()]
+                        matched_ids = [fac_map[fn.upper()] for fn in fac_names if fn.upper() in fac_map]
 
                         entry_row = TimetableEntry(
                             timetable_version_id=db_version_id,
@@ -235,9 +243,13 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
                             span_periods=e.get("spanPeriods", 1),
                             raw_subject_text=sub_code,
                             raw_room_text=room_code,
-                            faculty_ids=None
+                            faculty_ids=matched_ids if matched_ids else None
                         )
                         db_session.add(entry_row)
+                        await db_session.flush()
+
+                        for fid in matched_ids:
+                            db_session.add(TimetableEntryFaculty(timetable_entry_id=entry_row.id, faculty_id=fid))
 
                 await db_session.commit()
         except Exception as ex:
