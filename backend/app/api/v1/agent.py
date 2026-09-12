@@ -505,3 +505,159 @@ async def publish_multi_agent_timetable(
         version_label=label,
         notes=payload.get("notes", "Published by Autonomous 7-Agent Society")
     )
+
+
+# =====================================================================
+# NEXT-GEN AGENT EXTENSIONS: SUBSTITUTE, EXAMS, PARETO, TELEMETRY, V2
+# =====================================================================
+
+@router.post("/substitute/find-candidates", response_model=Dict[str, Any])
+async def find_substitute_candidates(
+    payload: Dict[str, Any],
+    db: AsyncSession = Depends(get_db)
+):
+    """Identifies and ranks eligible substitute faculty adhering to AICTE hours and daily fatigue limits."""
+    faculty_name = str(payload.get("faculty_name") or "").strip()
+    if not faculty_name:
+        raise HTTPException(status_code=400, detail="faculty_name is required")
+
+    from app.services.substitute_dispatcher import SubstituteDispatcher
+    return await SubstituteDispatcher.find_candidate_substitutes(
+        db=db,
+        faculty_name=faculty_name,
+        day=payload.get("day"),
+        period=payload.get("period"),
+        subject_code=payload.get("subject"),
+        version_id=int(payload.get("version_id", 5))
+    )
+
+
+@router.post("/substitute/dispatch", response_model=Dict[str, Any])
+async def dispatch_substitute_faculty(
+    payload: Dict[str, Any],
+    db: AsyncSession = Depends(get_db)
+):
+    """Executes safe substitute assignment with pre-snapshot rollback guard and ground-truth validation."""
+    entry_id = payload.get("entry_id")
+    substitute_id = payload.get("substitute_faculty_id")
+    session_id = payload.get("session_id", 1)
+
+    if not entry_id or not substitute_id:
+        raise HTTPException(status_code=400, detail="entry_id and substitute_faculty_id are required")
+
+    from app.services.substitute_dispatcher import SubstituteDispatcher
+    try:
+        return await SubstituteDispatcher.dispatch_substitute(
+            db=db,
+            session_id=int(session_id),
+            entry_id=int(entry_id),
+            substitute_faculty_id=int(substitute_id),
+            original_faculty_name=payload.get("original_faculty_name"),
+            reason=str(payload.get("reason") or "Emergency absence reassignment")
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/exam/generate", response_model=Dict[str, Any])
+async def generate_exam_schedule(
+    payload: Optional[Dict[str, Any]] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Generates a conflict-free examination timetable with 50% room spacing factor and fair invigilator duties."""
+    p = payload or {}
+    from app.services.exam_scheduler_agent import ExamSchedulerAgent
+    return await ExamSchedulerAgent.generate_exam_schedule(
+        db=db,
+        exam_type=str(p.get("exam_type", "MID_TERM_1")),
+        start_date=str(p.get("start_date", "2026-10-12")),
+        num_days=int(p.get("num_days", 6)),
+        spacing_factor=float(p.get("spacing_factor", 0.5)),
+        target_sections=p.get("target_sections")
+    )
+
+
+@router.post("/pareto/evaluate", response_model=Dict[str, Any])
+async def evaluate_pareto_frontier(
+    payload: Optional[Dict[str, Any]] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Evaluates multi-objective Pareto trade-offs across Faculty, Student, and Infrastructure profiles."""
+    p = payload or {}
+    from app.services.pareto_optimizer import ParetoOptimizer
+    return await ParetoOptimizer.evaluate_timetable(
+        db=db,
+        version_id=int(p.get("version_id", 5)),
+        candidate_entries=p.get("entries")
+    )
+
+
+@router.post("/telemetry/occupancy", response_model=Dict[str, Any])
+async def record_room_telemetry(payload: Dict[str, Any]):
+    """Ingests live IoT room occupancy from campus edge cameras or BLE beacons."""
+    room_code = str(payload.get("room_code") or "").strip()
+    if not room_code:
+        raise HTTPException(status_code=400, detail="room_code is required")
+    headcount = int(payload.get("detected_headcount", 0))
+
+    from app.services.room_telemetry_agent import RoomTelemetryAgent
+    return RoomTelemetryAgent.record_sensor_telemetry(
+        room_code=room_code,
+        detected_headcount=headcount,
+        sensor_type=str(payload.get("sensor_type", "EDGE_VISION_CAMERA")),
+        confidence=float(payload.get("confidence", 0.95))
+    )
+
+
+@router.get("/telemetry/audit", response_model=Dict[str, Any])
+async def audit_room_telemetry(
+    day: str = Query("MON"),
+    period: int = Query(3),
+    version_id: int = Query(5),
+    db: AsyncSession = Depends(get_db)
+):
+    """Audits scheduled classroom occupancy against edge sensor readings to detect ghost bookings."""
+    from app.services.room_telemetry_agent import RoomTelemetryAgent
+    return await RoomTelemetryAgent.audit_room_utilization(
+        db=db,
+        day=day,
+        period=period,
+        version_id=version_id
+    )
+
+
+@router.post("/telemetry/reclaim", response_model=Dict[str, Any])
+async def reclaim_ghost_room(
+    payload: Dict[str, Any],
+    db: AsyncSession = Depends(get_db)
+):
+    """Reclaims vacant ghost-booked room for tutorial or remedial sessions with audit logging."""
+    room_code = str(payload.get("room_code") or "").strip()
+    if not room_code:
+        raise HTTPException(status_code=400, detail="room_code is required")
+
+    from app.services.room_telemetry_agent import RoomTelemetryAgent
+    return await RoomTelemetryAgent.reclaim_ghost_room(
+        db=db,
+        session_id=int(payload.get("session_id", 1)),
+        room_code=room_code,
+        day=str(payload.get("day", "MON")),
+        period=int(payload.get("period", 3)),
+        purpose=str(payload.get("purpose", "Ad-hoc remedial session"))
+    )
+
+
+@router.post("/hierarchical/solve", response_model=Dict[str, Any])
+async def solve_hierarchically(
+    payload: Optional[Dict[str, Any]] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Triggers V2 Hierarchical Domain Decomposition (Phase 1 Macro Locks -> Phase 2 Parallel Micro-Solvers)."""
+    p = payload or {}
+    from app.solver.hierarchical_decomposer import HierarchicalDecomposer
+    return await HierarchicalDecomposer.solve_hierarchically(
+        db=db,
+        version_id=int(p.get("version_id", 5)),
+        timeout_seconds=int(p.get("timeout_seconds", 30))
+    )
+

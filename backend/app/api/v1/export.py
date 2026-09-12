@@ -112,3 +112,51 @@ async def export_faculty_ical(faculty_id: int, version_id: int = Query(5), db: A
         media_type="text/calendar",
         headers={"Content-Disposition": f"attachment; filename=Faculty_{faculty_id}_Schedule.ics"}
     )
+
+
+@router.get("/ical/section/{section_identifier}")
+async def export_section_ical(
+    section_identifier: str,
+    version_id: int = Query(5),
+    db: AsyncSession = Depends(get_db)
+):
+    """Generate dynamic iCal (.ics) calendar subscription feed for an academic section."""
+    from app.services.calendar_sync_service import CalendarSyncService
+    ics_text = await CalendarSyncService.generate_section_ical(db, section_identifier=section_identifier, version_id=version_id)
+    return StreamingResponse(
+        io.BytesIO(ics_text.encode("utf-8")),
+        media_type="text/calendar",
+        headers={"Content-Disposition": f"attachment; filename=Section_{section_identifier}_Timetable.ics"}
+    )
+
+
+@router.get("/ical/cohort/{cohort_key}")
+async def export_cohort_ical(
+    cohort_key: str,
+    version_id: int = Query(5),
+    db: AsyncSession = Depends(get_db)
+):
+    """Generate dynamic iCal (.ics) calendar subscription feed for a year cohort (e.g. YEAR_2, YEAR_3, YEAR_4)."""
+    from app.services.calendar_sync_service import CalendarSyncService
+    ics_text = await CalendarSyncService.generate_cohort_ical(db, cohort_key=cohort_key, version_id=version_id)
+    return StreamingResponse(
+        io.BytesIO(ics_text.encode("utf-8")),
+        media_type="text/calendar",
+        headers={"Content-Disposition": f"attachment; filename=Cohort_{cohort_key}_Master.ics"}
+    )
+
+
+@router.get("/ical/master")
+async def export_master_ical(
+    version_id: int = Query(5),
+    db: AsyncSession = Depends(get_db)
+):
+    """Generate full department master iCal (.ics) calendar subscription feed."""
+    from app.services.calendar_sync_service import CalendarSyncService
+    ics_text = await CalendarSyncService.generate_master_ical(db, version_id=version_id)
+    return StreamingResponse(
+        io.BytesIO(ics_text.encode("utf-8")),
+        media_type="text/calendar",
+        headers={"Content-Disposition": f"attachment; filename=VFSTR_ACSE_Master_V{version_id}.ics"}
+    )
+
