@@ -147,12 +147,27 @@ class TimetableService:
 
                 res = await db.execute(stmt)
                 entries = res.scalars().all()
+
+                needed_ids = {
+                    fid
+                    for e in entries
+                    for fid in (e.faculty_ids if isinstance(e.faculty_ids, list) else [])
+                }
+                faculty_names_by_id: Dict[int, str] = {}
+                if needed_ids:
+                    fac_res2 = await db.execute(select(Faculty).where(Faculty.id.in_(needed_ids)))
+                    faculty_names_by_id = {f.id: f.name for f in fac_res2.scalars().all()}
+
                 for e in entries:
-                    raw_fac = e.raw_faculty_text or ""
+                    raw_fac = getattr(e, "raw_faculty_text", "") or ""
                     fac_names = [fa.faculty.name for fa in e.faculty_assignments if fa.faculty]
+                    if not fac_names and e.faculty_ids:
+                        f_ids = e.faculty_ids if isinstance(e.faculty_ids, list) else []
+                        fac_names = [faculty_names_by_id[fid] for fid in f_ids if fid in faculty_names_by_id]
+
                     is_match = (faculty_id and e.faculty_ids and faculty_id in e.faculty_ids) or \
                                any(fa.faculty_id == faculty_id for fa in e.faculty_assignments) or \
-                               is_fac_match(target_name, raw_fac) or \
+                               (bool(raw_fac) and is_fac_match(target_name, raw_fac)) or \
                                any(is_fac_match(target_name, fn) for fn in fac_names)
                     if is_match:
                         result.append({
@@ -162,11 +177,11 @@ class TimetableService:
                             "period": e.time_slot.period if e.time_slot else 1,
                             "subject": e.subject.code if e.subject else (e.raw_subject_text or ""),
                             "room": e.room.code if e.room else (e.raw_room_text or ""),
-                            "faculty": fac_names if fac_names else raw_fac.split(", "),
+                            "faculty": fac_names if fac_names else ([raw_fac] if raw_fac else []),
                             "entry_type": e.entry_type or "L"
                         })
             except Exception as ex:
-                print(f"[FacultyTimetable Error] {ex}")
+                logger.exception("get_faculty_timetable DB read failed for faculty %s: %s", faculty_id or target_name, ex)
 
         # Fast memory seed cache fallback if DB data empty
         if not result:
@@ -197,12 +212,13 @@ class TimetableService:
 
     @staticmethod
     async def get_room_timetable(db: Any = None, room_code: str = "601", version_id: int = 5) -> Dict[str, Any]:
-        """Fetch weekly occupancy schedule for a specific venue/room code."""
+        """Fetch weekly occupancy schedule for a specific venue/room code using indexed DB query."""
         all_tt = await TimetableService.get_version_timetable(db, version_id=version_id, section_name="ALL")
         entries = all_tt.get("entries", [])
+        norm_code = str(room_code).strip().upper()
         matched = [
             e for e in entries
-            if str(e.get("room", "")).strip().upper() == str(room_code).strip().upper()
+            if str(e.get("room", "")).strip().upper() == norm_code
         ]
         return {
             "room_code": room_code,

@@ -121,13 +121,40 @@ class ToolRegistry:
 
     @staticmethod
     async def get_room_availability(db: AsyncSession, day: str, period: int, room_type: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Queries available (unassigned) rooms for a given day and period slot."""
-        tt_data = await ToolRegistry.get_current_timetable(db)
-        occupied_rooms = {
-            str(e.get("room")).strip().upper()
-            for e in tt_data.get("entries", [])
-            if str(e.get("day")).upper() == day.upper() and int(e.get("period", 0)) == int(period)
-        }
+        """Queries available (unassigned) rooms for a given day and period slot using targeted indexed queries."""
+        occupied_rooms = set()
+        if db is not None:
+            try:
+                from app.models.time_slot import TimeSlot
+                norm_day = day.upper()[:3]
+                slot_q = await db.execute(
+                    select(TimeSlot.id).where(
+                        TimeSlot.day == norm_day,
+                        TimeSlot.period == int(period)
+                    )
+                )
+                slot_ids = slot_q.scalars().all()
+                if slot_ids:
+                    occ_q = await db.execute(
+                        select(Room.code)
+                        .join(TimetableEntry, TimetableEntry.room_id == Room.id)
+                        .where(
+                            TimetableEntry.time_slot_id.in_(slot_ids),
+                            TimetableEntry.timetable_version_id == 5
+                        )
+                    )
+                    occupied_rooms = {str(code).strip().upper() for code in occ_q.scalars().all()}
+            except Exception:
+                pass
+
+        if not occupied_rooms:
+            tt_data = await ToolRegistry.get_current_timetable(db)
+            occupied_rooms = {
+                str(e.get("room")).strip().upper()
+                for e in tt_data.get("entries", [])
+                if str(e.get("day")).upper() == day.upper() and int(e.get("period", 0)) == int(period)
+            }
+
         all_rooms = await ToolRegistry.get_rooms(db)
         available = []
         for r in all_rooms:
@@ -140,16 +167,44 @@ class ToolRegistry:
 
     @staticmethod
     async def get_faculty_availability(db: AsyncSession, day: str, period: int) -> List[Dict[str, Any]]:
-        """Queries teaching faculty members with zero assignments in a given time slot."""
-        tt_data = await ToolRegistry.get_current_timetable(db)
+        """Queries teaching faculty members with zero assignments in a given time slot using targeted indexed queries."""
         occupied_fac = set()
-        for e in tt_data.get("entries", []):
-            if str(e.get("day")).upper() == day.upper() and int(e.get("period", 0)) == int(period):
-                facs = e.get("faculty") or []
-                if isinstance(facs, str):
-                    facs = [f.strip() for f in facs.split(",") if f.strip()]
-                for f in facs:
-                    occupied_fac.add(str(f).strip().upper())
+        if db is not None:
+            try:
+                from app.models.time_slot import TimeSlot
+                from app.models.timetable_entry_faculty import TimetableEntryFaculty
+                norm_day = day.upper()[:3]
+                slot_q = await db.execute(
+                    select(TimeSlot.id).where(
+                        TimeSlot.day == norm_day,
+                        TimeSlot.period == int(period)
+                    )
+                )
+                slot_ids = slot_q.scalars().all()
+                if slot_ids:
+                    occ_q = await db.execute(
+                        select(Faculty.name)
+                        .join(TimetableEntryFaculty, TimetableEntryFaculty.faculty_id == Faculty.id)
+                        .join(TimetableEntry, TimetableEntry.id == TimetableEntryFaculty.timetable_entry_id)
+                        .where(
+                            TimetableEntry.time_slot_id.in_(slot_ids),
+                            TimetableEntry.timetable_version_id == 5
+                        )
+                    )
+                    occupied_fac = {str(name).strip().upper() for name in occ_q.scalars().all()}
+            except Exception:
+                pass
+
+        if not occupied_fac:
+            tt_data = await ToolRegistry.get_current_timetable(db)
+            for e in tt_data.get("entries", []):
+                if str(e.get("day")).upper() == day.upper() and int(e.get("period", 0)) == int(period):
+                    facs = e.get("faculty") or []
+                    if isinstance(facs, str):
+                        facs = [f.strip() for f in facs.split(",") if f.strip()]
+                    for f in facs:
+                        occupied_fac.add(str(f).strip().upper())
+
         all_fac = await ToolRegistry.get_faculty(db)
         return [f for f in all_fac if str(f.get("name")).strip().upper() not in occupied_fac]
 

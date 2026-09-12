@@ -30,8 +30,20 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
             detail="At least one course assignment must be provided."
         )
 
-    # 1. Build Section metadata
-    sections_list = [{"id": sec_name, "student_count": 60} for sec_name in req.sections]
+    # 1. Build Section metadata from live DB when available
+    sec_strengths: Dict[str, int] = {}
+    try:
+        from app.core.database import async_session_factory
+        from app.models.section import Section
+        from sqlalchemy import select
+        async with async_session_factory() as db_session:
+            sec_q = await db_session.execute(select(Section).where(Section.name.in_(req.sections)))
+            for s in sec_q.scalars().all():
+                sec_strengths[s.name] = s.strength
+    except Exception:
+        pass
+
+    sections_list = [{"id": sec_name, "student_count": sec_strengths.get(sec_name, 60)} for sec_name in req.sections]
 
     # 2. Build Section Subject Quotas & Faculty map using Real Seed Cache Data
     from app.core.seed_cache import get_seed_data
@@ -116,18 +128,42 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
                     faculty_map[co].append(assign.subject_code)
 
 
-    # 3. Dynamic Room Pool Expansion (always provide full venue pool for maximum solver feasibility)
+    # 3. Dynamic Room Pool: Query Live DB First (with capacity, room_type, block, gpu_capable)
     custom_rooms = getattr(req, "rooms", None)
     if custom_rooms:
         rooms_list = custom_rooms
     else:
-        seed_rooms = seed.get("rooms", [])
-        if seed_rooms:
-            rooms_list = [{"id": str(r.get("code") or r.get("id")), "capacity": r.get("capacity", 66), "room_type": r.get("room_type", "classroom")} for r in seed_rooms]
-        else:
-            from app.services.room_service import RoomService
-            seed_r = RoomService._get_seed_rooms()
-            rooms_list = [{"id": str(r["code"]), "capacity": r.get("capacity", 66), "room_type": r.get("room_type", "classroom")} for r in seed_r]
+        rooms_list = []
+        try:
+            from app.core.database import async_session_factory
+            from app.models.room import Room
+            from sqlalchemy import select
+            async with async_session_factory() as db_session:
+                r_q = await db_session.execute(select(Room).where(Room.is_available == True))
+                db_rooms = r_q.scalars().all()
+                if db_rooms:
+                    rooms_list = [
+                        {
+                            "id": str(r.code),
+                            "code": str(r.code),
+                            "capacity": r.capacity,
+                            "room_type": r.room_type,
+                            "block": getattr(r, "block", "U-Block"),
+                            "gpu_capable": getattr(r, "gpu_capable", False)
+                        }
+                        for r in db_rooms
+                    ]
+        except Exception:
+            pass
+
+        if not rooms_list:
+            seed_rooms = seed.get("rooms", [])
+            if seed_rooms:
+                rooms_list = [{"id": str(r.get("code") or r.get("id")), "capacity": r.get("capacity", 66), "room_type": r.get("room_type", "classroom"), "block": r.get("block", "U-Block")} for r in seed_rooms]
+            else:
+                from app.services.room_service import RoomService
+                seed_r = RoomService._get_seed_rooms()
+                rooms_list = [{"id": str(r["code"]), "capacity": r.get("capacity", 66), "room_type": r.get("room_type", "classroom"), "block": r.get("block", "U-Block")} for r in seed_r]
 
     # 4. Build Time Slots (MON..SAT, Periods 1..8)
     time_slots = []
@@ -219,6 +255,9 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
                 fac_res = await db_session.execute(select(Faculty))
                 fac_map = {f.name.upper().strip(): f.id for f in fac_res.scalars().all()}
 
+                entries_to_add = []
+                entry_fac_pairs = []
+
                 for e in result.get("entries", []):
                     s_name = e.get("section")
                     sec_id = sec_map.get(s_name)
@@ -245,11 +284,27 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
                             raw_room_text=room_code,
                             faculty_ids=matched_ids if matched_ids else None
                         )
-                        db_session.add(entry_row)
-                        await db_session.flush()
+                        entries_to_add.append(entry_row)
+                        entry_fac_pairs.append((entry_row, matched_ids))
 
+                if entries_to_add:
+                    # Single bulk flush populates IDs across all entries in one round-trip
+                    db_session.add_all(entries_to_add)
+                    await db_session.flush()
+
+                    fac_link_rows = []
+                    for entry_row, matched_ids in entry_fac_pairs:
                         for fid in matched_ids:
-                            db_session.add(TimetableEntryFaculty(timetable_entry_id=entry_row.id, faculty_id=fid))
+                            fac_link_rows.append(
+                                TimetableEntryFaculty(
+                                    timetable_entry_id=entry_row.id,
+                                    faculty_id=fid,
+                                    role_type="LEAD"
+                                )
+                            )
+                    if fac_link_rows:
+                        db_session.add_all(fac_link_rows)
+                        await db_session.flush()
 
                 await db_session.commit()
         except Exception as ex:

@@ -51,6 +51,9 @@ class GeneticAlgorithmOptimizer:
         best_individual = initial_entries
         best_eval = FitnessEvaluator.evaluate(best_individual)
 
+        # Collect valid room codes from initial candidate set
+        candidate_rooms = list({str(e.get("room", "")).strip() for e in initial_entries if e.get("room")})
+
         for gen in range(1, self.generations + 1):
             # Evaluate Population
             evaluations = [(ind, FitnessEvaluator.evaluate(ind)) for ind in population]
@@ -69,7 +72,7 @@ class GeneticAlgorithmOptimizer:
                 p1 = self._tournament_select(evaluations)
                 p2 = self._tournament_select(evaluations)
                 child = self._crossover(p1, p2)
-                child = self._mutate(child)
+                child = self._mutate(child, candidate_rooms=candidate_rooms)
                 new_population.append(child)
 
             population = new_population
@@ -110,11 +113,28 @@ class GeneticAlgorithmOptimizer:
         child = [dict(e) for e in parent1[:cut]] + [dict(e) for e in parent2[cut:]]
         return child
 
-    def _mutate(self, individual: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _mutate(
+        self, individual: List[Dict[str, Any]], candidate_rooms: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
+        """Multi-dimensional genetic mutation perturbing period, day, or room allocation."""
         mutated = [dict(e) for e in individual]
+        days = ["MON", "TUE", "WED", "THU", "FRI", "SAT"]
+        rooms = candidate_rooms or list({str(e.get("room", "")).strip() for e in individual if e.get("room")})
+
         for item in mutated:
             if random.random() < self.mutation_rate:
-                item["period"] = random.randint(1, 8)
+                roll = random.random()
+                if roll < 0.60:
+                    # Period shift (1..8)
+                    item["period"] = random.randint(1, 8)
+                elif roll < 0.85:
+                    # Day redistribution (labs avoid Saturday)
+                    stype = str(item.get("type") or item.get("entry_type") or "L").upper()
+                    allowed_days = days[:5] if stype in ("P", "LAB") else days
+                    item["day"] = random.choice(allowed_days)
+                elif rooms:
+                    # Alternative venue mutation
+                    item["room"] = random.choice(rooms)
         return mutated
 
 

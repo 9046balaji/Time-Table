@@ -1,5 +1,5 @@
 import asyncio
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 try:
@@ -55,11 +55,117 @@ class SolveService:
 
     @classmethod
     async def _execute_solver_async(cls, run_id: str, config: SolverConfig, db: Optional[AsyncSession]):
-        from app.core.seed_cache import get_seed_data
-        seed = get_seed_data()
+        sections_raw = []
+        rooms_to_solve = []
+        section_subjects = []
+        faculty_map: Dict[str, List[str]] = {}
 
-        # Real sections
-        sections_raw = seed.get("sections", [])
+        try:
+            from app.core.database import AsyncSessionLocal
+            from app.models.section import Section
+            from app.models.room import Room
+            from app.models.section_subject import SectionSubject
+            from sqlalchemy.orm import selectinload
+
+            async with AsyncSessionLocal() as session:
+                sec_q = await session.execute(select(Section).where(Section.is_active == True))
+                db_secs = sec_q.scalars().all()
+                if db_secs:
+                    sections_raw = [
+                        {
+                            "id": s.name,
+                            "name": s.name,
+                            "student_count": s.strength,
+                            "year_level": s.year_level
+                        }
+                        for s in db_secs
+                    ]
+
+                r_q = await session.execute(select(Room).where(Room.is_available == True))
+                db_rms = r_q.scalars().all()
+                if db_rms:
+                    rooms_to_solve = [
+                        {
+                            "id": str(r.code),
+                            "code": str(r.code),
+                            "capacity": r.capacity,
+                            "room_type": r.room_type,
+                            "block": r.block,
+                            "gpu_capable": r.gpu_capable
+                        }
+                        for r in db_rms
+                    ]
+
+                ss_q = await session.execute(
+                    select(SectionSubject).options(
+                        selectinload(SectionSubject.section),
+                        selectinload(SectionSubject.subject),
+                        selectinload(SectionSubject.lecture_faculty),
+                        selectinload(SectionSubject.tutorial_faculty),
+                        selectinload(SectionSubject.lab_lead_faculty),
+                    )
+                )
+                db_ss = ss_q.scalars().all()
+                if db_ss:
+                    for ss_item in db_ss:
+                        sec_name = ss_item.section.name if ss_item.section else ""
+                        sub_code = ss_item.subject.code if ss_item.subject else ""
+                        if not sec_name or not sub_code:
+                            continue
+
+                        if ss_item.lecture_slots_needed > 0:
+                            fac_name = ss_item.lecture_faculty.name if ss_item.lecture_faculty else ""
+                            section_subjects.append({
+                                "section_id": sec_name,
+                                "subject_id": f"{sec_name}_{sub_code}_L",
+                                "subject_code": sub_code,
+                                "subject_type": "L",
+                                "total_slots_needed": ss_item.lecture_slots_needed,
+                                "faculty_name": fac_name
+                            })
+                            if fac_name:
+                                faculty_map.setdefault(fac_name, []).append(sub_code)
+
+                        if ss_item.tutorial_slots_needed > 0:
+                            fac_name = ss_item.tutorial_faculty.name if ss_item.tutorial_faculty else ""
+                            section_subjects.append({
+                                "section_id": sec_name,
+                                "subject_id": f"{sec_name}_{sub_code}_T",
+                                "subject_code": f"{sub_code}(T)",
+                                "subject_type": "T",
+                                "total_slots_needed": ss_item.tutorial_slots_needed,
+                                "faculty_name": fac_name
+                            })
+                            if fac_name:
+                                faculty_map.setdefault(fac_name, []).append(sub_code)
+
+                        if ss_item.lab_slots_needed > 0:
+                            fac_name = ss_item.lab_lead_faculty.name if ss_item.lab_lead_faculty else ""
+                            section_subjects.append({
+                                "section_id": sec_name,
+                                "subject_id": f"{sec_name}_{sub_code}_P",
+                                "subject_code": f"{sub_code}(P)",
+                                "subject_type": "P",
+                                "total_slots_needed": ss_item.lab_slots_needed,
+                                "faculty_name": fac_name,
+                                "continuous_slots": ss_item.lab_consecutive_override or 2
+                            })
+                            if fac_name:
+                                faculty_map.setdefault(fac_name, []).append(sub_code)
+        except Exception:
+            pass
+
+        # Fall back to seed cache if DB had no rows
+        if not sections_raw or not rooms_to_solve:
+            from app.core.seed_cache import get_seed_data
+            seed = get_seed_data()
+            if not sections_raw:
+                sections_raw = seed.get("sections", [])
+            if not rooms_to_solve:
+                rooms_to_solve = seed.get("rooms", [])
+            if not section_subjects:
+                section_subjects = seed.get("section_subjects", [])
+
         if not sections_raw:
             sections_raw = [
                 {"id": "II AIML-A", "student_count": 60},
@@ -77,7 +183,6 @@ class SolveService:
         else:
             sections_to_solve = sections_raw
 
-        rooms_to_solve = seed.get("rooms", [])
         if not rooms_to_solve:
             rooms_to_solve = [{"id": f"60{i}", "capacity": 60, "room_type": "classroom"} for i in range(1, 10)]
 
@@ -91,7 +196,6 @@ class SolveService:
                     "is_blocked": False
                 })
 
-        section_subjects = seed.get("section_subjects", [])
         if not section_subjects:
             section_subjects = []
             for sec in sections_to_solve:
@@ -120,7 +224,7 @@ class SolveService:
             section_subjects=section_subjects,
             rooms=rooms_to_solve,
             time_slots=time_slots,
-            faculty_subject_map={},
+            faculty_subject_map=faculty_map,
             progress_callback=progress_cb
         )
 

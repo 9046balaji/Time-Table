@@ -16,7 +16,7 @@ and schedule updated" while leaving every timetable row untouched.
 """
 
 import time
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -172,9 +172,11 @@ async def apply_timetable_change(
                     )
                 )
             ).scalars().all()
-            for ef in existing_facs:
-                await db.delete(ef)
-            await db.flush()
+            if existing_facs:
+                for ef in existing_facs:
+                    await db.delete(ef)
+                await db.flush()
+
             for idx, fid in enumerate(new_fac_ids):
                 db.add(
                     TimetableEntryFaculty(
@@ -279,6 +281,9 @@ async def publish_schedule(
     written = 0
     unresolved = 0
 
+    entries_to_add: List[TimetableEntry] = []
+    entry_fac_pairs: List[Tuple[TimetableEntry, List[int]]] = []
+
     for entry in entries:
         section_id = maps["sections"].get(normalize_code(entry.get("section")))
         slot_key = _slot_key(entry)
@@ -314,18 +319,28 @@ async def publish_schedule(
             raw_subject_text=str(entry.get("subject") or ""),
             raw_room_text=str(entry.get("room") or ""),
         )
-        db.add(new_entry)
+        entries_to_add.append(new_entry)
+        entry_fac_pairs.append((new_entry, fac_ids))
+        written += 1
+
+    if entries_to_add:
+        # High-performance bulk insert: single flush populates generated IDs across all entries
+        db.add_all(entries_to_add)
         await db.flush()
 
-        for idx, fid in enumerate(fac_ids):
-            db.add(
-                TimetableEntryFaculty(
-                    timetable_entry_id=new_entry.id,
-                    faculty_id=fid,
-                    role_type="LEAD" if idx == 0 else "CO_INSTRUCTOR",
+        faculty_links: List[TimetableEntryFaculty] = []
+        for new_entry, fac_ids in entry_fac_pairs:
+            for idx, fid in enumerate(fac_ids):
+                faculty_links.append(
+                    TimetableEntryFaculty(
+                        timetable_entry_id=new_entry.id,
+                        faculty_id=fid,
+                        role_type="LEAD" if idx == 0 else "CO_INSTRUCTOR",
+                    )
                 )
-            )
-        written += 1
+        if faculty_links:
+            db.add_all(faculty_links)
+            await db.flush()
 
     await db.commit()
     await ToolRegistry.log_action(

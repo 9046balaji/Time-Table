@@ -136,6 +136,17 @@ class CPSATSolver:
                 else:
                     room_pool = rooms
 
+                # Upfront capacity & type pruning (HC-05 & HC-06) to drastically reduce CP-SAT variable count
+                if not is_self_directed:
+                    sec_capacity = sec.get("student_count") or sec.get("strength") or 60
+                    compat_pool = [
+                        r for r in room_pool
+                        if (r.get("capacity", 60) >= sec_capacity)
+                        and ConstraintRules.is_room_compatible(sub_type, r.get("room_type", "classroom"))
+                    ]
+                    if compat_pool:
+                        room_pool = compat_pool
+
                 for r in room_pool:
                     r_id = r["id"]
                     for t in time_slots:
@@ -457,15 +468,51 @@ class CPSATSolver:
                                     model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
 
         # -----------------------------------------------------------------------
-        # 10. Objective Function: Schedule Compacting into Early Periods (P1..P6)
+        # 10. Multi-Objective Function: Schedule Compacting, Block Locality & GPU Suitability
         # -----------------------------------------------------------------------
+        room_by_id = {r["id"]: r for r in rooms}
+        room_by_id[self.VIRTUAL_LIB_ROOM["id"]] = self.VIRTUAL_LIB_ROOM
+
+        sub_by_id = {ss["subject_id"]: ss for ss_list in sec_subjs_by_sec.values() for ss in ss_list}
+        sec_by_id = {sec["id"]: sec for sec in sections}
+
         obj_terms = []
         for (s_id, sub_id, r_id, t_id), var in x.items():
             try:
                 p_num = int(str(t_id).split("_")[-1])
             except Exception:
                 p_num = 1
-            obj_terms.append(var * p_num)
+
+            # Base cost: compact into earlier periods (weight: 10 * period)
+            cost = p_num * 10
+
+            r_meta = room_by_id.get(r_id, {})
+            ss_meta = sub_by_id.get(sub_id, {})
+            sec_meta = sec_by_id.get(s_id, {})
+
+            r_code = str(r_meta.get("code") or r_id).upper()
+            sub_code = str(ss_meta.get("subject_code") or "").upper()
+            sec_cap = sec_meta.get("student_count") or sec_meta.get("strength") or 60
+            r_cap = r_meta.get("capacity", 60)
+
+            # SC-06: GPU Lab Suitability
+            is_gpu_sub = any(k in sub_code for k in ("DL", "CV", "MLOP", "GENAI"))
+            is_gpu_room = r_meta.get("gpu_capable", False) or "AFTF" in r_code
+            if is_gpu_sub and is_gpu_room:
+                cost -= 15  # Preferred GPU lab allocation bonus
+            elif is_gpu_sub and not is_gpu_room and ss_meta.get("subject_type") in ("P", "LAB"):
+                cost += 15  # Non-GPU lab penalty
+
+            # SC-09: Campus Building Block Locality
+            r_blk = str(r_meta.get("block") or "").upper()
+            if "U-BLOCK" in r_blk or "U_BLOCK" in r_blk:
+                cost -= 5
+
+            # SC-05: Capacity Fit (discourage allocating huge venues to smaller sections when not needed)
+            if r_cap > sec_cap + 40 and r_cap > 100:
+                cost += 8
+
+            obj_terms.append(var * cost)
 
         if obj_terms:
             model.Minimize(sum(obj_terms))
