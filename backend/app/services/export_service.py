@@ -35,26 +35,20 @@ class ExportService:
                     parsed_res = ExcelTimetableParser().parse_file(resolve_version_path(v_label))
                     timetable_data["sections"] = [{"name": sname} for sname in parsed_res.sections.keys()]
 
-                # Query entries for version_id
-                stmt = select(TimetableEntry, Section, TimeSlot, Room)\
-                    .outerjoin(Section, TimetableEntry.section_id == Section.id)\
-                    .outerjoin(TimeSlot, TimetableEntry.time_slot_id == TimeSlot.id)\
-                    .outerjoin(Room, TimetableEntry.room_id == Room.id)\
-                    .where(TimetableEntry.timetable_version_id == version_id)
-
-                res = await db.execute(stmt)
-                rows = res.all()
+                from app.services.timetable_service import TimetableService
+                tt_res = await TimetableService.get_version_timetable(db, version_id=version_id, section_name="ALL")
                 slots = []
-                for e, sec, ts, rm in rows:
-                    if sec and ts:
-                        slots.append({
-                            "section": sec.name,
-                            "day": ts.day,
-                            "period": ts.period,
-                            "subject": e.raw_subject_text or "",
-                            "room": rm.code if rm else (e.raw_room_text or ""),
-                            "faculty": e.raw_faculty_text or ""
-                        })
+                for e in tt_res.get("entries", []):
+                    fac = e.get("faculty")
+                    fac_str = ", ".join(fac) if isinstance(fac, list) else str(fac or "")
+                    slots.append({
+                        "section": e.get("section", ""),
+                        "day": e.get("day", ""),
+                        "period": e.get("period", 1),
+                        "subject": e.get("subject", ""),
+                        "room": e.get("room", ""),
+                        "faculty": fac_str
+                    })
                 if slots:
                     timetable_data["slots"] = slots
             except Exception as ex:
@@ -77,24 +71,23 @@ class ExportService:
 
         if db is not None:
             try:
-                stmt = select(TimetableEntry, Section, TimeSlot, Room)\
-                    .outerjoin(Section, TimetableEntry.section_id == Section.id)\
-                    .outerjoin(TimeSlot, TimetableEntry.time_slot_id == TimeSlot.id)\
-                    .outerjoin(Room, TimetableEntry.room_id == Room.id)\
-                    .where(TimetableEntry.timetable_version_id == version_id)
-
-                res = await db.execute(stmt)
-                rows = res.all()
+                from app.services.timetable_service import TimetableService
+                tt_res = await TimetableService.get_version_timetable(db, version_id=version_id, section_name="ALL")
                 slots = []
-                for e, sec, ts, rm in rows:
-                    if sec and ts:
+                c_filter = cohort_key.replace("_", " ").upper()
+                for e in tt_res.get("entries", []):
+                    sec = str(e.get("section", "")).upper()
+                    is_match = (c_filter in sec) or (cohort_key == "YEAR_2" and "II " in sec) or (cohort_key == "YEAR_3" and "III " in sec) or (cohort_key == "YEAR_4" and "IV " in sec)
+                    if is_match:
+                        fac = e.get("faculty")
+                        fac_str = ", ".join(fac) if isinstance(fac, list) else str(fac or "")
                         slots.append({
-                            "section": sec.name,
-                            "day": ts.day,
-                            "period": ts.period,
-                            "subject": e.raw_subject_text or "",
-                            "room": rm.code if rm else (e.raw_room_text or ""),
-                            "faculty": e.raw_faculty_text or ""
+                            "section": e.get("section", ""),
+                            "day": e.get("day", ""),
+                            "period": e.get("period", 1),
+                            "subject": e.get("subject", ""),
+                            "room": e.get("room", ""),
+                            "faculty": fac_str
                         })
                 if slots:
                     timetable_data["slots"] = slots
