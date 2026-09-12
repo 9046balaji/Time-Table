@@ -49,7 +49,9 @@ async def export_excel_timetable(version_id: int = Query(5), db: AsyncSession = 
     )
 
 
+@router.get("/pdf")
 @router.post("/pdf")
+@router.get("/pdf/sections")
 @router.post("/pdf/sections")
 async def export_sections_pdf(version_id: int = Query(5), db: AsyncSession = Depends(get_db)):
     pdf_bytes = await ExportService.generate_section_pdfs(db, version_id=version_id)
@@ -60,6 +62,7 @@ async def export_sections_pdf(version_id: int = Query(5), db: AsyncSession = Dep
     )
 
 
+@router.get("/pdf/faculty")
 @router.post("/pdf/faculty")
 async def export_faculty_pdf(version_id: int = Query(5), db: AsyncSession = Depends(get_db)):
     pdf_bytes = await ExportService.generate_faculty_pdfs(db, version_id=version_id)

@@ -143,36 +143,25 @@ class ExportService:
 
         if db is not None:
             try:
-                from sqlalchemy import select
-                from app.models.section import Section
-                from app.models.timetable import TimetableEntry
-                from app.models.time_slot import TimeSlot
-                from app.models.room import Room
-
-                sec_res = await db.execute(select(Section).where(Section.is_active == True).order_by(Section.id))
-                sections_db = sec_res.scalars().all()
-                section_names = [s.name for s in sections_db if not s.name.startswith("Section ")]
-
-                stmt = select(TimetableEntry, Section, TimeSlot, Room)\
-                    .outerjoin(Section, TimetableEntry.section_id == Section.id)\
-                    .outerjoin(TimeSlot, TimetableEntry.time_slot_id == TimeSlot.id)\
-                    .outerjoin(Room, TimetableEntry.room_id == Room.id)\
-                    .where(TimetableEntry.timetable_version_id == version_id)
-
-                res = await db.execute(stmt)
-                rows = res.all()
-                for e, sec, ts, rm in rows:
-                    if sec and ts:
-                        slots_list.append({
-                            "section": sec.name,
-                            "day": ts.day,
-                            "period": ts.period,
-                            "subject": e.raw_subject_text or "",
-                            "room": rm.code if rm else (e.raw_room_text or ""),
-                            "faculty": e.raw_faculty_text or ""
-                        })
+                from app.services.timetable_service import TimetableService
+                tt_res = await TimetableService.get_version_timetable(db, version_id=version_id, section_name="ALL")
+                entries = tt_res.get("entries", [])
+                if entries:
+                    slots_list = [
+                        {
+                            "section": e.get("section", ""),
+                            "day": e.get("day", ""),
+                            "period": e.get("period", 1),
+                            "subject": e.get("subject", ""),
+                            "room": e.get("room", ""),
+                            "faculty": ", ".join(e.get("faculty", [])) if isinstance(e.get("faculty"), list) else str(e.get("faculty") or "")
+                        }
+                        for e in entries
+                    ]
+                    section_names = sorted(list({s["section"] for s in slots_list if s.get("section")}))
             except Exception as ex:
-                print(f"[SectionPDF DB Error] {ex}")
+                import logging
+                logging.getLogger(__name__).exception("[SectionPDF DB Error] %s", ex)
 
         # Fallback to direct Excel dataset parsing if DB data empty
         if not section_names or not slots_list:

@@ -1,8 +1,8 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.core.database import engine, AsyncSessionLocal, ensure_database
+from app.core.database import engine, AsyncSessionLocal, ensure_database, get_db
 from app.api.v1.router import api_v1_router
 from app.services.seed_service import SeedService
 
@@ -44,6 +44,7 @@ app.add_middleware(
 
 
 @app.get("/health", tags=["Health"])
+@app.get(f"{settings.API_V1_STR}/health", tags=["Health"])
 async def health_check():
     return {
         "status": "ok",
@@ -53,3 +54,10 @@ async def health_check():
 
 
 app.include_router(api_v1_router, prefix=settings.API_V1_STR)
+
+# Global compatibility route aliases for legacy or frontend calls
+@app.get(f"{settings.API_V1_STR}/versions", tags=["Timetable"], include_in_schema=False)
+async def versions_alias(db=Depends(get_db)):
+    from app.api.v1.timetable import list_timetable_versions
+    return await list_timetable_versions(db=db)
+

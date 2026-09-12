@@ -29,6 +29,7 @@ api_v1_router.include_router(validate_router, prefix="/validate", tags=["Validat
 api_v1_router.include_router(import_excel_router, prefix="/import/excel", tags=["Import"])
 api_v1_router.include_router(solve_router, prefix="/solve", tags=["Solver"])
 api_v1_router.include_router(wizard_solve_router, prefix="/solve", tags=["Wizard Solver"])
+api_v1_router.include_router(wizard_solve_router, prefix="/wizard", tags=["Wizard Solver Alias"])
 api_v1_router.include_router(export_router, prefix="/export", tags=["Export"])
 api_v1_router.include_router(testing_router, prefix="/testing", tags=["Testing Lab"])
 api_v1_router.include_router(telemetry_router, prefix="/telemetry", tags=["Telemetry & Health"])

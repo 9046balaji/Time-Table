@@ -365,6 +365,24 @@ async def simulate_disruption_scenario(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+@router.get("/stream/{session_id}", response_model=Dict[str, Any])
+async def get_agent_stream_status(session_id: int, db: AsyncSession = Depends(get_db)):
+    """HTTP fallback for agent stream status and polling clients."""
+    from app.services.agent_service import AgentService
+    try:
+        session = await AgentService.get_session(db, session_id)
+        if not session:
+            return {"session_id": session_id, "status": "idle", "active_phase": "idle", "connected": False}
+        return {
+            "session_id": session_id,
+            "status": session.get("status", "idle"),
+            "active_phase": session.get("active_phase", "idle"),
+            "connected": True
+        }
+    except Exception:
+        return {"session_id": session_id, "status": "idle", "active_phase": "idle", "connected": False}
+
+
 @router.websocket("/stream/{session_id}")
 async def stream_agent_events(websocket: WebSocket, session_id: int):
     from app.services.agent_websocket_manager import agent_ws_manager
@@ -523,13 +541,16 @@ async def publish_multi_agent_timetable(
     entries = payload.get("entries") or []
     if not entries:
         raise HTTPException(status_code=400, detail="No entries provided to publish")
-    return await publish_schedule(
-        db=db,
-        session_id=payload.get("session_id", 1),
-        entries=entries,
-        version_label=label,
-        notes=payload.get("notes", "Published by Autonomous 7-Agent Society")
-    )
+    try:
+        return await publish_schedule(
+            db=db,
+            session_id=payload.get("session_id", 1),
+            entries=entries,
+            version_label=label,
+            notes=payload.get("notes", "Published by Autonomous 7-Agent Society")
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 # =====================================================================
@@ -537,23 +558,31 @@ async def publish_multi_agent_timetable(
 # =====================================================================
 
 @router.post("/substitute/find-candidates", response_model=Dict[str, Any])
+@router.get("/substitute/find-candidates", response_model=Dict[str, Any])
+@router.get("/substitutes", response_model=Dict[str, Any])
 async def find_substitute_candidates(
-    payload: Dict[str, Any],
+    payload: Optional[Dict[str, Any]] = None,
+    faculty_name: Optional[str] = Query(None),
+    day: Optional[str] = Query(None),
+    period: Optional[int] = Query(None),
+    subject: Optional[str] = Query(None),
+    version_id: Optional[int] = Query(5),
     db: AsyncSession = Depends(get_db)
 ):
     """Identifies and ranks eligible substitute faculty adhering to AICTE hours and daily fatigue limits."""
-    faculty_name = str(payload.get("faculty_name") or "").strip()
-    if not faculty_name:
+    pl = payload or {}
+    fn = str(pl.get("faculty_name") or faculty_name or "").strip()
+    if not fn:
         raise HTTPException(status_code=400, detail="faculty_name is required")
 
     from app.services.substitute_dispatcher import SubstituteDispatcher
     return await SubstituteDispatcher.find_candidate_substitutes(
         db=db,
-        faculty_name=faculty_name,
-        day=payload.get("day"),
-        period=payload.get("period"),
-        subject_code=payload.get("subject"),
-        version_id=int(payload.get("version_id", 5))
+        faculty_name=fn,
+        day=pl.get("day") or day,
+        period=pl.get("period") or period,
+        subject_code=pl.get("subject") or subject,
+        version_id=int(pl.get("version_id") or version_id or 5)
     )
 
 

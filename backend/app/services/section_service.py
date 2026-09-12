@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from app.models.section import Section
 from app.models.branch import Branch
 from app.core.seed_cache import get_seed_data
@@ -34,14 +35,14 @@ class SectionService:
         items: List[Dict[str, Any]] = []
         if db is not None:
             try:
-                stmt = select(Section)
+                stmt = select(Section).options(selectinload(Section.branch)).order_by(Section.name)
                 res = await db.execute(stmt)
                 db_sections = res.scalars().all()
                 if db_sections:
                     items = []
                     for s in db_sections:
                         s_name = s.name or ""
-                        b_code = s.branch.code if getattr(s, "branch", None) else ("CSBS" if "CSBS" in s_name else ("IOT" if "IOT" in s_name else ("DS" if "DS" in s_name else ("CS" if "CS" in s_name else "AIML"))))
+                        b_code = s.branch.code if s.branch else ("CSBS" if "CSBS" in s_name else ("IOT" if "IOT" in s_name else ("DS" if "DS" in s_name else ("CS" if "CS" in s_name else "AIML"))))
                         y_num = getattr(s, "year_level", 2) or 2
 
                         items.append({
@@ -53,7 +54,8 @@ class SectionService:
                             "strength": getattr(s, "strength", 60)
                         })
             except Exception as ex:
-                print(f"[SectionService DB Error] {ex}")
+                import logging
+                logging.getLogger(__name__).warning("[SectionService DB Warning] %s", ex)
 
         if not items:
             items = cls._get_seed_sections()
@@ -72,6 +74,6 @@ class SectionService:
 
     @staticmethod
     async def get_by_id(db: AsyncSession, section_id: int) -> Optional[Section]:
-        stmt = select(Section).where(Section.id == section_id)
+        stmt = select(Section).options(selectinload(Section.branch)).where(Section.id == section_id)
         res = await db.execute(stmt)
         return res.scalar_one_or_none()
