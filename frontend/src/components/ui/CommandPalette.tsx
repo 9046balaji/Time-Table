@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search,
@@ -68,14 +68,14 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     }
   }, [isOpen]);
 
-  const navigateTo = (path: string, label: string) => {
+  const navigateTo = useCallback((path: string, label: string) => {
     router.push(path);
     toast.info(`Navigated to ${label}`);
     onClose();
-  };
+  }, [router, onClose]);
 
   // Static Navigation & AI Actions
-  const staticItems: CommandItem[] = [
+  const staticItems: CommandItem[] = useMemo(() => [
     {
       id: 'nav-dashboard',
       category: 'Navigation',
@@ -140,7 +140,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       icon: <Zap className="w-4 h-4 text-amber-500" />,
       action: () => navigateTo('/schedule?action=solve', 'AI Solver'),
     },
-  ];
+  ], [navigateTo]);
 
   // Dynamic Section items
   const sectionItems: CommandItem[] = useMemo(() => {
@@ -164,7 +164,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         action: () => navigateTo(`/schedule?section=${encodeURIComponent(sName)}`, `${sName} Schedule`),
       };
     });
-  }, [sections]);
+  }, [sections, navigateTo]);
 
   // Dynamic Faculty items
   const facultyItems: CommandItem[] = useMemo(() => {
@@ -176,7 +176,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       icon: <User className="w-4 h-4 text-violet-600 dark:text-violet-400" />,
       action: () => navigateTo(`/configure?tab=faculty&search=${encodeURIComponent(f.name)}`, `Faculty ${f.name}`),
     }));
-  }, [faculty]);
+  }, [faculty, navigateTo]);
 
   // Dynamic Room items
   const roomItems: CommandItem[] = useMemo(() => {
@@ -188,7 +188,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       icon: <Building className="w-4 h-4 text-rose-600 dark:text-rose-400" />,
       action: () => navigateTo(`/configure?tab=rooms&search=${encodeURIComponent(r.code)}`, `Venue ${r.code}`),
     }));
-  }, [rooms]);
+  }, [rooms, navigateTo]);
 
   // Dynamic Subject items
   const subjectItems: CommandItem[] = useMemo(() => {
@@ -200,12 +200,12 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       icon: <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />,
       action: () => navigateTo(`/configure?tab=subjects&search=${encodeURIComponent(sub.code)}`, `Subject ${sub.code}`),
     }));
-  }, [subjects]);
+  }, [subjects, navigateTo]);
 
   // Combine all searchable command items
   const allItems = useMemo(() => {
     return [...staticItems, ...sectionItems, ...facultyItems, ...roomItems, ...subjectItems];
-  }, [sectionItems, facultyItems, roomItems, subjectItems]);
+  }, [staticItems, sectionItems, facultyItems, roomItems, subjectItems]);
 
   const filteredItems = useMemo(() => {
     if (!query.trim()) return allItems.slice(0, 12);

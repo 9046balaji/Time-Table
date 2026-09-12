@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Users, GraduationCap, Building2, BookOpen, Plus, Search, Filter,
@@ -65,7 +65,7 @@ export default function ConfigurePage() {
   };
 
   // Fetch initial master data
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [facRes, roomRes, subRes, secRes] = await Promise.all([
@@ -116,11 +116,11 @@ export default function ConfigurePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   return (
     <div className="space-y-6 w-full max-w-full pb-12">

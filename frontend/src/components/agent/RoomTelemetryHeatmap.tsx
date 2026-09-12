@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Activity, AlertTriangle, RefreshCw, Radio, CheckCircle, ShieldAlert, Cpu } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/api';
 
@@ -14,7 +14,7 @@ export const RoomTelemetryHeatmap: React.FC = () => {
 
   const apiBase = getApiBaseUrl();
 
-  const fetchTelemetry = async () => {
+  const fetchTelemetry = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${apiBase}/api/v1/agent/telemetry/audit?day=${day}&period=${period}&version_id=5`);
@@ -26,11 +26,11 @@ export const RoomTelemetryHeatmap: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiBase, day, period]);
 
   useEffect(() => {
     fetchTelemetry();
-  }, [day, period]);
+  }, [fetchTelemetry]);
 
   const handleSimulateGhost = async (roomCode: string) => {
     try {

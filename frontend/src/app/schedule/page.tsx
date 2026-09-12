@@ -148,7 +148,7 @@ export default function SchedulePage() {
       const subs = Array.isArray(res.data) ? res.data : ((res.data as any)?.items || []);
       setSubjectList(subs);
     }).catch(() => setSubjectList([]));
-  }, []);
+  }, [urlVersionId]);
 
   // Fetch full timetable slots for selected version when Free Venue Inspector is opened
   useEffect(() => {

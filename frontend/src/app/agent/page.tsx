@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Activity, AlertTriangle, CheckCircle2, RefreshCw, ShieldCheck, RotateCcw } from 'lucide-react';
 import { getApiBaseUrl, getWsBaseUrl } from '@/lib/api';
@@ -41,7 +41,7 @@ export default function AgentConsolePage() {
 
   const apiBase = getApiBaseUrl();
 
-  const loadSession = async (sessionId?: number) => {
+  const loadSession = useCallback(async (sessionId?: number) => {
     if (sessionId) {
       const res = await fetch(`${apiBase}/api/v1/agent/sessions/${sessionId}`);
       if (!res.ok) {
@@ -55,9 +55,9 @@ export default function AgentConsolePage() {
       return data;
     }
     return null;
-  };
+  }, [apiBase]);
 
-  const createSession = async () => {
+  const createSession = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${apiBase}/api/v1/agent/sessions`, {
@@ -88,7 +88,7 @@ export default function AgentConsolePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiBase]);
 
   const triggerScenario = async (scenarioType: string, targetCode?: string, affectedSections?: string[]) => {
     if (!session?.id) return;
@@ -206,7 +206,7 @@ export default function AgentConsolePage() {
 
   useEffect(() => {
     createSession();
-  }, []);
+  }, [createSession]);
 
   useEffect(() => {
     if (!session?.id) return;
@@ -227,7 +227,7 @@ export default function AgentConsolePage() {
     return () => {
       if (socket) socket.close();
     };
-  }, [session?.id]);
+  }, [session?.id, loadSession]);
 
   const eventList = (session?.events || []) as any[];
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Sliders, CheckCircle2, Award, Zap, Compass, Activity } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/api';
 
@@ -13,7 +13,7 @@ export const ParetoExplorerPanel: React.FC = () => {
 
   const apiBase = getApiBaseUrl();
 
-  const handleEvaluate = async () => {
+  const handleEvaluate = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -32,11 +32,11 @@ export const ParetoExplorerPanel: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiBase, versionId]);
 
   useEffect(() => {
     handleEvaluate();
-  }, [versionId]);
+  }, [handleEvaluate]);
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">

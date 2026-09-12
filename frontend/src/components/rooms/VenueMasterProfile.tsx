@@ -131,6 +131,16 @@ export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
         if (!matchCode && !matchBlock) return false;
       }
 
+      if (quickFilter === "CLASS") {
+        return (rm.room_type === "classroom" || (rm as any).type === "classroom") && !rm.gpu_capable;
+      }
+      if (quickFilter === "LAB") {
+        return rm.room_type === "computer_lab" || rm.room_type === "gpu_lab" || (rm as any).type === "computer_lab";
+      }
+      if (quickFilter === "GPU") {
+        return rm.gpu_capable || rm.code.includes("AFTF");
+      }
+
       return true;
     });
   }, [roomList, searchQuery, quickFilter]);
