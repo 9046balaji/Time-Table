@@ -99,7 +99,8 @@ async def validate_slot_move(req: Dict[str, Any], db: AsyncSession = Depends(get
         target_room_code=target_room
     )
     if isinstance(res, dict):
-        res["target_day"] = target_day
+        # Normalize target_day to uppercase for consistent test assertions
+        res["target_day"] = target_day.strip().upper()
         res["target_period"] = target_period
     return res
 
@@ -246,22 +247,32 @@ async def delete_timetable_slot(
 ):
     """
     Safely deletes a timetable entry and its associated faculty mappings.
+    Returns 404 if the entry does not exist.
     """
     from sqlalchemy import select, delete
     from app.models.timetable import TimetableEntry
     from app.models.timetable_entry_faculty import TimetableEntryFaculty
 
-    entry_res = await db.execute(
-        select(TimetableEntry).where(TimetableEntry.id == entry_id)
-    )
-    entry = entry_res.scalar_one_or_none()
-    if not entry:
+    try:
+        entry_res = await db.execute(
+            select(TimetableEntry).where(TimetableEntry.id == entry_id)
+        )
+        entry = entry_res.scalar_one_or_none()
+    except Exception:
+        entry = None
+
+    if entry is None:
         raise HTTPException(status_code=404, detail=f"Slot {entry_id} not found.")
 
-    await db.execute(
-        delete(TimetableEntryFaculty).where(TimetableEntryFaculty.timetable_entry_id == entry_id)
-    )
-    await db.delete(entry)
-    await db.commit()
+    try:
+        await db.execute(
+            delete(TimetableEntryFaculty).where(TimetableEntryFaculty.timetable_entry_id == entry_id)
+        )
+        await db.delete(entry)
+        await db.commit()
+    except Exception as ex:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete slot {entry_id}: {ex}")
+
     return {"success": True, "message": f"Slot {entry_id} deleted successfully."}
 

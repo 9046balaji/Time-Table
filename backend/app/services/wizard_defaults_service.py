@@ -80,11 +80,40 @@ class WizardDefaultsService:
             seed_secs = SectionService._get_seed_sections()
             section_names = [s["name"] for s in seed_secs]
 
-        # 4. Standard Curricula dynamically generated from seed entries
+        # 4. Standard Curricula dynamically generated from seed entries.
+        #    Compute REAL weekly_hours by counting how many times each subject appears
+        #    per section in seed data (averaged across all sections of the same year).
         seed_entries = seed.get("entries", [])
         curricula_map: Dict[str, List[Dict[str, Any]]] = {"II Year": [], "III Year": [], "IV Year": []}
         seen_codes: Dict[str, Set[str]] = {"II Year": set(), "III Year": set(), "IV Year": set()}
 
+        # Phase 1: count occurrences per (section, subject) pair
+        sec_subj_counts: Dict[tuple, int] = {}
+        for e in seed_entries:
+            sname = str(e.get("section") or "").strip()
+            code = str(e.get("subject") or "").strip()
+            if sname and code and code not in ("BREAK", "LUNCH"):
+                key = (sname, code)
+                sec_subj_counts[key] = sec_subj_counts.get(key, 0) + 1
+
+        # Phase 2: average across sections of the same year to get "typical" weekly hours
+        year_subj_slot_lists: Dict[str, Dict[str, list]] = {
+            "II Year": {}, "III Year": {}, "IV Year": {}
+        }
+        for (sname, code), cnt in sec_subj_counts.items():
+            yk = "IV Year" if sname.startswith("IV") else ("III Year" if sname.startswith("III") else "II Year")
+            if code not in year_subj_slot_lists[yk]:
+                year_subj_slot_lists[yk][code] = []
+            year_subj_slot_lists[yk][code].append(cnt)
+
+        real_weekly_hours: Dict[str, Dict[str, int]] = {}
+        for yk, subj_map in year_subj_slot_lists.items():
+            real_weekly_hours[yk] = {}
+            for code, counts in subj_map.items():
+                avg = round(sum(counts) / len(counts))
+                real_weekly_hours[yk][code] = max(1, min(avg, 12))  # clamp 1..12
+
+        # Phase 3: build curricula with real weekly_hours
         for e in seed_entries:
             sname = str(e.get("section") or "")
             code = str(e.get("subject") or "").strip()
@@ -100,13 +129,18 @@ class WizardDefaultsService:
                 co_facs = fac[1:] if isinstance(fac, list) and len(fac) > 1 else []
                 is_lab = "(P)" in code or stype == "P"
 
+                # Use real computed weekly_hours from seed data
+                real_hours = real_weekly_hours.get(year_key, {}).get(code)
+                if real_hours is None:
+                    real_hours = 2 if is_lab else (4 if "MINOR" in code else 3)
+
                 curricula_map[year_key].append({
                     "subject_code": code,
                     "subject_name": str(e.get("raw_subject_text") or code),
                     "subject_type": "P" if is_lab else stype,
                     "faculty_name": primary_fac,
                     "co_faculty": co_facs,
-                    "weekly_hours": 2 if is_lab else (4 if "MINOR" in code else 3),
+                    "weekly_hours": real_hours,
                     "continuous_slots": 2 if is_lab else 1
                 })
 

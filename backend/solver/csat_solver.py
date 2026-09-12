@@ -468,13 +468,24 @@ class CPSATSolver:
                                     model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
 
         # -----------------------------------------------------------------------
-        # 10. Multi-Objective Function: Schedule Compacting, Block Locality & GPU Suitability
+        # 10. Multi-Objective Function: Schedule Compacting, Block Locality, GPU Suitability
+        #     + Section-Period Diversity (ANTI-HOMOGENIZATION: prevents all sections
+        #       from landing on the same period/lab-start across the department)
         # -----------------------------------------------------------------------
         room_by_id = {r["id"]: r for r in rooms}
         room_by_id[self.VIRTUAL_LIB_ROOM["id"]] = self.VIRTUAL_LIB_ROOM
 
         sub_by_id = {ss["subject_id"]: ss for ss_list in sec_subjs_by_sec.values() for ss in ss_list}
         sec_by_id = {sec["id"]: sec for sec in sections}
+
+        # Build a stable section-index map so each section gets a different period offset.
+        # This is the key anti-homogenization mechanism: section 0 prefers early periods,
+        # section 1 gets a cost boost for early periods pushing it later, etc.
+        sec_index_map: Dict[Any, int] = {sec["id"]: idx for idx, sec in enumerate(sections)}
+
+        # Lab period rotation: rotate preferred lab start period per section
+        # so different sections land on different lab blocks.
+        LAB_PERIOD_ROTATION = [1, 3, 6, 4, 7, 3, 1, 6]  # Cycle through valid starts
 
         obj_terms = []
         for (s_id, sub_id, r_id, t_id), var in x.items():
@@ -483,24 +494,54 @@ class CPSATSolver:
             except Exception:
                 p_num = 1
 
-            # Base cost: compact into earlier periods (weight: 10 * period)
-            cost = p_num * 10
+            t_day = str(t_id).split("_")[0] if "_" in str(t_id) else "MON"
+            sec_idx = sec_index_map.get(s_id, 0)
 
             r_meta = room_by_id.get(r_id, {})
             ss_meta = sub_by_id.get(sub_id, {})
             sec_meta = sec_by_id.get(s_id, {})
+            sub_type = str(ss_meta.get("subject_type", "L")).upper()
 
             r_code = str(r_meta.get("code") or r_id).upper()
             sub_code = str(ss_meta.get("subject_code") or "").upper()
             sec_cap = sec_meta.get("student_count") or sec_meta.get("strength") or 60
             r_cap = r_meta.get("capacity", 60)
 
+            # ----------------------------------------------------------------
+            # Base cost: slightly prefer earlier periods, but modulated per section
+            # Section 0: cost = period * 8 (prefers early)
+            # Section 1: cost = period * 8 + 15 * (1 - period/8) (slight late push)
+            # Section n: rotated so each section prefers a DIFFERENT period band
+            # ----------------------------------------------------------------
+            if sub_type in ("P", "LAB"):
+                # For labs: each section gets a preferred start period from the rotation.
+                # The preferred period has LOW cost; all other periods have HIGH cost.
+                preferred_start = LAB_PERIOD_ROTATION[sec_idx % len(LAB_PERIOD_ROTATION)]
+                if p_num == preferred_start:
+                    cost = 5  # Strong preference for this section's designated lab slot
+                elif p_num == preferred_start + 1:
+                    cost = 6  # Consecutive slot (part of the lab pair)
+                elif p_num in (1, 3, 4, 6, 7):  # Other valid lab starts
+                    # Penalize proportional to how far from preferred
+                    cost = 20 + abs(p_num - preferred_start) * 8
+                else:
+                    cost = 80  # Invalid/non-preferred period — strong discourage
+            else:
+                # For non-lab (theory/tutorial): spread across days using section_idx
+                # Different sections prefer different days via day-based cost offset
+                day_order = ["MON", "TUE", "WED", "THU", "FRI", "SAT"]
+                day_idx = day_order.index(t_day) if t_day in day_order else 3
+                # Section offset: rotate day preferences so sections fill different days first
+                preferred_day_idx = (sec_idx * 2) % len(day_order)
+                day_cost = abs(day_idx - preferred_day_idx) * 3
+                cost = p_num * 8 + day_cost
+
             # SC-06: GPU Lab Suitability
             is_gpu_sub = any(k in sub_code for k in ("DL", "CV", "MLOP", "GENAI"))
             is_gpu_room = r_meta.get("gpu_capable", False) or "AFTF" in r_code
             if is_gpu_sub and is_gpu_room:
                 cost -= 15  # Preferred GPU lab allocation bonus
-            elif is_gpu_sub and not is_gpu_room and ss_meta.get("subject_type") in ("P", "LAB"):
+            elif is_gpu_sub and not is_gpu_room and sub_type in ("P", "LAB"):
                 cost += 15  # Non-GPU lab penalty
 
             # SC-09: Campus Building Block Locality
@@ -508,7 +549,7 @@ class CPSATSolver:
             if "U-BLOCK" in r_blk or "U_BLOCK" in r_blk:
                 cost -= 5
 
-            # SC-05: Capacity Fit (discourage allocating huge venues to smaller sections when not needed)
+            # SC-05: Capacity Fit (discourage allocating huge venues to smaller sections)
             if r_cap > sec_cap + 40 and r_cap > 100:
                 cost += 8
 

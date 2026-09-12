@@ -50,6 +50,27 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
     seed = get_seed_data()
     seed_entries = seed.get("entries", [])
 
+    # Pre-compute per-subject actual weekly_hours from seed (count occurrences per section)
+    # This gives real curriculum slot counts instead of hardcoded 2/3/4 guesses.
+    seed_weekly_hours: Dict[str, int] = {}
+    sec_subj_count: Dict[tuple, int] = {}
+    for e in seed_entries:
+        s_name = str(e.get("section") or "").strip()
+        sub_name = str(e.get("subject") or "").strip()
+        if s_name and sub_name and sub_name not in ("BREAK", "LUNCH"):
+            key = (s_name, sub_name)
+            sec_subj_count[key] = sec_subj_count.get(key, 0) + 1
+    # Build a subject->typical-hours map by averaging across sections
+    subj_total_count: Dict[str, list] = {}
+    for (s_name, sub_name), cnt in sec_subj_count.items():
+        if sub_name not in subj_total_count:
+            subj_total_count[sub_name] = []
+        subj_total_count[sub_name].append(cnt)
+    for sub_name, counts in subj_total_count.items():
+        avg = round(sum(counts) / len(counts))
+        seed_weekly_hours[sub_name] = max(1, min(avg, 12))  # clamp 1..12
+
+
     # Map (section_norm, base_subj_norm) -> list of faculty names
     section_fac_map: Dict[tuple, List[str]] = {}
     subj_fac_pool: Dict[str, List[str]] = {}
@@ -76,11 +97,20 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
     for sec_idx, sec in enumerate(req.sections, start=1):
         sec_norm = sec.replace(" ", "").replace("-", "").upper()
         for idx, assign in enumerate(req.assignments, start=101):
-            sub_id = f"{sec}_{assign.subject_code}_{idx}"
+            sub_id = f"{sec}_{assign.subject_code}_{sec_idx:02d}_{idx}"
+
             co_facs = [co.strip() for co in getattr(assign, "co_faculty", []) if co.strip()]
             c_slots = getattr(assign, "continuous_slots", 2 if assign.subject_type == "P" else 1)
 
-            needed_slots = max(1, assign.weekly_hours)
+            # Determine actual weekly hours: prefer seed-observed count, then request, then defaults
+            base_subj_for_hours = assign.subject_code.replace("(P)", "").replace("(T)", "").replace(" ", "").upper()
+            assign_code_upper = assign.subject_code.replace(" ", "").upper()
+            seed_hours = (
+                seed_weekly_hours.get(assign.subject_code)
+                or seed_weekly_hours.get(assign_code_upper)
+                or seed_weekly_hours.get(base_subj_for_hours)
+            )
+            needed_slots = seed_hours if seed_hours else max(1, assign.weekly_hours)
 
 
             # Determine primary faculty for this specific section
