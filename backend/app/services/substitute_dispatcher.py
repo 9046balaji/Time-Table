@@ -241,14 +241,39 @@ class SubstituteDispatcher:
         await ToolRegistry.save_schedule_snapshot(db, session_id, all_entries, label=f"pre_substitute_dispatch_{entry_id}")
 
         # 5. Execute reassignment
-        await db.execute(
-            TimetableEntryFaculty.__table__.delete().where(TimetableEntryFaculty.timetable_entry_id == entry_id)
-        )
+        # Target and delete only the specific absent faculty to preserve lab co-instructors
+        target_deleted = False
+        if original_faculty_name:
+            orig_fac_res = await db.execute(select(Faculty).where(Faculty.name == original_faculty_name))
+            orig_fac = orig_fac_res.scalar_one_or_none()
+            if orig_fac:
+                await db.execute(
+                    TimetableEntryFaculty.__table__.delete().where(
+                        TimetableEntryFaculty.timetable_entry_id == entry_id,
+                        TimetableEntryFaculty.faculty_id == orig_fac.id
+                    )
+                )
+                target_deleted = True
+
+        if not target_deleted:
+            existing_assocs = (
+                await db.execute(
+                    select(TimetableEntryFaculty).where(TimetableEntryFaculty.timetable_entry_id == entry_id)
+                )
+            ).scalars().all()
+            if len(existing_assocs) <= 1:
+                await db.execute(
+                    TimetableEntryFaculty.__table__.delete().where(TimetableEntryFaculty.timetable_entry_id == entry_id)
+                )
+
         new_assoc = TimetableEntryFaculty(timetable_entry_id=entry_id, faculty_id=substitute_faculty_id)
         db.add(new_assoc)
 
-        old_text = entry.raw_faculty_text or original_faculty_name or "Previous Faculty"
-        entry.raw_faculty_text = substitute.name
+        # Update JSON faculty_ids array if present
+        current_fids = list(entry.faculty_ids) if isinstance(entry.faculty_ids, list) else []
+        if substitute_faculty_id not in current_fids:
+            current_fids.append(substitute_faculty_id)
+        entry.faculty_ids = current_fids
         await db.flush()
 
         # 6. Post-verification: ConflictChecker audit
