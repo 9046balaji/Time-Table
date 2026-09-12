@@ -597,7 +597,8 @@ async def generate_exam_schedule(
         start_date=str(p.get("start_date", "2026-10-12")),
         num_days=int(p.get("num_days", 6)),
         spacing_factor=float(p.get("spacing_factor", 0.5)),
-        target_sections=p.get("target_sections") or p.get("sections")
+        target_sections=p.get("target_sections") or p.get("sections"),
+        session_id=p.get("session_id")
     )
 
 

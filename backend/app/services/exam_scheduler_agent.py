@@ -8,6 +8,7 @@ from app.models.room import Room
 from app.models.section import Section
 from app.models.faculty import Faculty
 from app.models.subject import Subject
+from app.models.agent import AgentSession, AgentEvent, AgentDecision
 from app.services.tool_registry import ToolRegistry
 try:
     from ortools.sat.python import cp_model
@@ -37,7 +38,8 @@ class ExamSchedulerAgent:
         start_date: str = "2026-10-12",
         num_days: int = 6,
         spacing_factor: float = 0.5,
-        target_sections: Optional[List[str]] = None
+        target_sections: Optional[List[str]] = None,
+        session_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Generates a conflict-free examination timetable using CP-SAT constraint optimization.
@@ -209,6 +211,51 @@ class ExamSchedulerAgent:
         # 3. Audit Generated Exam Timetable
         audit = ExamSchedulerAgent.audit_exam_timetable(scheduled_exams)
         elapsed_ms = int((time.time() - start_time) * 1000)
+
+        # 4. Optional Agent Session Tracking
+        if session_id:
+            try:
+                sess_res = await db.execute(select(AgentSession).where(AgentSession.id == int(session_id)))
+                sess = sess_res.scalar_one_or_none()
+                if sess:
+                    summary = f"Exam Timetable Generated: {len(scheduled_exams)} exams scheduled over {num_days} days ({audit['hard_violations']} clashes)."
+                    sess.summary = summary
+                    sess.context = {
+                        **(sess.context or {}),
+                        "exam_schedule": {
+                            "exam_type": exam_type,
+                            "start_date": start_date,
+                            "num_days": num_days,
+                            "total_exams": len(scheduled_exams),
+                            "hard_violations": audit["hard_violations"],
+                        }
+                    }
+                    ev = AgentEvent(
+                        session_id=sess.id,
+                        event_type="EXAM_SCHEDULE_GENERATED",
+                        source="exam_scheduler_agent",
+                        severity="low" if audit["hard_violations"] == 0 else "high",
+                        summary=summary,
+                        payload={
+                            "exam_type": exam_type,
+                            "total_exams": len(scheduled_exams),
+                            "hard_violations": audit["hard_violations"]
+                        }
+                    )
+                    db.add(ev)
+                    dec = AgentDecision(
+                        session_id=sess.id,
+                        decision_type="EXAM_SCHEDULE_OPTIMIZED",
+                        reason_code="EXAM_PERIOD_SCHEDULING",
+                        selected_option=f"schedule_{exam_type}",
+                        risk_level="low" if audit["hard_violations"] == 0 else "high",
+                        rationale=summary,
+                        payload={"exam_type": exam_type, "total_exams": len(scheduled_exams)}
+                    )
+                    db.add(dec)
+                    await db.commit()
+            except Exception:
+                pass
 
         return {
             "status": "COMPLETED" if audit["hard_violations"] == 0 else "WARNING",

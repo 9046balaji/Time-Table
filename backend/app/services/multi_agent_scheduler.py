@@ -653,9 +653,43 @@ class MasterArbiterAgent:
 
         self._log_event(self.AGENT_NAME, "USER", "FINAL_DECISION", summary, {"unanimous": unanimous})
 
-        # Persist decision trace in database if session exists
+        # Persist decision trace and candidate entries in database if session exists
         if self.session_id:
             try:
+                sess_res = await self.db.execute(select(AgentSession).where(AgentSession.id == self.session_id))
+                sess = sess_res.scalar_one_or_none()
+                if sess:
+                    sess.current_step = "consensus"
+                    sess.summary = summary
+                    sess.context = {
+                        **(sess.context or {}),
+                        "candidate_entries": candidate_entries,
+                        "unanimous": unanimous,
+                        "synthesis_summary": summary,
+                        "runtime_seconds": elapsed_sec,
+                    }
+
+                    ev = AgentEvent(
+                        session_id=self.session_id,
+                        event_type="MULTI_AGENT_SYNTHESIS_COMPLETE",
+                        source="master_arbiter",
+                        severity="low" if unanimous else "medium",
+                        summary=summary,
+                        payload={
+                            "unanimous": unanimous,
+                            "runtime_seconds": elapsed_sec,
+                            "total_slots": len(candidate_entries),
+                            "votes": [{
+                                "agent": v.agent_name,
+                                "vote": v.vote,
+                                "has_veto_power": v.has_veto_power,
+                                "violations": v.violations_detected,
+                                "rationale": v.rationale
+                            } for v in final_votes]
+                        }
+                    )
+                    self.db.add(ev)
+
                 dec = AgentDecision(
                     session_id=self.session_id,
                     decision_type="MULTI_AGENT_SYNTHESIS",
@@ -677,6 +711,19 @@ class MasterArbiterAgent:
                 )
                 self.db.add(dec)
                 await self.db.commit()
+
+                # Broadcast completion via WebSocket
+                try:
+                    from app.services.agent_websocket_manager import agent_ws_manager
+                    await agent_ws_manager.broadcast_event(self.session_id, {
+                        "type": "AGENT_EVENT",
+                        "event_type": "MULTI_AGENT_SYNTHESIS_COMPLETE",
+                        "summary": summary,
+                        "unanimous": unanimous,
+                        "runtime_seconds": elapsed_sec,
+                    })
+                except Exception:
+                    pass
             except Exception:
                 pass
 

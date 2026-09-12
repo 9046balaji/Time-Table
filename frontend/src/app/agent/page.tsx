@@ -2,12 +2,19 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Activity, AlertTriangle, CheckCircle2, RefreshCw, ShieldCheck, RotateCcw } from 'lucide-react';
+import {
+  Activity, AlertTriangle, CheckCircle2, RefreshCw, ShieldCheck, RotateCcw,
+  Bot, Zap, UserCheck, Calendar, Radio, Compass
+} from 'lucide-react';
 import { getApiBaseUrl, getWsBaseUrl } from '@/lib/api';
 import { DecisionTrace } from '@/components/agent/DecisionTrace';
 import { MissionSimulator } from '@/components/agent/MissionSimulator';
 import { DiffView } from '@/components/agent/DiffView';
 import { MultiAgentSynthesisWorkspace } from '@/components/agent/MultiAgentSynthesisWorkspace';
+import { SubstituteDispatcherPanel } from '@/components/agent/SubstituteDispatcherPanel';
+import { ExamSchedulerPanel } from '@/components/agent/ExamSchedulerPanel';
+import { RoomTelemetryHeatmap } from '@/components/agent/RoomTelemetryHeatmap';
+import { ParetoExplorerPanel } from '@/components/agent/ParetoExplorerPanel';
 
 type AgentEvent = {
   id: number;
@@ -33,6 +40,8 @@ type AgentSession = {
 };
 
 export default function AgentConsolePage() {
+  type AgentWorkspaceTab = 'synthesis' | 'simulation' | 'substitute' | 'exam' | 'telemetry' | 'pareto';
+  const [activeTab, setActiveTab] = useState<AgentWorkspaceTab>('synthesis');
   const [session, setSession] = useState<AgentSession | null>(null);
   const [originalEntries, setOriginalEntries] = useState<any[]>([]);
   const [repairedEntries, setRepairedEntries] = useState<any[]>([]);
@@ -280,110 +289,211 @@ export default function AgentConsolePage() {
         </div>
       )}
 
-      {/* Autonomous Collaborative Multi-Agent Synthesis Section */}
-      <MultiAgentSynthesisWorkspace
-        versionId={12}
-        onSynthesisComplete={(entries) => {
-          if (entries && entries.length > 0) {
-            setRepairedEntries(entries);
-          }
-        }}
-      />
+      {/* Workspace Navigation Tabs */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveTab('synthesis')}
+          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'synthesis'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+          }`}
+        >
+          <Bot className="w-4 h-4" />
+          7-Agent Society
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('simulation')}
+          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'simulation'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+          }`}
+        >
+          <Zap className="w-4 h-4" />
+          Disruption Simulator
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('substitute')}
+          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'substitute'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+          }`}
+        >
+          <UserCheck className="w-4 h-4" />
+          Substitute Dispatcher
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('exam')}
+          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'exam'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
+          Exam Scheduler
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('telemetry')}
+          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'telemetry'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+          }`}
+        >
+          <Radio className="w-4 h-4" />
+          SmartClass IoT Telemetry
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('pareto')}
+          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'pareto'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+          }`}
+        >
+          <Compass className="w-4 h-4" />
+          Pareto Trade-offs
+        </button>
+      </div>
 
-      {/* Disruption Simulator Section */}
-      <MissionSimulator onTriggerScenario={triggerScenario} loading={loading} />
+      {/* Tab Panel 1: 7-Agent Society Workspace */}
+      {activeTab === 'synthesis' && (
+        <MultiAgentSynthesisWorkspace
+          versionId={12}
+          onSynthesisComplete={(entries) => {
+            if (entries && entries.length > 0) {
+              setRepairedEntries(entries);
+            }
+          }}
+        />
+      )}
 
-      {/* Main Grid Layout */}
-      {session && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Decision Trace Log */}
-          <div className="lg:col-span-2 space-y-6">
-            <DecisionTrace events={eventList} currentStep={session.current_step} status={session.status} />
-            {repairedEntries.length > 0 && (
-              <DiffView
-                originalEntries={originalEntries}
-                repairedEntries={repairedEntries}
-                stabilityScore={session.context?.repair_metrics?.stability_score || 95}
-                movedCount={session.context?.repair_metrics?.moved_count || repairedEntries.length}
-                displacedSections={session.context?.repair_metrics?.displaced_sections || []}
-                onRollback={executeRollback}
-                loading={loading}
-              />
-            )}
-          </div>
+      {/* Tab Panel 2: Disruption Simulator */}
+      {activeTab === 'simulation' && (
+        <div className="space-y-6">
+          <MissionSimulator onTriggerScenario={triggerScenario} loading={loading} />
 
-          {/* Action & Approval Controls */}
-          <div className="space-y-6">
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Active Session Telemetry</h3>
-                <span className="text-xs font-mono font-bold text-slate-400">#{session.id}</span>
+          {session && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Decision Trace Log */}
+              <div className="lg:col-span-2 space-y-6">
+                <DecisionTrace events={eventList} currentStep={session.current_step} status={session.status} />
+                {repairedEntries.length > 0 && (
+                  <DiffView
+                    originalEntries={originalEntries}
+                    repairedEntries={repairedEntries}
+                    stabilityScore={session.context?.repair_metrics?.stability_score || 95}
+                    movedCount={session.context?.repair_metrics?.moved_count || repairedEntries.length}
+                    displacedSections={session.context?.repair_metrics?.displaced_sections || []}
+                    onRollback={executeRollback}
+                    loading={loading}
+                  />
+                )}
               </div>
 
-              <div className="space-y-2.5 text-xs">
-                <div className="flex justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800">
-                  <span className="text-slate-500">Current Step:</span>
-                  <span className="font-bold text-indigo-600 dark:text-indigo-400 font-mono">{session.current_step.toUpperCase()}</span>
+              {/* Action & Approval Controls */}
+              <div className="space-y-6">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Active Session Telemetry</h3>
+                    <span className="text-xs font-mono font-bold text-slate-400">#{session.id}</span>
+                  </div>
+
+                  <div className="space-y-2.5 text-xs">
+                    <div className="flex justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800">
+                      <span className="text-slate-500">Current Step:</span>
+                      <span className="font-bold text-indigo-600 dark:text-indigo-400 font-mono">{session.current_step.toUpperCase()}</span>
+                    </div>
+                    <div className="flex justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800">
+                      <span className="text-slate-500">Session Status:</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">{session.status.toUpperCase()}</span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800">
+                      <span className="text-slate-500 block mb-1">Active Summary:</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 leading-relaxed block">{session.summary || 'Ready for disruption simulation.'}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800">
-                  <span className="text-slate-500">Session Status:</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">{session.status.toUpperCase()}</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800">
-                  <span className="text-slate-500 block mb-1">Active Summary:</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 leading-relaxed block">{session.summary || 'Ready for disruption simulation.'}</span>
+
+                {/* Approval Workflow Box */}
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShieldCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Human Approval Gate</h3>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+                    High-impact local repairs require explicit human approval before schedule publication.
+                  </p>
+
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => decideRepair('approved')}
+                      className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      Approve Local Repair
+                    </button>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={validateRepair}
+                      className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      Run Validation Gate Check
+                    </button>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => decideRepair('rejected')}
+                      className="w-full py-2.5 px-4 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                    >
+                      <AlertTriangle className="w-4 h-4" />
+                      Reject & Request Rollback
+                    </button>
+                    <Link
+                      href="/schedule"
+                      className="w-full block text-center py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all mt-2"
+                    >
+                      View Full Timetable Grid &rarr;
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Approval Workflow Box */}
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <ShieldCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Human Approval Gate</h3>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-                High-impact local repairs require explicit human approval before schedule publication.
-              </p>
-
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => decideRepair('approved')}
-                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Approve Local Repair
-                </button>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={validateRepair}
-                  className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  Run Validation Gate Check
-                </button>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => decideRepair('rejected')}
-                  className="w-full py-2.5 px-4 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2"
-                >
-                  <AlertTriangle className="w-4 h-4" />
-                  Reject & Request Rollback
-                </button>
-                <Link
-                  href="/schedule"
-                  className="w-full block text-center py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all mt-2"
-                >
-                  View Full Timetable Grid &rarr;
-                </Link>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
+      )}
+
+      {/* Tab Panel 3: Substitute Dispatcher */}
+      {activeTab === 'substitute' && (
+        <SubstituteDispatcherPanel />
+      )}
+
+      {/* Tab Panel 4: Exam Scheduler */}
+      {activeTab === 'exam' && (
+        <ExamSchedulerPanel />
+      )}
+
+      {/* Tab Panel 5: SmartClass IoT Telemetry */}
+      {activeTab === 'telemetry' && (
+        <RoomTelemetryHeatmap />
+      )}
+
+      {/* Tab Panel 6: Pareto Trade-offs */}
+      {activeTab === 'pareto' && (
+        <ParetoExplorerPanel />
       )}
     </div>
   );

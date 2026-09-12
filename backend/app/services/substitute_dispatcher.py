@@ -278,16 +278,27 @@ class SubstituteDispatcher:
         target_deleted = False
         orig_fac = None
         if original_faculty_name:
-            orig_fac_res = await db.execute(select(Faculty).where(Faculty.name == original_faculty_name))
-            orig_fac = orig_fac_res.scalar_one_or_none()
+            all_fac_res = await db.execute(select(Faculty))
+            all_facs = all_fac_res.scalars().all()
+            target_key = faculty_identity_key(original_faculty_name)
+            for f in all_facs:
+                if f.name == original_faculty_name or (target_key and faculty_identity_key(f.name) == target_key):
+                    orig_fac = f
+                    break
             if orig_fac:
-                await db.execute(
-                    TimetableEntryFaculty.__table__.delete().where(
-                        TimetableEntryFaculty.timetable_entry_id == entry_id,
-                        TimetableEntryFaculty.faculty_id == orig_fac.id
+                matching_assocs = (
+                    await db.execute(
+                        select(TimetableEntryFaculty).where(
+                            TimetableEntryFaculty.timetable_entry_id == entry_id,
+                            TimetableEntryFaculty.faculty_id == orig_fac.id
+                        )
                     )
-                )
-                target_deleted = True
+                ).scalars().all()
+                for ef in matching_assocs:
+                    await db.delete(ef)
+                if matching_assocs:
+                    await db.flush()
+                    target_deleted = True
 
         existing_assocs = []
         if not target_deleted:
@@ -297,9 +308,10 @@ class SubstituteDispatcher:
                 )
             ).scalars().all()
             if len(existing_assocs) <= 1:
-                await db.execute(
-                    TimetableEntryFaculty.__table__.delete().where(TimetableEntryFaculty.timetable_entry_id == entry_id)
-                )
+                for ef in existing_assocs:
+                    await db.delete(ef)
+                if existing_assocs:
+                    await db.flush()
 
         new_assoc = TimetableEntryFaculty(timetable_entry_id=entry_id, faculty_id=substitute_faculty_id)
         db.add(new_assoc)

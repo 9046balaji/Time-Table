@@ -170,6 +170,14 @@ class MultiAgentConsensusEngine:
             payload=result_payload
         )
         db.add(event)
+
+        session.current_step = "publish" if consensus_passed else "repair"
+        session.status = "active" if consensus_passed else "blocked"
+        session.summary = summary
+        session.context = {
+            **(session.context or {}),
+            "last_consensus": result_payload
+        }
         await db.commit()
 
         return result_payload
