@@ -87,7 +87,7 @@ class ToolRegistry:
             {
                 "id": s.id,
                 "name": s.name,
-                "student_count": s.student_count,
+                "student_count": getattr(s, "strength", getattr(s, "student_count", 60)),
                 "year_level": s.year_level
             }
             for s in secs
