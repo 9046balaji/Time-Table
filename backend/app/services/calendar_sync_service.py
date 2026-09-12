@@ -38,8 +38,13 @@ class CalendarSyncService:
     }
 
     @staticmethod
-    def _build_ics_document(cal_name: str, events: List[Dict[str, Any]]) -> str:
-        """Constructs an RFC 5545 VCALENDAR document."""
+    def _build_ics_document(
+        cal_name: str,
+        events: List[Dict[str, Any]],
+        reference_monday: Optional[datetime] = None,
+        semester_weeks: int = 18
+    ) -> str:
+        """Constructs an RFC 5545 VCALENDAR document with semester recurrence boundaries."""
         lines = [
             "BEGIN:VCALENDAR",
             "VERSION:2.0",
@@ -50,6 +55,9 @@ class CalendarSyncService:
             "X-WR-TIMEZONE:Asia/Kolkata",
         ]
 
+        ref_monday = reference_monday or CalendarSyncService.REFERENCE_MONDAY
+        term_end = ref_monday + timedelta(weeks=semester_weeks)
+        until_str = term_end.strftime("%Y%m%dT235959Z")
         now_str = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
 
         for idx, ev in enumerate(events):
@@ -59,7 +67,7 @@ class CalendarSyncService:
             byday = CalendarSyncService.DAY_TO_BYDAY.get(day, "MO")
             offset = CalendarSyncService.DAY_OFFSETS.get(day, 0)
 
-            event_date = CalendarSyncService.REFERENCE_MONDAY + timedelta(days=offset)
+            event_date = ref_monday + timedelta(days=offset)
             date_str = event_date.strftime("%Y%m%d")
 
             dtstart = f"{date_str}T{times[0]}"
@@ -78,7 +86,7 @@ class CalendarSyncService:
                 f"DTSTAMP:{now_str}",
                 f"DTSTART;TZID=Asia/Kolkata:{dtstart}",
                 f"DTEND;TZID=Asia/Kolkata:{dtend}",
-                f"RRULE:FREQ=WEEKLY;BYDAY={byday}",
+                f"RRULE:FREQ=WEEKLY;BYDAY={byday};UNTIL={until_str}",
                 f"SUMMARY:{subj} ({sec})",
                 f"LOCATION:{room}",
                 f"DESCRIPTION:Subject: {subj}\\nSection: {sec}\\nRoom: {room}\\nInstructor: {fac}",
