@@ -8,7 +8,7 @@ class Department(BaseModel):
 
     code = Column(String(20), unique=True, index=True, nullable=False)
     name = Column(Text, nullable=False)
-    head_faculty_id = Column(Integer, ForeignKey("faculty.id"), nullable=True)
+    head_faculty_id = Column(Integer, ForeignKey("faculty.id", use_alter=True, name="fk_department_head_faculty"), nullable=True)
     program_type = Column(String(50), nullable=True)  # UG, PG, Integrated
 
     branches = relationship("Branch", back_populates="department")
