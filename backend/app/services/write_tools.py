@@ -209,7 +209,7 @@ async def publish_schedule(
         )
     ).scalar_one_or_none()
     if existing is not None:
-        raise ValueError(f"Version label {version_label} already exists")
+        version_label = f"{version_label}-{int(time.time())}"
 
     source = (
         await db.execute(
