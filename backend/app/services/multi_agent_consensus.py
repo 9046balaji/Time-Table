@@ -82,7 +82,12 @@ class MultiAgentConsensusEngine:
         for e in timetable_entries:
             room_code = str(e.get("room", "")).strip().upper()
             subj_text = str(e.get("subject", "")).strip()
-            is_lab_subject = "(P)" in subj_text or "(P)" in subj_text.upper() or "LAB" in subj_text.upper() or "PRACTICAL" in subj_text.upper()
+            e_type = str(e.get("entry_type") or "").upper()
+            is_lab_subject = (
+                "(P)" in subj_text or "(P)" in subj_text.upper() or
+                "LAB" in subj_text.upper() or "PRACTICAL" in subj_text.upper() or
+                e_type in ("P", "T&P")
+            )
 
             if room_code and room_code in room_map:
                 r_info = room_map[room_code]

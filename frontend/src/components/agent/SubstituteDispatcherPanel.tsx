@@ -50,13 +50,13 @@ export const SubstituteDispatcherPanel: React.FC = () => {
     setError(null);
     setDispatchSuccess(null);
     try {
-      // Find sample entry or dispatch
+      const targetEntryId = candidatesData?.impacted_slot?.id || 1;
       const res = await fetch(`${apiBase}/api/v1/agent/substitute/dispatch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           session_id: 1,
-          entry_id: 1, // baseline slot
+          entry_id: targetEntryId,
           substitute_faculty_id: substituteId,
           original_faculty_name: facultyName,
           reason: `Emergency absence coverage for ${facultyName}`
@@ -161,6 +161,20 @@ export const SubstituteDispatcherPanel: React.FC = () => {
       {/* Candidates List */}
       {candidatesData && (
         <div>
+          {candidatesData.impacted_slot && (
+            <div className="mb-4 p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-indigo-700 dark:text-indigo-300">Target Class:</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {candidatesData.impacted_slot.section || 'N/A'} • {candidatesData.impacted_slot.subject || subject} • Room {candidatesData.impacted_slot.room || 'N/A'}
+                </span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 font-mono text-[10px] font-bold">
+                Entry #{candidatesData.impacted_slot.id}
+              </span>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
               Ranked Candidates for {day} Period {period} ({candidatesData.eligible_candidates_count} eligible of {candidatesData.total_candidates})

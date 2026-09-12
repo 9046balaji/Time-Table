@@ -38,11 +38,13 @@ def normalize_code(value: Any) -> str:
 
 
 async def resolve_lookup_maps(db: AsyncSession) -> Dict[str, Any]:
-    """Build code -> id maps for sections, rooms, subjects and time slots."""
+    """Build code -> id maps for sections, rooms, subjects, time slots, and faculty."""
+    from backend.solver.conflict_checker import faculty_identity_key
     sections = (await db.execute(select(Section))).scalars().all()
     rooms = (await db.execute(select(Room))).scalars().all()
     subjects = (await db.execute(select(Subject))).scalars().all()
     slots = (await db.execute(select(TimeSlot))).scalars().all()
+    faculty = (await db.execute(select(Faculty))).scalars().all()
 
     return {
         "sections": {normalize_code(s.name): s.id for s in sections},
@@ -53,6 +55,8 @@ async def resolve_lookup_maps(db: AsyncSession) -> Dict[str, Any]:
             for s in slots
             if s.period is not None
         },
+        "faculty_by_name": {normalize_code(f.name): f.id for f in faculty},
+        "faculty_by_key": {faculty_identity_key(f.name): f.id for f in faculty if faculty_identity_key(f.name)},
     }
 
 
@@ -136,6 +140,50 @@ async def apply_timetable_change(
         if room_id is not None:
             row.room_id = room_id
         row.raw_room_text = str(entry.get("room") or "")
+
+        # Faculty sync if present in candidate entry
+        new_fac_ids: Optional[List[int]] = None
+        if "faculty_ids" in entry and entry.get("faculty_ids") is not None:
+            new_fac_ids = [int(fid) for fid in entry["faculty_ids"] if fid is not None]
+        elif "faculty" in entry and entry.get("faculty") is not None:
+            fac_raw = entry["faculty"]
+            if isinstance(fac_raw, str):
+                fac_list = [f.strip() for f in fac_raw.split(",") if f.strip()]
+            elif isinstance(fac_raw, list):
+                fac_list = [str(f).strip() for f in fac_raw if str(f).strip()]
+            else:
+                fac_list = []
+            if fac_list:
+                from backend.solver.conflict_checker import faculty_identity_key
+                resolved = []
+                for fname in fac_list:
+                    fid = maps["faculty_by_name"].get(normalize_code(fname)) or maps["faculty_by_key"].get(faculty_identity_key(fname))
+                    if fid and fid not in resolved:
+                        resolved.append(fid)
+                if resolved:
+                    new_fac_ids = resolved
+
+        if new_fac_ids is not None:
+            row.faculty_ids = new_fac_ids
+            existing_facs = (
+                await db.execute(
+                    select(TimetableEntryFaculty).where(
+                        TimetableEntryFaculty.timetable_entry_id == row.id
+                    )
+                )
+            ).scalars().all()
+            for ef in existing_facs:
+                await db.delete(ef)
+            await db.flush()
+            for idx, fid in enumerate(new_fac_ids):
+                db.add(
+                    TimetableEntryFaculty(
+                        timetable_entry_id=row.id,
+                        faculty_id=fid,
+                        role_type="LEAD" if idx == 0 else "CO_INSTRUCTOR",
+                    )
+                )
+
         updated += 1
 
     await db.flush()
@@ -239,20 +287,44 @@ async def publish_schedule(
             unresolved += 1
             continue
 
-        db.add(
-            TimetableEntry(
-                timetable_version_id=new_version.id,
-                section_id=section_id,
-                subject_id=maps["subjects"].get(normalize_code(entry.get("subject"))),
-                room_id=maps["rooms"].get(normalize_code(entry.get("room"))),
-                time_slot_id=slot_id,
-                faculty_ids=list(entry.get("faculty_ids") or []),
-                entry_type=str(entry.get("entry_type") or "L"),
-                span_periods=int(entry.get("span_periods") or 1),
-                raw_subject_text=str(entry.get("subject") or ""),
-                raw_room_text=str(entry.get("room") or ""),
-            )
+        fac_ids = list(entry.get("faculty_ids") or [])
+        if not fac_ids and entry.get("faculty"):
+            fac_raw = entry.get("faculty")
+            if isinstance(fac_raw, str):
+                fac_list = [f.strip() for f in fac_raw.split(",") if f.strip()]
+            elif isinstance(fac_raw, list):
+                fac_list = [str(f).strip() for f in fac_raw if str(f).strip()]
+            else:
+                fac_list = []
+            from backend.solver.conflict_checker import faculty_identity_key
+            for fname in fac_list:
+                fid = maps["faculty_by_name"].get(normalize_code(fname)) or maps["faculty_by_key"].get(faculty_identity_key(fname))
+                if fid and fid not in fac_ids:
+                    fac_ids.append(fid)
+
+        new_entry = TimetableEntry(
+            timetable_version_id=new_version.id,
+            section_id=section_id,
+            subject_id=maps["subjects"].get(normalize_code(entry.get("subject"))),
+            room_id=maps["rooms"].get(normalize_code(entry.get("room"))),
+            time_slot_id=slot_id,
+            faculty_ids=fac_ids,
+            entry_type=str(entry.get("entry_type") or "L"),
+            span_periods=int(entry.get("span_periods") or 1),
+            raw_subject_text=str(entry.get("subject") or ""),
+            raw_room_text=str(entry.get("room") or ""),
         )
+        db.add(new_entry)
+        await db.flush()
+
+        for idx, fid in enumerate(fac_ids):
+            db.add(
+                TimetableEntryFaculty(
+                    timetable_entry_id=new_entry.id,
+                    faculty_id=fid,
+                    role_type="LEAD" if idx == 0 else "CO_INSTRUCTOR",
+                )
+            )
         written += 1
 
     await db.commit()
@@ -334,11 +406,16 @@ async def assign_faculty_to_entry(
         )
 
     row.faculty_ids = list(faculty_ids)
-    await db.execute(
-        TimetableEntryFaculty.__table__.delete().where(
-            TimetableEntryFaculty.timetable_entry_id == row.id
+    existing_facs = (
+        await db.execute(
+            select(TimetableEntryFaculty).where(
+                TimetableEntryFaculty.timetable_entry_id == row.id
+            )
         )
-    )
+    ).scalars().all()
+    for ef in existing_facs:
+        await db.delete(ef)
+    await db.flush()
     for index, faculty_id in enumerate(faculty_ids):
         db.add(
             TimetableEntryFaculty(
@@ -478,3 +555,50 @@ async def create_timetable_entry(
         "room": room,
         "faculty": faculty_names,
     }
+
+
+async def delete_timetable_entry(
+    db: AsyncSession,
+    session_id: int,
+    entry_id: int,
+    reason: str = "agent_cancel_slot",
+) -> Dict[str, Any]:
+    """Delete a timetable entry, ensuring relational cleanup and audit trace."""
+    from app.services.tool_registry import ToolRegistry
+    started = time.time()
+
+    row = (
+        await db.execute(
+            select(TimetableEntry)
+            .where(TimetableEntry.id == int(entry_id))
+            .with_for_update()
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        raise ValueError(f"Timetable entry {entry_id} not found")
+
+    version_id = row.timetable_version_id
+
+    # Clean up associated faculty records first
+    existing_facs = (
+        await db.execute(
+            select(TimetableEntryFaculty).where(
+                TimetableEntryFaculty.timetable_entry_id == row.id
+            )
+        )
+    ).scalars().all()
+    for ef in existing_facs:
+        await db.delete(ef)
+    await db.delete(row)
+    await db.commit()
+
+    await ToolRegistry.log_action(
+        db,
+        session_id,
+        "delete_timetable_entry",
+        {"entry_id": entry_id, "version_id": version_id, "reason": reason},
+        {"status": "deleted", "entry_id": entry_id},
+        int((time.time() - started) * 1000),
+    )
+    return {"status": "deleted", "entry_id": entry_id, "version_id": version_id}
+

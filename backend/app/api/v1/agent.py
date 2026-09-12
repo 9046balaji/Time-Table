@@ -309,6 +309,31 @@ async def create_entry(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@router.post("/sessions/{session_id}/delete-entry", response_model=Dict[str, Any])
+async def delete_entry(
+    session_id: int,
+    payload: Dict[str, Any],
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a timetable entry, safely releasing the slot with audit trace."""
+    entry_id = payload.get("entry_id")
+    if not entry_id:
+        raise HTTPException(status_code=400, detail="entry_id is required")
+
+    from app.services.tool_registry import ToolRegistry
+    try:
+        return await ToolRegistry.delete_timetable_entry(
+            db,
+            session_id=session_id,
+            entry_id=int(entry_id),
+            reason=str(payload.get("reason") or "agent_cancel_slot"),
+        )
+    except ValueError as exc:
+        message = str(exc)
+        status = 404 if "not found" in message.lower() else 400
+        raise HTTPException(status_code=status, detail=message) from exc
+
+
 @router.post("/simulate/{scenario_type}", response_model=Dict[str, Any])
 async def simulate_disruption_scenario(
     scenario_type: str,

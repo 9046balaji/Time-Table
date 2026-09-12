@@ -154,6 +154,14 @@ class RoomTelemetryAgent:
         norm_room = str(room_code).strip().upper()
         summary = f"SmartClass Reclaim: Room {norm_room} reclaimed during {day} P{period} for '{purpose}' (physical headcount confirmed < 5)."
 
+        # Ensure session exists to avoid FK constraint failure
+        sess_check = (await db.execute(select(AgentSession.id).where(AgentSession.id == session_id))).scalar_one_or_none()
+        if not sess_check:
+            fallback_sess = AgentSession(goal="SmartClass IoT Telemetry Session", status="active")
+            db.add(fallback_sess)
+            await db.flush()
+            session_id = fallback_sess.id
+
         event = AgentEvent(
             session_id=session_id,
             event_type="ROOM_RECLAIMED",

@@ -30,6 +30,14 @@ class ToolRegistry:
         status: str = "success"
     ) -> AgentAction:
         """Persists a tool execution record to agent_actions audit table."""
+        # Ensure session exists to avoid FK constraint violation
+        sess_check = (await db.execute(select(AgentSession.id).where(AgentSession.id == session_id))).scalar_one_or_none()
+        if not sess_check:
+            fallback_sess = AgentSession(goal=f"Automated Tool Execution: {tool_name}", status="active")
+            db.add(fallback_sess)
+            await db.flush()
+            session_id = fallback_sess.id
+
         action = AgentAction(
             session_id=session_id,
             tool_name=tool_name,
@@ -375,6 +383,7 @@ class ToolRegistry:
     publish_schedule = staticmethod(_write_tools.publish_schedule)
     assign_faculty_to_entry = staticmethod(_write_tools.assign_faculty_to_entry)
     create_timetable_entry = staticmethod(_write_tools.create_timetable_entry)
+    delete_timetable_entry = staticmethod(_write_tools.delete_timetable_entry)
 
     @staticmethod
     async def save_schedule_snapshot(db: AsyncSession, session_id: int, entries: List[Dict[str, Any]], label: str = "checkpoint") -> Dict[str, Any]:

@@ -180,12 +180,30 @@ class SubstituteDispatcher:
         # Sort: Eligible first, then highest score
         candidates.sort(key=lambda c: (c["is_eligible"], c["suitability_score"]), reverse=True)
 
+        # Identify impacted timetable entry for absent faculty at target slot
+        impacted_slot = None
+        for e in all_entries:
+            d = str(e.get("day", "")).upper()[:3]
+            p = int(e.get("period", 1))
+            facs = e.get("faculty") or e.get("facultyNames") or []
+            if isinstance(facs, str):
+                fac_list = [f.strip() for f in facs.split(",") if f.strip()]
+            else:
+                fac_list = [str(f).strip() for f in facs if str(f).strip()]
+            if any(faculty_identity_key(f) == f_key for f in fac_list):
+                if norm_day and d == norm_day[:3] and target_period and p == target_period:
+                    impacted_slot = e
+                    break
+                elif not impacted_slot:
+                    impacted_slot = e
+
         elapsed_ms = int((time.time() - start_time) * 1000)
         return {
             "absent_faculty": faculty_name,
             "target_day": norm_day,
             "target_period": target_period,
             "subject": norm_subj,
+            "impacted_slot": impacted_slot,
             "total_candidates": len(candidates),
             "eligible_candidates_count": sum(1 for c in candidates if c["is_eligible"]),
             "candidates": candidates,
@@ -240,9 +258,25 @@ class SubstituteDispatcher:
         all_entries = tt_res.get("entries", [])
         await ToolRegistry.save_schedule_snapshot(db, session_id, all_entries, label=f"pre_substitute_dispatch_{entry_id}")
 
+        # Determine the name of the original/replaced faculty
+        old_text = original_faculty_name
+        if not old_text:
+            orig_facs = (
+                await db.execute(
+                    select(Faculty)
+                    .join(TimetableEntryFaculty, Faculty.id == TimetableEntryFaculty.faculty_id)
+                    .where(TimetableEntryFaculty.timetable_entry_id == entry_id)
+                )
+            ).scalars().all()
+            if orig_facs:
+                old_text = ", ".join(f.name for f in orig_facs)
+            else:
+                old_text = "assigned faculty"
+
         # 5. Execute reassignment
         # Target and delete only the specific absent faculty to preserve lab co-instructors
         target_deleted = False
+        orig_fac = None
         if original_faculty_name:
             orig_fac_res = await db.execute(select(Faculty).where(Faculty.name == original_faculty_name))
             orig_fac = orig_fac_res.scalar_one_or_none()
@@ -255,6 +289,7 @@ class SubstituteDispatcher:
                 )
                 target_deleted = True
 
+        existing_assocs = []
         if not target_deleted:
             existing_assocs = (
                 await db.execute(
@@ -269,8 +304,12 @@ class SubstituteDispatcher:
         new_assoc = TimetableEntryFaculty(timetable_entry_id=entry_id, faculty_id=substitute_faculty_id)
         db.add(new_assoc)
 
-        # Update JSON faculty_ids array if present
+        # Update JSON faculty_ids array to stay in sync with TimetableEntryFaculty
         current_fids = list(entry.faculty_ids) if isinstance(entry.faculty_ids, list) else []
+        if orig_fac and orig_fac.id in current_fids:
+            current_fids = [fid for fid in current_fids if fid != orig_fac.id]
+        elif not target_deleted and len(existing_assocs) <= 1:
+            current_fids = []
         if substitute_faculty_id not in current_fids:
             current_fids.append(substitute_faculty_id)
         entry.faculty_ids = current_fids
@@ -286,6 +325,14 @@ class SubstituteDispatcher:
             raise ValueError(f"Dispatch aborted: resulted in {report.faculty_clashes} faculty collision(s).")
 
         # 7. Persist Agent Event & Decision
+        # Ensure session exists to avoid FK constraint failure
+        sess_check = (await db.execute(select(AgentSession.id).where(AgentSession.id == session_id))).scalar_one_or_none()
+        if not sess_check:
+            fallback_sess = AgentSession(goal="Substitute Faculty Dispatch", status="active")
+            db.add(fallback_sess)
+            await db.flush()
+            session_id = fallback_sess.id
+
         summary = f"Substitute Dispatch: Assigned {substitute.name} in place of {old_text} for Entry #{entry_id} ({reason})."
         event = AgentEvent(
             session_id=session_id,

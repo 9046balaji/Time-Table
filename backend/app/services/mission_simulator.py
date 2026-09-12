@@ -132,6 +132,7 @@ class MissionSimulator:
                 "affected_sections": sections,
                 "severity": severity
             },
+            "candidate_entries": repair_res.get("entries", []),
             "repair_metrics": {
                 "moved_count": repair_res["moved_count"],
                 "displaced_sections": repair_res["displaced_sections"],
@@ -177,6 +178,8 @@ class MissionSimulator:
                 "moved_count": repair_res["moved_count"],
                 "displaced_sections": repair_res["displaced_sections"],
                 "stability_score": repair_res["stability_score"],
-                "risk_level": repair_res["risk_level"]
+                "risk_level": repair_res["risk_level"],
+                "hard_violations": repair_res.get("hard_violations", 0),
+                "entries": repair_res.get("entries", [])
             }
         }
