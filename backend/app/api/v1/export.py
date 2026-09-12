@@ -39,8 +39,11 @@ async def export_minors_honors_excel(version_id: int = Query(5), db: AsyncSessio
     )
 
 
+@router.get("/excel")
 @router.post("/excel")
-async def export_excel_timetable(version_id: int = Query(5), db: AsyncSession = Depends(get_db)):
+@router.get("/excel/version/{version_id}")
+@router.post("/excel/version/{version_id}")
+async def export_excel_timetable(version_id: int = 5, db: AsyncSession = Depends(get_db)):
     content = await ExportService.generate_excel_export(db, version_id=version_id)
     return StreamingResponse(
         io.BytesIO(content),
@@ -53,12 +56,45 @@ async def export_excel_timetable(version_id: int = Query(5), db: AsyncSession = 
 @router.post("/pdf")
 @router.get("/pdf/sections")
 @router.post("/pdf/sections")
+@router.get("/pdf/department")
+@router.post("/pdf/department")
 async def export_sections_pdf(version_id: int = Query(5), db: AsyncSession = Depends(get_db)):
     pdf_bytes = await ExportService.generate_section_pdfs(db, version_id=version_id)
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=VFSTR_V{version_id}_Section_Timetables.pdf"}
+    )
+
+
+@router.get("/pdf/section/{section_identifier}")
+@router.post("/pdf/section/{section_identifier}")
+async def export_single_section_pdf(
+    section_identifier: str,
+    version_id: int = Query(5),
+    db: AsyncSession = Depends(get_db)
+):
+    pdf_bytes = await ExportService.generate_single_section_pdf(db, section_id=section_identifier, version_id=version_id)
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=VFSTR_V{version_id}_Section_{section_identifier}_Timetable.pdf"}
+    )
+
+
+@router.get("/zip/sections")
+@router.post("/zip/sections")
+async def export_sections_zip(version_id: int = Query(5), db: AsyncSession = Depends(get_db)):
+    import zipfile
+    pdf_bytes = await ExportService.generate_section_pdfs(db, version_id=version_id)
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(f"VFSTR_V{version_id}_All_Sections_Timetable.pdf", pdf_bytes)
+    zip_buffer.seek(0)
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename=VFSTR_V{version_id}_Sections_Bundle.zip"}
     )
 
 

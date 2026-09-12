@@ -1,6 +1,6 @@
 import io
 import csv
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, UploadFile, File, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -278,4 +278,32 @@ async def import_csv_data(
 ):
     content = await file.read()
     return await service.import_csv_data(entity_type=entity_type, content=content)
+
+
+@router.get(
+    "/assignments",
+    response_model=List[Dict[str, Any]],
+    summary="List course faculty assignments",
+    description="Retrieve mapping matrix of faculty and subjects per section."
+)
+async def list_assignments(
+    section_id: Optional[int] = Query(None),
+    subject_id: Optional[int] = Query(None),
+    service: ConfigureService = Depends(get_configure_service)
+):
+    return await service.list_assignments(section_id=section_id, subject_id=subject_id)
+
+
+@router.post(
+    "/assignments",
+    response_model=SectionSubjectMapResponse,
+    summary="Assign faculty to course section",
+    description="Create or update section-subject assignment."
+)
+async def map_section_subject(
+    payload: SectionSubjectMapRequest,
+    service: ConfigureService = Depends(get_configure_service)
+):
+    return await service.batch_assign_section_subject(payload)
+
 

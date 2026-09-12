@@ -261,6 +261,48 @@ class ConfigureService:
             total_slots=total_slots
         )
 
+    async def list_assignments(
+        self,
+        section_id: Optional[int] = None,
+        subject_id: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        from sqlalchemy.orm import selectinload
+        try:
+            stmt = select(SectionSubject).options(
+                selectinload(SectionSubject.section),
+                selectinload(SectionSubject.subject)
+            )
+            if section_id:
+                stmt = stmt.where(SectionSubject.section_id == section_id)
+            if subject_id:
+                stmt = stmt.where(SectionSubject.subject_id == subject_id)
+            res = await self.db.execute(stmt)
+            items = res.scalars().all()
+            if items:
+                return [
+                    {
+                        "id": m.id,
+                        "section_id": m.section_id,
+                        "section_name": m.section.name if m.section else "",
+                        "subject_id": m.subject_id,
+                        "subject_code": m.subject.code if m.subject else "",
+                        "subject_name": m.subject.full_name if m.subject else "",
+                        "lecture_faculty_id": m.lecture_faculty_id,
+                        "lecture_slots_needed": m.lecture_slots_needed,
+                        "tutorial_slots_needed": m.tutorial_slots_needed,
+                        "lab_slots_needed": m.lab_slots_needed,
+                        "total_slots": m.lecture_slots_needed + m.tutorial_slots_needed + m.lab_slots_needed
+                    }
+                    for m in items
+                ]
+        except Exception as ex:
+            import logging
+            logging.getLogger(__name__).warning("[Assignments DB Query Warning] %s", ex)
+
+        from app.core.seed_cache import get_seed_data
+        seed = get_seed_data()
+        return seed.get("assignments", [])
+
     # ---------------------------------------------------------
     # BULK CSV IMPORT
     # ---------------------------------------------------------

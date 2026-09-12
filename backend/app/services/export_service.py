@@ -105,7 +105,12 @@ class ExportService:
         return exporter.export_minors_honors_excel()
 
     @staticmethod
-    async def generate_section_pdfs(db: Any = None, version_id: int = 5) -> bytes:
+    async def generate_single_section_pdf(db: Any = None, section_id: Any = 1, version_id: int = 5) -> bytes:
+        """Generate single section PDF for a specific section id or name."""
+        return await ExportService.generate_section_pdfs(db, version_id=version_id, target_section=str(section_id))
+
+    @staticmethod
+    async def generate_section_pdfs(db: Any = None, version_id: int = 5, target_section: Optional[str] = None) -> bytes:
         """Generate printable PDF containing timetables for all sections for a given version."""
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(
@@ -185,6 +190,24 @@ class ExportService:
                 print(f"[SectionPDF File Fallback Error] {ex}")
                 section_names = ["II AIML-A", "III CS", "IV DS"]
                 slots_list = []
+
+        if target_section:
+            resolved_target = str(target_section).strip()
+            if db is not None and resolved_target.isdigit():
+                try:
+                    from sqlalchemy import select
+                    from app.models.section import Section
+                    sec_q = await db.execute(select(Section).where(Section.id == int(resolved_target)))
+                    sec_obj = sec_q.scalar_one_or_none()
+                    if sec_obj:
+                        resolved_target = sec_obj.name
+                except Exception:
+                    pass
+            filtered_names = [s for s in section_names if s == resolved_target or s.lower() == resolved_target.lower() or resolved_target in s]
+            if filtered_names:
+                section_names = filtered_names[:1]
+            elif section_names:
+                section_names = section_names[:1]
 
         ver_label = "Version 3 (13-Jul-2026)" if version_id == 3 else "Version 5 (15-Jul-2026)"
 
