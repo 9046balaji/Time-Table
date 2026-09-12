@@ -66,21 +66,25 @@ class HierarchicalDecomposer:
         year_4_entries = [e for e in flexible_entries if "IV " in str(e.get("section", ""))]
         other_entries = [e for e in flexible_entries if e not in year_2_entries and e not in year_3_entries and e not in year_4_entries]
 
-        # 4. Phase 3: Solve Intra-Year Micro-Solvers
-        # Each micro-solver runs independently with the global locks as fixed reservations
+        # 4. Phase 3: Solve Intra-Year Micro-Solvers with Cumulative Reservation Matrix
         solver = CPSATSolver()
         repaired_components = []
+        cumulative_context = list(global_locked_entries)
 
         for y_label, y_entries in [("Year-2", year_2_entries), ("Year-3", year_3_entries), ("Year-4", year_4_entries)]:
             if not y_entries:
                 continue
 
+            combined_workload = cumulative_context + y_entries
             micro_res = solver.solve_local_repair(
-                current_entries=y_entries,
+                current_entries=combined_workload,
                 available_rooms=available_rooms,
                 priority_level="BALANCED"
             )
-            repaired_components.extend(micro_res.get("entries", y_entries))
+            solved_all = micro_res.get("entries", combined_workload)
+            y_solved = solved_all[len(cumulative_context):]
+            repaired_components.extend(y_solved)
+            cumulative_context.extend(y_solved)
 
         repaired_components.extend(other_entries)
 

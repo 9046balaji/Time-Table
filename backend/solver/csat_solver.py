@@ -661,7 +661,17 @@ class CPSATSolver:
                 # STAGE 3: Default Safe Venue Fallback
                 if not assigned_room:
                     repair_stage = "STAGE_3_SAFE_FALLBACK"
-                    assigned_room = "605" if sub_type not in ("P", "LAB") else "611"
+                    for r in available_rooms:
+                        r_code = str(r.get("code") or r.get("id")).strip().upper()
+                        if r_code in (disrupted_room_norm, "VIRTUAL_LIBRARY"):
+                            continue
+                        candidate_key = (assigned_day, assigned_period, r_code)
+                        if candidate_key not in occupied_cells:
+                            assigned_room = r_code
+                            occupied_cells.add(candidate_key)
+                            break
+                    if not assigned_room:
+                        assigned_room = "605" if sub_type not in ("P", "LAB") else "611"
 
                 entry_copy["room"] = assigned_room
                 entry_copy["roomCode"] = assigned_room
