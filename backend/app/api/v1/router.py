@@ -12,10 +12,12 @@ from app.api.v1.export import router as export_router, sync_master_timetable_to_
 from app.api.v1.configure import router as configure_router
 from app.api.v1.testing import router as testing_router
 from app.api.v1.telemetry import router as telemetry_router
+from app.api.v1.auth import router as auth_router
 from app.api.v1.agent import router as agent_router
 
 api_v1_router = APIRouter()
 
+api_v1_router.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 api_v1_router.include_router(agent_router, prefix="/agent", tags=["Agent"])
 api_v1_router.include_router(sections_router, prefix="/sections", tags=["Sections"])
 api_v1_router.include_router(faculty_router, prefix="/faculty", tags=["Faculty"])

@@ -36,11 +36,7 @@ app.add_exception_handler(DomainException, rfc7807_domain_exception_handler)
 # CORS configuration with explicit origins when allow_credentials=True
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8000",
-    ],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
