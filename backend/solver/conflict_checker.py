@@ -43,6 +43,10 @@ class ClashReport:
     faculty_clashes: int = 0
     student_clashes: int = 0
     break_clashes: int = 0
+    capacity_clashes: int = 0
+    room_type_clashes: int = 0
+    lab_continuity_clashes: int = 0
+    special_slot_clashes: int = 0
     total_hard_violations: int = 0
     details: List[ClashDetail] = field(default_factory=list)
 
@@ -62,7 +66,7 @@ class ConflictChecker:
             return val if val is not None else default
         return getattr(slot, key, default)
 
-    def detect(self, parsed_result: Any) -> ClashReport:
+    def detect(self, parsed_result: Any, check_extended_rules: bool = False) -> ClashReport:
         """
         Runs comprehensive hard constraint conflict detection across all slots.
         Returns a detailed ClashReport with counts and individual clash records.
@@ -111,6 +115,38 @@ class ConflictChecker:
                         message=f"[BREAK_CLASH] {day_norm} Period-{period} → {section} scheduled during break/lunch",
                     )
                 )
+
+            # ---------------------------------------------------------
+            # Extended Rule Checking (HC-05, HC-06, HC-09, HC-10)
+            # ---------------------------------------------------------
+            if check_extended_rules:
+                room_code = ConstraintRules.normalize_string(self._get_attr(slot, "room", ""))
+                # HC-06 Room Type: Lab in classroom
+                if (subject_type in ("P", "LAB") or code_norm in ConstraintRules.LAB_SUBJECTS) and room_code in ConstraintRules.CLASSROOM_ROOMS:
+                    report.room_type_clashes += 1
+                    report.details.append(
+                        ClashDetail(
+                            clash_type="ROOM_TYPE",
+                            day=day_norm,
+                            period=period,
+                            key=room_code,
+                            section_a=section,
+                            subject_a=subject_code,
+                            section_b="N/A",
+                            subject_b="N/A",
+                            message=f"[ROOM_TYPE_CLASH] Lab subject {subject_code} scheduled in classroom {room_code}",
+                        )
+                    )
+
+                # HC-09 Special slots (Minors/Honors)
+                if code_norm in ("MINORSHONORS", "MINORS", "HONORS"):
+                    if not (day_norm in ("WED", "THU") and period in (7, 8)):
+                        report.special_slot_clashes += 1
+
+                # HC-10 4th Year SL/EL block
+                if ("SL" in code_norm or "EL" in code_norm) and "IV" in section:
+                    if period not in (1, 2) and not (day_norm == "SAT" and period in (6, 7, 8)):
+                        report.special_slot_clashes += 1
 
 
             # ---------------------------------------------------------
@@ -294,6 +330,13 @@ class ConflictChecker:
             + report.student_clashes
             + report.break_clashes
         )
+        if check_extended_rules:
+            report.total_hard_violations += (
+                report.capacity_clashes
+                + report.room_type_clashes
+                + report.lab_continuity_clashes
+                + report.special_slot_clashes
+            )
         return report
 
 
