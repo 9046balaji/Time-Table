@@ -273,6 +273,12 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                     if (colSpan > 1) skipPeriods = colSpan - 1;
                     const facShort = entry ? shortFacultyName(entry) : "";
                     const facFull  = entry ? fullFacultyNames(entry) : "";
+                    const subjFull = entry?.subjectCode ? (SUBJECT_NAMES[entry.subjectCode.replace("(P)", "").replace("(T&P)", "").replace("(T)", "").trim()] || entry.subjectCode) : "";
+                    const cellTooltip = entry?.hasClash
+                      ? `CLASH: ${entry.clashReason || "Constraint violation"}`
+                      : entry
+                      ? `${subjFull} (${entry.subjectCode}) • ${facFull || "Unassigned"} • Room ${entry.roomCode || "TBD"}`
+                      : `Click to assign slot for ${day} Period ${periodId}`;
                     return (
                       <td
                         key={pIdx}
@@ -297,7 +303,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                           }
                         }}
                         className={`border border-slate-300 dark:border-slate-600 text-center transition-colors cursor-pointer h-[68px] align-middle p-0.5 ${slotBg(entry)} hover:border-blue-500 hover:ring-1 hover:ring-blue-500`}
-                        title={entry?.hasClash ? `CLASH: ${entry.clashReason}` : facFull ? `${entry?.subjectCode} - ${facFull}` : `Click to assign slot for ${day} Period ${periodId}`}
+                        title={cellTooltip}
                       >
                         {entry ? (
                           <div className="flex flex-col items-center justify-center h-full gap-0.5 px-0.5">

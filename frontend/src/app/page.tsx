@@ -34,9 +34,9 @@ export default function DashboardPage() {
   const [selectedDataset, setSelectedDataset] = useState<'4th_year' | 'multi_branch_e2e' | 'v5_baseline'>('4th_year');
 
   const [stats, setStats] = useState({
-    sectionsCount: 59,
-    facultyCount: 72,
-    roomsCount: 71,
+    sectionsCount: 44,
+    facultyCount: 80,
+    roomsCount: 35,
     subjectsCount: 22,
     totalSlots: 1000,
     hardViolations: 51,
