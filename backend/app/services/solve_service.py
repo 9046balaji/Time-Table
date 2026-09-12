@@ -72,8 +72,10 @@ class SolveService:
             sections_to_solve = [s for s in sections_raw if "II " in s.get("id", "")]
         elif scope != "ALL" and "III" in scope:
             sections_to_solve = [s for s in sections_raw if "III " in s.get("id", "")]
+        elif scope != "ALL" and "IV" in scope:
+            sections_to_solve = [s for s in sections_raw if "IV " in s.get("id", "")]
         else:
-            sections_to_solve = sections_raw[:12] if len(sections_raw) > 12 else sections_raw
+            sections_to_solve = sections_raw
 
         rooms_to_solve = seed.get("rooms", [])
         if not rooms_to_solve:
@@ -132,17 +134,19 @@ class SolveService:
                 "entries_count": result.get("entries_count", 0)
             })
 
-            # Save version and entries to DB
-            if status_str == "COMPLETED" and db is not None:
+            # Save version and entries to DB using AsyncSessionLocal
+            if status_str == "COMPLETED":
                 try:
+                    from app.core.database import AsyncSessionLocal
                     from app.services.write_tools import publish_schedule
-                    await publish_schedule(
-                        db=db,
-                        session_id=1,
-                        entries=result.get("entries", []),
-                        version_label=f"SOLVER-{run_id.upper()}",
-                        notes=f"Auto-generated via {config.algorithm} engine"
-                    )
+                    async with AsyncSessionLocal() as session:
+                        await publish_schedule(
+                            db=session,
+                            session_id=1,
+                            entries=result.get("entries", []),
+                            version_label=f"SOLVER-{run_id.upper()}",
+                            notes=f"Auto-generated via {config.algorithm} engine"
+                        )
                 except Exception as ex:
                     print(f"[SolveService Publish Warning] {ex}")
 

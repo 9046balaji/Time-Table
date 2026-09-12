@@ -1,16 +1,18 @@
 import asyncio
 import json
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Depends
 from typing import Dict, Any
+from sqlalchemy.ext.asyncio import AsyncSession
 from backend.solver.csat_solver import SolverConfig
 from app.services.solve_service import SolveService
+from app.core.database import get_db
 
 router = APIRouter()
 
 
 @router.post("", response_model=Dict[str, Any])
-async def trigger_solver(config: SolverConfig = SolverConfig()):
-    return await SolveService.start_solve_job(db=None, config=config)
+async def trigger_solver(config: SolverConfig = SolverConfig(), db: AsyncSession = Depends(get_db)):
+    return await SolveService.start_solve_job(db=db, config=config)
 
 
 @router.post("/benchmark", response_model=Dict[str, Any])
@@ -59,29 +61,28 @@ async def websocket_solver_stream(websocket: WebSocket, run_id: str):
         await pubsub.unsubscribe(f"solver_progress:{run_id}")
         await r_client.close()
     except Exception as ex:
-        print(f"[WebSocket Stream Warning] Pub/Sub fallback activated: {ex}")
-        # Fallback simulation if Redis Pub/Sub is unavailable
-        hard_violations_steps = [51, 38, 24, 12, 5, 0]
-        for gen, h_val in enumerate(hard_violations_steps, start=1):
+        # Real memory status polling fallback when Redis Pub/Sub is unavailable
+        prev_gen = -1
+        for _ in range(120):  # Poll up to 60 seconds
+            status = SolveService.get_run_status(run_id)
+            if status:
+                gen = status.get("generation", 0)
+                st = status.get("status", "RUNNING")
+                if gen != prev_gen or st in ("COMPLETED", "FAILED", "ABORTED"):
+                    prev_gen = gen
+                    msg = {
+                        "type": "complete" if st == "COMPLETED" else ("error" if st in ("FAILED", "ABORTED") else "progress"),
+                        "status": st,
+                        "generation": gen,
+                        "fitness": status.get("fitness_score", 0),
+                        "hard_violations": status.get("hard_violations", 0),
+                        "soft_violations": status.get("soft_violations", 0),
+                        "runtime_seconds": status.get("runtime_seconds", 0.0),
+                        "message": f"Status: {st} (Gen {gen}, Hard Violations: {status.get('hard_violations', 0)})"
+                    }
+                    await websocket.send_text(json.dumps(msg))
+                    if st in ("COMPLETED", "FAILED", "ABORTED"):
+                        break
             await asyncio.sleep(0.5)
-            msg = {
-                "type": "progress" if h_val > 0 else "complete",
-                "generation": gen * 50,
-                "fitness": -(h_val * 10000 + (5 - gen) * 10),
-                "hard_violations": h_val,
-                "soft_violations": max(0, 5 - gen),
-                "runtime_seconds": round(gen * 0.5, 1),
-                "message": f"Iteration {gen*50}: {h_val} hard violations remaining."
-            }
-            await websocket.send_text(json.dumps(msg))
-
-        await websocket.send_text(json.dumps({
-            "type": "complete",
-            "version_id": 6,
-            "hard_violations": 0,
-            "soft_violations": 0,
-            "runtime_seconds": 3.0,
-            "message": "✓ CP-SAT Solver completed: 100% hard constraints satisfied (0 clashes)."
-        }))
     except WebSocketDisconnect:
         pass
