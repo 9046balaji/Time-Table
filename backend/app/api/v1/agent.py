@@ -564,7 +564,6 @@ async def generate_exam_schedule(
     payload: Optional[Dict[str, Any]] = None,
     db: AsyncSession = Depends(get_db)
 ):
-    """Generates a conflict-free examination timetable with 50% room spacing factor and fair invigilator duties."""
     p = payload or {}
     from app.services.exam_scheduler_agent import ExamSchedulerAgent
     return await ExamSchedulerAgent.generate_exam_schedule(
@@ -573,7 +572,7 @@ async def generate_exam_schedule(
         start_date=str(p.get("start_date", "2026-10-12")),
         num_days=int(p.get("num_days", 6)),
         spacing_factor=float(p.get("spacing_factor", 0.5)),
-        target_sections=p.get("target_sections")
+        target_sections=p.get("target_sections") or p.get("sections")
     )
 
 

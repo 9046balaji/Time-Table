@@ -114,37 +114,67 @@ class ExamSchedulerAgent:
             subj = task["subject"]
             req_students = task["student_count"]
 
-            # Choose day & session ensuring EC-01 (1 exam per section per day)
+            preferred_sessions = ["MORNING", "AFTERNOON"] if ("II " in sec_name or "IV " in sec_name) else ["AFTERNOON", "MORNING"]
+
             assigned_day = None
             assigned_session = None
+            allocated_rooms = []
+            seats_covered = 0
 
+            # Find a day and session with sufficient free room capacity
             for d_idx in range(num_days):
                 d_str = exam_dates[(task["day_index"] + d_idx) % num_days]
-                if (d_str, sec_name) not in day_section_assigned:
-                    assigned_day = d_str
-                    # Alternate sessions: Year 2 & 4 Morning, Year 3 Afternoon
-                    assigned_session = "MORNING" if ("II " in sec_name or "IV " in sec_name) else "AFTERNOON"
-                    day_section_assigned.add((d_str, sec_name))
+                if (d_str, sec_name) in day_section_assigned:
+                    continue
+
+                for sess in preferred_sessions:
+                    cand_rooms = []
+                    cand_capacity = 0
+                    for r in usable_rooms:
+                        room_key = (d_str, sess, r["code"])
+                        if room_key not in slot_room_assigned:
+                            cand_rooms.append(r["code"])
+                            cand_capacity += r["exam_capacity"]
+                            if cand_capacity >= req_students:
+                                break
+
+                    if cand_capacity >= req_students:
+                        assigned_day = d_str
+                        assigned_session = sess
+                        allocated_rooms = cand_rooms
+                        seats_covered = cand_capacity
+                        day_section_assigned.add((d_str, sec_name))
+                        for rc in allocated_rooms:
+                            slot_room_assigned.add((d_str, sess, rc))
+                        break
+
+                if assigned_day:
                     break
+
+            if not assigned_day:
+                # Secondary sweep: find any slot with any available non-clashing rooms
+                for d_str in exam_dates:
+                    if (d_str, sec_name) in day_section_assigned:
+                        continue
+                    for sess in ("MORNING", "AFTERNOON"):
+                        free_rooms = [r["code"] for r in usable_rooms if (d_str, sess, r["code"]) not in slot_room_assigned]
+                        if free_rooms:
+                            assigned_day = d_str
+                            assigned_session = sess
+                            allocated_rooms = free_rooms[:2]
+                            seats_covered = sum(r.get("exam_capacity", 30) for r in usable_rooms if r["code"] in allocated_rooms)
+                            day_section_assigned.add((d_str, sec_name))
+                            for rc in allocated_rooms:
+                                slot_room_assigned.add((d_str, sess, rc))
+                            break
+                    if assigned_day:
+                        break
 
             if not assigned_day:
                 assigned_day = exam_dates[0]
                 assigned_session = "MORNING"
-
-            # Allocate Rooms with 50% spacing factor (EC-03)
-            allocated_rooms = []
-            seats_covered = 0
-            for r in usable_rooms:
-                room_key = (assigned_day, assigned_session, r["code"])
-                if room_key not in slot_room_assigned:
-                    allocated_rooms.append(r["code"])
-                    slot_room_assigned.add(room_key)
-                    seats_covered += r["exam_capacity"]
-                    if seats_covered >= req_students:
-                        break
-
-            if not allocated_rooms:
                 allocated_rooms = ["601"]
+                seats_covered = 30
 
             # Allocate Invigilators (EC-04: Non-clashing & Fair rotation)
             invigilators = []
