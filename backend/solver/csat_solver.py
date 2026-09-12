@@ -68,6 +68,17 @@ class CPSATSolver:
     def __init__(self, config: Optional[SolverConfig] = None):
         self.config = config or SolverConfig()
 
+    @classmethod
+    def is_self_directed_subject(cls, sub_type: Any, sub_code: Any) -> bool:
+        """Reliably identifies whether a subject assignment is self-directed or virtual-venue-managed."""
+        st = str(sub_type or "").strip().upper()
+        sc = str(sub_code or "").strip().upper()
+        return (
+            st in cls.SELF_DIRECTED_TYPES
+            or sc in cls.SELF_DIRECTED_TYPES
+            or any(k in sc for k in ("MINOR", "HONOR", "SL/EL", "SL_EL", "LIBRARY", "IIC"))
+        )
+
     @staticmethod
     def _has_faculty(ss: Dict[str, Any]) -> bool:
         """Determines if a subject assignment record carries a non-empty faculty assignment."""
@@ -103,40 +114,54 @@ class CPSATSolver:
                 sec_subjs_by_sec[s_id] = []
             sec_subjs_by_sec[s_id].append(ss)
 
+        # Check if Minors/Honors exists anywhere in this solve scope
+        has_minors_scope = any(
+            self.is_self_directed_subject(ss.get("subject_type"), ss.get("subject_code"))
+            and ("MINOR" in str(ss.get("subject_code", "")).upper() or "HONOR" in str(ss.get("subject_code", "")).upper())
+            for ss in section_subjects
+        )
+
+        usable_slots = [
+            t for t in time_slots
+            if not t.get("is_blocked", False) and not ConstraintRules.is_break_slot(t.get("period", 0), t.get("slot_name", ""))
+        ]
+
         # -----------------------------------------------------------------------
-        # 2. Decision Variable Initialization: x[section_id, subject_id, room_id, slot_id]
+        # 2. Decision Variable Initialization & Fast Pre-indexing
         # -----------------------------------------------------------------------
         x: Dict[Tuple[Any, Any, Any, Any], cp_model.IntVar] = {}
+        vars_by_room_slot: Dict[Tuple[Any, Any], List[cp_model.IntVar]] = {}
+        vars_by_sec_slot: Dict[Tuple[Any, Any], List[cp_model.IntVar]] = {}
+        vars_by_sec_sub: Dict[Tuple[Any, Any], List[cp_model.IntVar]] = {}
+        vars_by_sec_sub_start: Dict[Tuple[Any, Any], List[cp_model.IntVar]] = {}
+        vars_by_fac_slot: Dict[Tuple[str, Any], List[cp_model.IntVar]] = {}
+        vars_by_fac_day: Dict[Tuple[str, str], List[cp_model.IntVar]] = {}
+        vars_by_sec_day_teaching: Dict[Tuple[Any, str], List[cp_model.IntVar]] = {}
 
         for sec in sections:
             s_id = sec["id"]
+            s_id_str = str(s_id).upper()
+            is_fourth_year = "IV " in s_id_str or "IV_" in s_id_str or "IV-" in s_id_str or "IV" in s_id_str.split()
+            is_second_year = "II " in s_id_str or "II_" in s_id_str or "II-" in s_id_str or "II" in s_id_str.split()
             sec_subjs = sec_subjs_by_sec.get(s_id, [])
 
             for ss in sec_subjs:
                 sub_id = ss["subject_id"]
                 sub_type = str(ss.get("subject_type", "L")).strip().upper()
                 sub_code = str(ss.get("subject_code", "")).strip().upper()
-
-                is_self_directed = (
-                    sub_type in self.SELF_DIRECTED_TYPES
-                    or sub_code in self.SELF_DIRECTED_TYPES
-                    or "MINOR" in sub_code
-                    or "HONOR" in sub_code
-                    or "SL/EL" in sub_code
-                    or "SL_EL" in sub_code
-                    or "LIBRARY" in sub_code
-                )
+                is_self_directed = self.is_self_directed_subject(sub_type, sub_code)
+                is_lab = (sub_type in ("P", "LAB")) and not is_self_directed
 
                 if is_self_directed:
                     room_pool = [self.VIRTUAL_LIB_ROOM]
-                elif sub_type in ("P", "LAB"):
+                elif is_lab:
                     room_pool = [r for r in rooms if r.get("room_type") in ("lab", "computer_lab", "gpu_lab")] or rooms
                 elif sub_type in ("L", "T"):
                     room_pool = [r for r in rooms if r.get("room_type") not in ("lab", "computer_lab", "gpu_lab")] or rooms
                 else:
                     room_pool = rooms
 
-                # Upfront capacity & type pruning (HC-05 & HC-06) to drastically reduce CP-SAT variable count
+                # Upfront capacity & type pruning (HC-05 & HC-06)
                 if not is_self_directed:
                     sec_capacity = sec.get("student_count") or sec.get("strength") or 60
                     compat_pool = [
@@ -147,125 +172,104 @@ class CPSATSolver:
                     if compat_pool:
                         room_pool = compat_pool
 
-                for r in room_pool:
-                    r_id = r["id"]
-                    for t in time_slots:
-                        t_id = t["id"]
-                        x[s_id, sub_id, r_id, t_id] = model.NewBoolVar(f"x_{s_id}_{sub_id}_{r_id}_{t_id}")
-
-        # -----------------------------------------------------------------------
-        # 3. HC-01: Room Conflict (At most 1 class per room per slot)
-        # -----------------------------------------------------------------------
-        for r in rooms:
-            r_id = r["id"]
-            for t in time_slots:
-                t_id = t["id"]
-                room_vars = [
-                    x[sec["id"], ss["subject_id"], r_id, t_id]
-                    for sec in sections
-                    for ss in sec_subjs_by_sec.get(sec["id"], [])
-                    if (sec["id"], ss["subject_id"], r_id, t_id) in x
-                ]
-                if room_vars:
-                    model.AddAtMostOne(room_vars)
-
-        # -----------------------------------------------------------------------
-        # 4. HC-02: Faculty Assignments & Double-Booking Guard
-        # -----------------------------------------------------------------------
-        fac_to_sec_subjs: Dict[str, List[Tuple[Any, Any]]] = {}
-        for sec in sections:
-            s_id = sec["id"]
-            for ss in sec_subjs_by_sec.get(s_id, []):
-                sub_type = str(ss.get("subject_type", "L")).strip().upper()
-                if sub_type in self.SELF_DIRECTED_TYPES or not self._has_faculty(ss):
-                    continue
-
-                sub_id = ss["subject_id"]
-                sub_code = str(ss.get("subject_code", "")).strip()
-
+                # Extract faculty assignments for this subject
                 ss_facs: Set[str] = set()
                 if self._has_faculty(ss):
                     ss_facs.add(str(ss["faculty_name"]).strip())
                 for co in ss.get("co_faculty", []):
                     if co and str(co).strip():
                         ss_facs.add(str(co).strip())
-
-                if not ss_facs:
+                if not ss_facs and not is_self_directed:
                     for f_name, codes in faculty_subject_map.items():
                         if sub_code in codes:
                             ss_facs.add(f_name)
 
-                for f_name in ss_facs:
-                    if f_name not in fac_to_sec_subjs:
-                        fac_to_sec_subjs[f_name] = []
-                    fac_to_sec_subjs[f_name].append((s_id, sub_id))
+                for t in usable_slots:
+                    t_id = t["id"]
+                    t_day = str(t.get("day", "MON")).upper()
+                    t_p = int(t.get("period", 1))
 
-        for fac_name, sec_sub_list in fac_to_sec_subjs.items():
-            for t in time_slots:
-                t_id = t["id"]
-                fac_vars = [
-                    x[s_id, sub_id, r["id"], t_id]
-                    for (s_id, sub_id) in sec_sub_list
-                    for r in rooms
-                    if (s_id, sub_id, r["id"], t_id) in x
-                ]
-                if fac_vars:
-                    model.AddAtMostOne(fac_vars)
+                    # Domain Pruning 1: Saturday lab prohibition
+                    if is_lab and t_day == "SAT":
+                        continue
+
+                    # Domain Pruning 2: Minors/Honors Global Slot Protection (WED/THU P7-P8 only)
+                    if ("MINOR" in sub_code or "HONOR" in sub_code):
+                        if not (t_day in ("WED", "THU") and t_p in (7, 8)):
+                            continue
+                    elif has_minors_scope and (t_day in ("WED", "THU") and t_p in (7, 8)):
+                        # Non-minors cannot displace global cohort slots
+                        continue
+
+                    # Domain Pruning 3: 4th Year SL/EL Fixed Block Protection
+                    is_slel = any(k in sub_code or k in sub_type for k in ("SL/EL", "SL_EL", "LEARNING"))
+                    if is_fourth_year:
+                        if is_slel:
+                            if not (t_p in (1, 2) or (t_day == "SAT" and t_p in (6, 7, 8))):
+                                continue
+                        else:
+                            if t_p in (1, 2):
+                                continue
+
+                    # Domain Pruning 4: 2nd Year Teaching Slot Protection (no regular teaching P7-P8)
+                    if is_second_year and not is_self_directed and t_p in (7, 8):
+                        continue
+
+                    for r in room_pool:
+                        r_id = r["id"]
+                        var = model.NewBoolVar(f"x_{s_id}_{sub_id}_{r_id}_{t_id}")
+                        x[s_id, sub_id, r_id, t_id] = var
+
+                        # Index into fast-lookup buckets
+                        if not is_self_directed:
+                            vars_by_room_slot.setdefault((r_id, t_id), []).append(var)
+                        vars_by_sec_slot.setdefault((s_id, t_id), []).append(var)
+                        vars_by_sec_sub.setdefault((s_id, sub_id), []).append(var)
+
+                        if is_lab and t_p in (1, 3, 4, 6, 7):
+                            vars_by_sec_sub_start.setdefault((s_id, sub_id), []).append(var)
+
+                        if not is_self_directed:
+                            vars_by_sec_day_teaching.setdefault((s_id, t_day), []).append(var)
+
+                        for fname in ss_facs:
+                            vars_by_fac_slot.setdefault((fname, t_id), []).append(var)
+                            vars_by_fac_day.setdefault((fname, t_day), []).append(var)
+
+        # -----------------------------------------------------------------------
+        # 3. HC-01: Room Conflict (At most 1 class per room per slot)
+        # -----------------------------------------------------------------------
+        for (r_id, t_id), r_vars in vars_by_room_slot.items():
+            if len(r_vars) > 1:
+                model.AddAtMostOne(r_vars)
+
+        # -----------------------------------------------------------------------
+        # 4. HC-02: Faculty Assignments & Double-Booking Guard
+        # -----------------------------------------------------------------------
+        for (fname, t_id), f_vars in vars_by_fac_slot.items():
+            if len(f_vars) > 1:
+                model.AddAtMostOne(f_vars)
 
         # Teacher daily teaching cap constraint
-        days_list = ["MON", "TUE", "WED", "THU", "FRI", "SAT"]
-        for fac_name, sec_sub_list in fac_to_sec_subjs.items():
-            for day in days_list:
-                day_slots = [t for t in time_slots if t.get("day") == day and not t.get("is_blocked")]
-                fac_daily_vars = [
-                    x[s_id, sub_id, r["id"], t["id"]]
-                    for (s_id, sub_id) in sec_sub_list
-                    for r in rooms
-                    for t in day_slots
-                    if (s_id, sub_id, r["id"], t["id"]) in x
-                ]
-                if fac_daily_vars:
-                    model.Add(sum(fac_daily_vars) <= max_classes_per_teacher_per_day)
+        for (fname, day), fac_daily_vars in vars_by_fac_day.items():
+            if fac_daily_vars:
+                model.Add(sum(fac_daily_vars) <= max_classes_per_teacher_per_day)
 
         # Section daily teaching cap (max 5 teaching hours per day, excluding SL/EL & Library)
-        for sec in sections:
-            s_id = sec["id"]
-            sec_subjs = sec_subjs_by_sec.get(s_id, [])
-            teaching_subjs = [
-                ss for ss in sec_subjs
-                if str(ss.get("subject_type", "L")).upper() not in self.SELF_DIRECTED_TYPES
-            ]
-            for day in days_list:
-                day_slots = [t for t in time_slots if t.get("day") == day and not t.get("is_blocked")]
-                sec_daily_teaching_vars = [
-                    x[s_id, ss["subject_id"], r["id"], t["id"]]
-                    for ss in teaching_subjs
-                    for r in rooms
-                    for t in day_slots
-                    if (s_id, ss["subject_id"], r["id"], t["id"]) in x
-                ]
-                if sec_daily_teaching_vars:
-                    model.Add(sum(sec_daily_teaching_vars) <= 5)
+        for (s_id, day), sec_daily_teaching_vars in vars_by_sec_day_teaching.items():
+            if sec_daily_teaching_vars:
+                model.Add(sum(sec_daily_teaching_vars) <= 5)
 
         # -----------------------------------------------------------------------
         # 5. HC-03: Section Conflict (At most 1 class per section per slot)
         # -----------------------------------------------------------------------
-        for sec in sections:
-            s_id = sec["id"]
-            sec_subjs = sec_subjs_by_sec.get(s_id, [])
-            for t in time_slots:
-                t_id = t["id"]
-                sec_vars = [
-                    x[s_id, ss["subject_id"], r["id"], t_id]
-                    for ss in sec_subjs
-                    for r in ([self.VIRTUAL_LIB_ROOM] if str(ss.get("subject_type")).upper() in self.SELF_DIRECTED_TYPES else rooms)
-                    if (s_id, ss["subject_id"], r["id"], t_id) in x
-                ]
-                if sec_vars:
-                    model.AddAtMostOne(sec_vars)
+        for (s_id, t_id), s_vars in vars_by_sec_slot.items():
+            if len(s_vars) > 1:
+                model.AddAtMostOne(s_vars)
 
         # -----------------------------------------------------------------------
         # 6. HC-04: Subject Frequency (Exact slots needed per subject per section)
+        #    & HC-08: Lab Consecutiveness and Same-Room Multi-Period Continuity
         # -----------------------------------------------------------------------
         for sec in sections:
             s_id = sec["id"]
@@ -273,199 +277,51 @@ class CPSATSolver:
             for ss in sec_subjs:
                 sub_id = ss["subject_id"]
                 needed = ss.get("total_slots_needed", 3)
-                sub_type = str(ss.get("subject_type", "L")).upper()
-                sub_rooms = [self.VIRTUAL_LIB_ROOM] if sub_type in self.SELF_DIRECTED_TYPES else rooms
+                sub_type = str(ss.get("subject_type", "L")).strip().upper()
+                sub_code = str(ss.get("subject_code", "")).strip().upper()
+                is_self_directed = self.is_self_directed_subject(sub_type, sub_code)
+                is_lab = (sub_type in ("P", "LAB")) and not is_self_directed
 
-                if sub_type in ("P", "LAB"):
-                    valid_lab_starts = [1, 3, 4, 6, 7]
-                    start_vars = [
-                        x[s_id, sub_id, r["id"], t["id"]]
-                        for r in sub_rooms
-                        for t in time_slots
-                        if t.get("period") in valid_lab_starts and not t.get("is_blocked")
-                        and (s_id, sub_id, r["id"], t["id"]) in x
-                    ]
+                # 6.1 Exact frequency equality for ALL subjects (theory, lab, self-directed)
+                all_sub_vars = vars_by_sec_sub.get((s_id, sub_id), [])
+                if all_sub_vars:
+                    model.Add(sum(all_sub_vars) == needed)
+
+                # 6.2 Lab start period frequency and consecutiveness
+                if is_lab:
+                    c_slots = getattr(ss, "continuous_slots", 2) or 2
+                    effective_c_slots = min(c_slots, needed)
+                    num_sessions = max(1, needed // effective_c_slots)
+
+                    start_vars = vars_by_sec_sub_start.get((s_id, sub_id), [])
                     if start_vars:
-                        model.Add(sum(start_vars) == needed)
-                else:
-                    all_sub_vars = [
-                        x[s_id, sub_id, r["id"], t["id"]]
-                        for r in sub_rooms
-                        for t in time_slots
-                        if (s_id, sub_id, r["id"], t["id"]) in x
-                    ]
-                    if all_sub_vars:
-                        model.Add(sum(all_sub_vars) == needed)
+                        model.Add(sum(start_vars) == num_sessions)
 
-        # -----------------------------------------------------------------------
-        # 7. HC-05 & HC-06: Room Capacity & Type Compatibility
-        # -----------------------------------------------------------------------
-        for sec in sections:
-            s_id = sec["id"]
-            sec_capacity = sec.get("student_count", 60)
-            sec_subjs = sec_subjs_by_sec.get(s_id, [])
-            for ss in sec_subjs:
-                sub_id = ss["subject_id"]
-                sub_type = str(ss.get("subject_type", "L")).upper()
-
-                if sub_type in self.SELF_DIRECTED_TYPES:
-                    continue
-
-                for r in rooms:
-                    r_id = r["id"]
-                    r_cap = r.get("capacity", 60)
-                    r_type = r.get("room_type", "classroom")
-
-                    is_cap_ok = r_cap >= sec_capacity
-                    is_type_ok = ConstraintRules.is_room_compatible(sub_type, r_type)
-
-                    if not (is_cap_ok and is_type_ok):
-                        for t in time_slots:
-                            if (s_id, sub_id, r_id, t["id"]) in x:
-                                model.Add(x[s_id, sub_id, r_id, t["id"]] == 0)
-
-        # -----------------------------------------------------------------------
-        # 8. HC-07: Break / Lunch Slot Protection
-        # -----------------------------------------------------------------------
-        for t in time_slots:
-            if t.get("is_blocked", False) or ConstraintRules.is_break_slot(t.get("period", 0), t.get("slot_name", "")):
-                t_id = t["id"]
-                for sec in sections:
-                    s_id = sec["id"]
-                    for ss in sec_subjs_by_sec.get(s_id, []):
-                        sub_id = ss["subject_id"]
-                        sub_type = str(ss.get("subject_type", "L")).upper()
-                        sub_rooms = [self.VIRTUAL_LIB_ROOM] if sub_type in self.SELF_DIRECTED_TYPES else rooms
-                        for r in sub_rooms:
-                            if (s_id, sub_id, r["id"], t_id) in x:
-                                model.Add(x[s_id, sub_id, r["id"], t_id] == 0)
-
-        # -----------------------------------------------------------------------
-        # 9. HC-08 & Special Cohort Blocks (Labs, Minors/Honors, 4th Year SL/EL)
-        # -----------------------------------------------------------------------
-        for sec in sections:
-            s_id = sec["id"]
-            sec_subjs = sec_subjs_by_sec.get(s_id, [])
-
-            # Rule 1: Lab Consecutive Block Enforcement
-            lab_subjs = [ss for ss in sec_subjs if str(ss.get("subject_type")).upper() in ("P", "LAB")]
-            for ss in lab_subjs:
-                sub_id = ss["subject_id"]
-
-                # Saturday Lab prohibition
-                for r in rooms:
-                    for t in time_slots:
-                        if t.get("day") == "SAT" and (s_id, sub_id, r["id"], t["id"]) in x:
-                            model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
-
-                for day in ["MON", "TUE", "WED", "THU", "FRI"]:
-                    day_slots = {t.get("period", 0): t for t in time_slots if t.get("day") == day and not t.get("is_blocked")}
+                    # Consecutive period implication in identical room
                     valid_start_periods = [1, 3, 4, 6, 7]
-
-                    for p1 in valid_start_periods:
-                        p2 = p1 + 1
-                        if p1 in day_slots and p2 in day_slots:
-                            t1_id = day_slots[p1]["id"]
-                            t2_id = day_slots[p2]["id"]
-
+                    for day in ["MON", "TUE", "WED", "THU", "FRI"]:
+                        day_start_vars = []
+                        for p1 in valid_start_periods:
+                            p2 = p1 + 1
+                            t1_id = f"{day}_{p1}"
+                            t2_id = f"{day}_{p2}"
                             for r in rooms:
                                 r_id = r["id"]
-                                if (s_id, sub_id, r_id, t1_id) in x and (s_id, sub_id, r_id, t2_id) in x:
-                                    model.Add(x[s_id, sub_id, r_id, t2_id] == 1).OnlyEnforceIf(x[s_id, sub_id, r_id, t1_id])
+                                v1 = x.get((s_id, sub_id, r_id, t1_id))
+                                v2 = x.get((s_id, sub_id, r_id, t2_id))
+                                if v1 is not None and v2 is not None:
+                                    if effective_c_slots >= 2:
+                                        model.Add(v2 == 1).OnlyEnforceIf(v1)
+                                    day_start_vars.append(v1)
+                                    if effective_c_slots >= 3:
+                                        t3_id = f"{day}_{p1 + 2}"
+                                        v3 = x.get((s_id, sub_id, r_id, t3_id))
+                                        if v3 is not None:
+                                            model.Add(v3 == 1).OnlyEnforceIf(v1)
 
-                    start_day_vars = [
-                        x[s_id, sub_id, r["id"], day_slots[p]["id"]]
-                        for r in rooms
-                        for p in valid_start_periods
-                        if p in day_slots and (s_id, sub_id, r["id"], day_slots[p]["id"]) in x
-                    ]
-                    if start_day_vars:
-                        model.Add(sum(start_day_vars) <= 1)
+                        if day_start_vars:
+                            model.Add(sum(day_start_vars) <= 1)
 
-            # Rule 2: Minors/Honors Global Slot Protection
-            minors_subjs = [
-                ss for ss in sec_subjs
-                if ("MINOR" in str(ss.get("subject_code", "")).upper() or "HONOR" in str(ss.get("subject_code", "")).upper())
-            ]
-            has_p78_slots = any(t.get("period") in (7, 8) for t in time_slots)
-            if minors_subjs and has_p78_slots:
-                for ss in minors_subjs:
-                    sub_id = ss["subject_id"]
-                    sub_type = str(ss.get("subject_type", "L")).upper()
-                    sub_rooms = [self.VIRTUAL_LIB_ROOM] if sub_type in self.SELF_DIRECTED_TYPES else rooms
-                    for r in sub_rooms:
-                        for t in time_slots:
-                            t_day = t.get("day")
-                            t_p = t.get("period")
-                            if not (t_day in ("WED", "THU") and t_p in (7, 8)):
-                                if (s_id, sub_id, r["id"], t["id"]) in x:
-                                    model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
-
-                regular_subjs = [
-                    ss for ss in sec_subjs
-                    if not ("MINOR" in str(ss.get("subject_code", "")).upper() or "HONOR" in str(ss.get("subject_code", "")).upper())
-                ]
-                for ss in regular_subjs:
-                    sub_id = ss["subject_id"]
-                    sub_type = str(ss.get("subject_type", "L")).upper()
-                    sub_rooms = [self.VIRTUAL_LIB_ROOM] if sub_type in self.SELF_DIRECTED_TYPES else rooms
-                    for r in sub_rooms:
-                        for t in time_slots:
-                            if t.get("day") in ("WED", "THU") and t.get("period") in (7, 8):
-                                if (s_id, sub_id, r["id"], t["id"]) in x:
-                                    model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
-
-            # Rule 3: 4th Year SL/EL Fixed Block Protection (P1-P2 MON-SAT strictly SL/EL)
-            s_id_str = str(s_id).upper()
-            is_fourth_year = "IV " in s_id_str or "IV_" in s_id_str or "IV-" in s_id_str or "IV" in s_id_str.split()
-            if is_fourth_year:
-                # 4th Year regular theory & lab subjects CANNOT be in P1 or P2 (P1-P2 reserved for SL/EL)
-                regular_4th_subjs = [
-                    ss for ss in sec_subjs
-                    if not any(k in str(ss.get("subject_code", "")).upper() or k in str(ss.get("subject_type", "")).upper()
-                               for k in ("SL/EL", "SL_EL", "LEARNING", "LIBRARY", "MINOR", "HONOR"))
-                ]
-                for ss in regular_4th_subjs:
-                    sub_id = ss["subject_id"]
-                    for r in rooms:
-                        for t in time_slots:
-                            if t.get("period") in (1, 2):
-                                if (s_id, sub_id, r["id"], t["id"]) in x:
-                                    model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
-
-                # 4th Year SL/EL MUST be assigned to P1-P2 (or Saturday afternoon P6-P8)
-                slel_subjs = [
-                    ss for ss in sec_subjs
-                    if any(k in str(ss.get("subject_code", "")).upper() or k in str(ss.get("subject_type", "")).upper()
-                           for k in ("SL/EL", "SL_EL", "LEARNING"))
-                ]
-                if slel_subjs:
-                    for ss in slel_subjs:
-                        sub_id = ss["subject_id"]
-                        sub_rooms = [self.VIRTUAL_LIB_ROOM]
-                        for r in sub_rooms:
-                            for t in time_slots:
-                                t_p = t.get("period")
-                                t_day = t.get("day")
-                                is_allowed_slel = (t_p in (1, 2)) or (t_day == "SAT" and t_p in (6, 7, 8))
-                                if not is_allowed_slel:
-                                    if (s_id, sub_id, r["id"], t["id"]) in x:
-                                        model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
-
-            # Rule 4: 2nd Year Teaching Slot Protection (P1 to P6 cap)
-            is_second_year = "II " in s_id_str or "II_" in s_id_str or "II-" in s_id_str or "II" in s_id_str.split()
-            if is_second_year:
-                regular_2nd_subjs = [
-                    ss for ss in sec_subjs
-                    if str(ss.get("subject_type", "L")).upper() not in self.SELF_DIRECTED_TYPES
-                ]
-                for ss in regular_2nd_subjs:
-                    sub_id = ss["subject_id"]
-                    for r in rooms:
-                        for t in time_slots:
-                            if t.get("period") in (7, 8):
-                                if (s_id, sub_id, r["id"], t["id"]) in x:
-                                    model.Add(x[s_id, sub_id, r["id"], t["id"]] == 0)
 
         # -----------------------------------------------------------------------
         # 10. Multi-Objective Function: Schedule Compacting, Block Locality, GPU Suitability

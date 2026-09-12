@@ -1,6 +1,6 @@
 import time
 from fastapi import APIRouter, HTTPException, status
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 try:
     from app.schemas.wizard import TimetableGenerationRequest, WizardGenerationResponse
 except ImportError:
@@ -8,6 +8,56 @@ except ImportError:
 from backend.solver.csat_solver import CPSATSolver, SolverConfig
 
 router = APIRouter()
+
+
+from functools import lru_cache
+
+@lru_cache(maxsize=1)
+def _get_cached_seed_metadata() -> Tuple[Dict[str, int], Dict[Tuple[str, str], List[str]], Dict[str, List[str]]]:
+    """Pre-computes and caches curriculum weekly hours and faculty pools from baseline seed data."""
+    from app.core.seed_cache import get_seed_data
+    seed = get_seed_data()
+    seed_entries = seed.get("entries", [])
+
+    sec_subj_count: Dict[Tuple[str, str], int] = {}
+    for e in seed_entries:
+        s_name = str(e.get("section") or "").strip()
+        sub_name = str(e.get("subject") or "").strip()
+        if s_name and sub_name and sub_name not in ("BREAK", "LUNCH"):
+            key = (s_name, sub_name)
+            sec_subj_count[key] = sec_subj_count.get(key, 0) + 1
+
+    subj_total_count: Dict[str, List[int]] = {}
+    for (s_name, sub_name), cnt in sec_subj_count.items():
+        if sub_name not in subj_total_count:
+            subj_total_count[sub_name] = []
+        subj_total_count[sub_name].append(cnt)
+
+    seed_weekly_hours: Dict[str, int] = {}
+    for sub_name, counts in subj_total_count.items():
+        avg = round(sum(counts) / len(counts))
+        seed_weekly_hours[sub_name] = max(1, min(avg, 12))
+
+    section_fac_map: Dict[Tuple[str, str], List[str]] = {}
+    subj_fac_pool: Dict[str, List[str]] = {}
+
+    for e in seed_entries:
+        s_name = str(e.get("section") or "").replace(" ", "").replace("-", "").upper()
+        sub_name = str(e.get("subject") or "").replace("(P)", "").replace("(T)", "").replace(" ", "").upper()
+        fac = e.get("faculty")
+        if not fac:
+            continue
+        fac_list = fac if isinstance(fac, list) else [f.strip() for f in str(fac).split(",") if f.strip()]
+        
+        if s_name and sub_name:
+            section_fac_map[(s_name, sub_name)] = fac_list
+            if sub_name not in subj_fac_pool:
+                subj_fac_pool[sub_name] = []
+            for f in fac_list:
+                if f not in subj_fac_pool[sub_name]:
+                    subj_fac_pool[sub_name].append(f)
+
+    return seed_weekly_hours, section_fac_map, subj_fac_pool
 
 
 @router.post("/generate-from-wizard", response_model=WizardGenerationResponse)
@@ -45,51 +95,8 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
 
     sections_list = [{"id": sec_name, "student_count": sec_strengths.get(sec_name, 60)} for sec_name in req.sections]
 
-    # 2. Build Section Subject Quotas & Faculty map using Real Seed Cache Data
-    from app.core.seed_cache import get_seed_data
-    seed = get_seed_data()
-    seed_entries = seed.get("entries", [])
-
-    # Pre-compute per-subject actual weekly_hours from seed (count occurrences per section)
-    # This gives real curriculum slot counts instead of hardcoded 2/3/4 guesses.
-    seed_weekly_hours: Dict[str, int] = {}
-    sec_subj_count: Dict[tuple, int] = {}
-    for e in seed_entries:
-        s_name = str(e.get("section") or "").strip()
-        sub_name = str(e.get("subject") or "").strip()
-        if s_name and sub_name and sub_name not in ("BREAK", "LUNCH"):
-            key = (s_name, sub_name)
-            sec_subj_count[key] = sec_subj_count.get(key, 0) + 1
-    # Build a subject->typical-hours map by averaging across sections
-    subj_total_count: Dict[str, list] = {}
-    for (s_name, sub_name), cnt in sec_subj_count.items():
-        if sub_name not in subj_total_count:
-            subj_total_count[sub_name] = []
-        subj_total_count[sub_name].append(cnt)
-    for sub_name, counts in subj_total_count.items():
-        avg = round(sum(counts) / len(counts))
-        seed_weekly_hours[sub_name] = max(1, min(avg, 12))  # clamp 1..12
-
-
-    # Map (section_norm, base_subj_norm) -> list of faculty names
-    section_fac_map: Dict[tuple, List[str]] = {}
-    subj_fac_pool: Dict[str, List[str]] = {}
-
-    for e in seed_entries:
-        s_name = str(e.get("section") or "").replace(" ", "").replace("-", "").upper()
-        sub_name = str(e.get("subject") or "").replace("(P)", "").replace("(T)", "").replace(" ", "").upper()
-        fac = e.get("faculty")
-        if not fac:
-            continue
-        fac_list = fac if isinstance(fac, list) else [f.strip() for f in str(fac).split(",") if f.strip()]
-        
-        if s_name and sub_name:
-            section_fac_map[(s_name, sub_name)] = fac_list
-            if sub_name not in subj_fac_pool:
-                subj_fac_pool[sub_name] = []
-            for f in fac_list:
-                if f not in subj_fac_pool[sub_name]:
-                    subj_fac_pool[sub_name].append(f)
+    # 2. Retrieve memoized Seed Curriculum & Faculty analytics
+    seed_weekly_hours, section_fac_map, subj_fac_pool = _get_cached_seed_metadata()
 
     section_subjects = []
     faculty_map: Dict[str, List[str]] = {}
@@ -102,15 +109,19 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
             co_facs = [co.strip() for co in getattr(assign, "co_faculty", []) if co.strip()]
             c_slots = getattr(assign, "continuous_slots", 2 if assign.subject_type == "P" else 1)
 
-            # Determine actual weekly hours: prefer seed-observed count, then request, then defaults
-            base_subj_for_hours = assign.subject_code.replace("(P)", "").replace("(T)", "").replace(" ", "").upper()
-            assign_code_upper = assign.subject_code.replace(" ", "").upper()
-            seed_hours = (
-                seed_weekly_hours.get(assign.subject_code)
-                or seed_weekly_hours.get(assign_code_upper)
-                or seed_weekly_hours.get(base_subj_for_hours)
-            )
-            needed_slots = seed_hours if seed_hours else max(1, assign.weekly_hours)
+            # Determine actual weekly hours: user input takes priority; fallback to seed curriculum
+            req_hours = getattr(assign, "weekly_hours", None)
+            if req_hours is not None and req_hours > 0:
+                needed_slots = req_hours
+            else:
+                base_subj_for_hours = assign.subject_code.replace("(P)", "").replace("(T)", "").replace(" ", "").upper()
+                assign_code_upper = assign.subject_code.replace(" ", "").upper()
+                seed_hours = (
+                    seed_weekly_hours.get(assign.subject_code)
+                    or seed_weekly_hours.get(assign_code_upper)
+                    or seed_weekly_hours.get(base_subj_for_hours)
+                )
+                needed_slots = seed_hours if seed_hours else 3
 
 
             # Determine primary faculty for this specific section
@@ -187,6 +198,8 @@ async def generate_from_wizard(req: TimetableGenerationRequest):
             pass
 
         if not rooms_list:
+            from app.core.seed_cache import get_seed_data
+            seed = get_seed_data()
             seed_rooms = seed.get("rooms", [])
             if seed_rooms:
                 rooms_list = [{"id": str(r.get("code") or r.get("id")), "capacity": r.get("capacity", 66), "room_type": r.get("room_type", "classroom"), "block": r.get("block", "U-Block")} for r in seed_rooms]
