@@ -28,10 +28,18 @@ import {
   Search,
   Filter,
   Eye,
-  Info
+  Info,
+  UserCheck,
+  Compass,
+  Radio,
+  Download
 } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/api';
 import { TimetableGrid, SlotEntry } from '@/components/timetable/TimetableGrid';
+import { SubstituteDispatcherPanel } from './SubstituteDispatcherPanel';
+import { ExamSchedulerPanel } from './ExamSchedulerPanel';
+import { ParetoExplorerPanel } from './ParetoExplorerPanel';
+import { RoomTelemetryHeatmap } from './RoomTelemetryHeatmap';
 
 type AgentVoteInfo = {
   agent: string;
@@ -81,6 +89,7 @@ export function MultiAgentSynthesisWorkspace({
   const [selectedSections, setSelectedSections] = useState<string[]>([]);
   const [userDirective, setUserDirective] = useState<string>('');
   const [activePreviewSection, setActivePreviewSection] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'SYNTHESIS' | 'SUBSTITUTE' | 'EXAMS' | 'PARETO' | 'TELEMETRY' | 'CALENDAR'>('SYNTHESIS');
 
   const [auditData, setAuditData] = useState<{
     status: string;
@@ -331,20 +340,108 @@ export function MultiAgentSynthesisWorkspace({
 
   return (
     <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-6">
-      {/* Top Banner */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800 mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
-            Autonomous 7-Agent Collaborative Society
+      {/* Mode Navigation Tabs */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+        {[
+          { id: 'SYNTHESIS', label: 'Autonomous Synthesis', icon: Sparkles },
+          { id: 'SUBSTITUTE', label: 'Substitute Dispatcher', icon: UserCheck },
+          { id: 'EXAMS', label: 'Exam Scheduler', icon: Calendar },
+          { id: 'PARETO', label: 'Pareto Explorer', icon: Compass },
+          { id: 'TELEMETRY', label: 'IoT Room Telemetry', icon: Radio },
+          { id: 'CALENDAR', label: 'Calendar Sync (.ics)', icon: Download },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                isActive
+                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Active Tab Panel Views */}
+      {activeTab === 'SUBSTITUTE' && <SubstituteDispatcherPanel />}
+      {activeTab === 'EXAMS' && <ExamSchedulerPanel />}
+      {activeTab === 'PARETO' && <ParetoExplorerPanel />}
+      {activeTab === 'TELEMETRY' && <RoomTelemetryHeatmap />}
+      {activeTab === 'CALENDAR' && (
+        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 rounded-lg">
+              <Download className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">RFC 5545 Dynamic iCalendar Feeds</h3>
+              <p className="text-xs text-slate-500">Live calendar subscriptions for Google Calendar, Apple Calendar, or Outlook.</p>
+            </div>
           </div>
-          <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">
-            Autonomous Multi-Agent Timetable Synthesis & Live Grid Studio
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Interact with the agents, specify target sections or natural language instructions, and watch the timetable generate and negotiate live in real time.
-          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <h4 className="font-bold text-sm text-slate-900 dark:text-white">Full Department Master</h4>
+              <p className="text-xs text-slate-500">All 44 academic sections and 1,000 slots.</p>
+              <a
+                href={`${apiBase}/api/v1/export/ical/master`}
+                download
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download Master .ics
+              </a>
+            </div>
+            <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <h4 className="font-bold text-sm text-slate-900 dark:text-white">2nd Year Cohort Feed</h4>
+              <p className="text-xs text-slate-500">All Year-2 sections (II AIML, II CSBS, etc.).</p>
+              <a
+                href={`${apiBase}/api/v1/export/ical/cohort/YEAR_2`}
+                download
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download Year-2 .ics
+              </a>
+            </div>
+            <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <h4 className="font-bold text-sm text-slate-900 dark:text-white">Section Feed (II AIML-A)</h4>
+              <p className="text-xs text-slate-500">Weekly recurring class schedule.</p>
+              <a
+                href={`${apiBase}/api/v1/export/ical/section/II_AIML_A`}
+                download
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download Section .ics
+              </a>
+            </div>
+          </div>
         </div>
+      )}
+
+      {activeTab === 'SYNTHESIS' && (
+        <div className="space-y-6">
+          {/* Top Banner */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800 mb-2">
+                <Sparkles className="w-3.5 h-3.5" />
+                Autonomous 7-Agent Collaborative Society
+              </div>
+              <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">
+                Autonomous Multi-Agent Timetable Synthesis & Live Grid Studio
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Interact with the agents, specify target sections or natural language instructions, and watch the timetable generate and negotiate live in real time.
+              </p>
+            </div>
 
         {/* Global Action Buttons */}
         <div className="flex flex-wrap items-center gap-3">
@@ -747,6 +844,8 @@ export function MultiAgentSynthesisWorkspace({
               </button>
             </div>
           </div>
+        </div>
+      )}
         </div>
       )}
     </div>
