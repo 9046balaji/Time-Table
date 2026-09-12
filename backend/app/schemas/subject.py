@@ -3,9 +3,9 @@ from typing import Optional
 
 
 class SubjectBase(BaseModel):
-    code: str = Field(..., example="DS")
-    name: str = Field(..., example="Data Structures")
-    type: str = Field("L", example="L")  # L, P, T
+    code: str = Field(..., json_schema_extra={"example": "DS"})
+    name: str = Field(..., json_schema_extra={"example": "Data Structures"})
+    type: str = Field("L", json_schema_extra={"example": "L"})  # L, P, T
     weekly_hours: int = Field(3, ge=1, le=10)
 
 

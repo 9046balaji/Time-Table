@@ -3,8 +3,8 @@ from typing import Optional, List
 
 
 class SectionBase(BaseModel):
-    name: str = Field(..., example="II AIML-A")
-    label: str = Field(..., example="II Year")
+    name: str = Field(..., json_schema_extra={"example": "II AIML-A"})
+    label: str = Field(..., json_schema_extra={"example": "II Year"})
     strength: int = Field(60, ge=1, le=200)
 
 

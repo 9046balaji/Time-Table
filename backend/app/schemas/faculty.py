@@ -3,8 +3,8 @@ from typing import Optional, Dict, Any, List
 
 
 class FacultyBase(BaseModel):
-    name: str = Field(..., example="Dr. S. Srikantha Reddy")
-    designation: str = Field("Assistant Professor", example="Associate Professor")
+    name: str = Field(..., json_schema_extra={"example": "Dr. S. Srikantha Reddy"})
+    designation: str = Field("Assistant Professor", json_schema_extra={"example": "Associate Professor"})
     max_hours_per_week: int = Field(16, ge=1, le=30)
     availability: Optional[Dict[str, Any]] = None
 
