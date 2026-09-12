@@ -8,7 +8,5 @@ htmlcov/
 .env
 .env.local
 .git/
-.gitignore
-tests/
 Dockerfile
 .dockerignore

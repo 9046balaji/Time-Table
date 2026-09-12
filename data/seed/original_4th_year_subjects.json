@@ -1,0 +1,1609 @@
+{
+  "AI(N-313)": {
+    "subject_code": "AI(N-313)",
+    "subject_type": "L",
+    "total_demand_hours": 12,
+    "sections_count": 6,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-2",
+      "SECTION-5",
+      "SECTION-7"
+    ]
+  },
+  "AI(N-413)": {
+    "subject_code": "AI(N-413)",
+    "subject_type": "L",
+    "total_demand_hours": 12,
+    "sections_count": 6,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-10",
+      "SECTION-13",
+      "SECTION-15",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-9"
+    ]
+  },
+  "AI(N-513)": {
+    "subject_code": "AI(N-513)",
+    "subject_type": "L",
+    "total_demand_hours": 6,
+    "sections_count": 3,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18"
+    ]
+  },
+  "BDA [L]": {
+    "subject_code": "BDA [L]",
+    "subject_type": "L",
+    "total_demand_hours": 45,
+    "sections_count": 18,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-15",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-7",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  },
+  "BDA [L] [N-318]": {
+    "subject_code": "BDA [L] [N-318]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-13",
+      "SECTION-19"
+    ]
+  },
+  "BDA [L] [N-401]": {
+    "subject_code": "BDA [L] [N-401]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-19"
+    ]
+  },
+  "BDA [L] [N-407]": {
+    "subject_code": "BDA [L] [N-407]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-5"
+    ]
+  },
+  "BDA [L] [N-414B]": {
+    "subject_code": "BDA [L] [N-414B]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-12"
+    ]
+  },
+  "BDA [L] [N-416]": {
+    "subject_code": "BDA [L] [N-416]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-11"
+    ]
+  },
+  "BDA [L] [N-506]": {
+    "subject_code": "BDA [L] [N-506]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-11"
+    ]
+  },
+  "BDA [L]N-314": {
+    "subject_code": "BDA [L]N-314",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-19",
+      "SECTION-8"
+    ]
+  },
+  "BDA [L][N-519]": {
+    "subject_code": "BDA [L][N-519]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-18",
+      "SECTION-8"
+    ]
+  },
+  "BDA [P]": {
+    "subject_code": "BDA [P]",
+    "subject_type": "L",
+    "total_demand_hours": 4,
+    "sections_count": 4,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-7",
+      "SECTION-8"
+    ]
+  },
+  "BDA [P] [N-311]": {
+    "subject_code": "BDA [P] [N-311]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-13",
+      "SECTION-5"
+    ]
+  },
+  "BDA [P] [N-312]": {
+    "subject_code": "BDA [P] [N-312]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-4"
+    ]
+  },
+  "BDA [P] [N-316]": {
+    "subject_code": "BDA [P] [N-316]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-9"
+    ]
+  },
+  "BDA [P] [N-515]": {
+    "subject_code": "BDA [P] [N-515]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-6"
+    ]
+  },
+  "BDA [P][N-306]": {
+    "subject_code": "BDA [P][N-306]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-3"
+    ]
+  },
+  "BDA [P][N-312]": {
+    "subject_code": "BDA [P][N-312]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-2"
+    ]
+  },
+  "BDA [P][N-315]": {
+    "subject_code": "BDA [P][N-315]",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 3,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-15"
+    ]
+  },
+  "BDA [P][N-316]": {
+    "subject_code": "BDA [P][N-316]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-14",
+      "SECTION-18"
+    ]
+  },
+  "BDA [P][N-317]": {
+    "subject_code": "BDA [P][N-317]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-16",
+      "SECTION-19"
+    ]
+  },
+  "BDA [P][N-406]": {
+    "subject_code": "BDA [P][N-406]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-17"
+    ]
+  },
+  "CC [L]": {
+    "subject_code": "CC [L]",
+    "subject_type": "L",
+    "total_demand_hours": 45,
+    "sections_count": 19,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-15",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-19",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-7",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  },
+  "CC [L] N-408]": {
+    "subject_code": "CC [L] N-408]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-3"
+    ]
+  },
+  "CC [L] [N-406]": {
+    "subject_code": "CC [L] [N-406]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-9"
+    ]
+  },
+  "CC [L] [N-411]": {
+    "subject_code": "CC [L] [N-411]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1"
+    ]
+  },
+  "CC [L]N-314": {
+    "subject_code": "CC [L]N-314",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-14"
+    ]
+  },
+  "CC [L]N-414": {
+    "subject_code": "CC [L]N-414",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-6"
+    ]
+  },
+  "CC [L][N-307]": {
+    "subject_code": "CC [L][N-307]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-11",
+      "SECTION-4"
+    ]
+  },
+  "CC [L][N-314A]": {
+    "subject_code": "CC [L][N-314A]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-2"
+    ]
+  },
+  "CC [L][N-419]": {
+    "subject_code": "CC [L][N-419]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-18"
+    ]
+  },
+  "CC [L][N-505]": {
+    "subject_code": "CC [L][N-505]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-12"
+    ]
+  },
+  "CC [L][N-519]": {
+    "subject_code": "CC [L][N-519]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-17"
+    ]
+  },
+  "CC [P]": {
+    "subject_code": "CC [P]",
+    "subject_type": "L",
+    "total_demand_hours": 10,
+    "sections_count": 10,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-11",
+      "SECTION-13",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-6",
+      "SECTION-8"
+    ]
+  },
+  "CC [P] [N-306]": {
+    "subject_code": "CC [P] [N-306]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-5"
+    ]
+  },
+  "CC [P] [N-313]": {
+    "subject_code": "CC [P] [N-313]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-2"
+    ]
+  },
+  "CC [P] [N-315]": {
+    "subject_code": "CC [P] [N-315]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-9"
+    ]
+  },
+  "CC [P] [N-317]": {
+    "subject_code": "CC [P] [N-317]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-19"
+    ]
+  },
+  "CC [P] [N-405]": {
+    "subject_code": "CC [P] [N-405]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-12"
+    ]
+  },
+  "CC [P][N-317]": {
+    "subject_code": "CC [P][N-317]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-14"
+    ]
+  },
+  "CC [P][N-401]": {
+    "subject_code": "CC [P][N-401]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-10"
+    ]
+  },
+  "CC [P][N-405]": {
+    "subject_code": "CC [P][N-405]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-15",
+      "SECTION-7"
+    ]
+  },
+  "CC(L)N-414": {
+    "subject_code": "CC(L)N-414",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-19"
+    ]
+  },
+  "CE(N-110 SEMINAR HALL)": {
+    "subject_code": "CE(N-110 SEMINAR HALL)",
+    "subject_type": "L",
+    "total_demand_hours": 19,
+    "sections_count": 19,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-15",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-19",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-7",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  },
+  "EXPERIENTIAL LEARNING/SELF LEARNING/PROJECT": {
+    "subject_code": "EXPERIENTIAL LEARNING/SELF LEARNING/PROJECT",
+    "subject_type": "L",
+    "total_demand_hours": 16,
+    "sections_count": 16,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-15",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-7",
+      "SECTION-9"
+    ]
+  },
+  "Friday": {
+    "subject_code": "Friday",
+    "subject_type": "L",
+    "total_demand_hours": 19,
+    "sections_count": 19,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-15",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-19",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-7",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  },
+  "MINOR": {
+    "subject_code": "MINOR",
+    "subject_type": "L",
+    "total_demand_hours": 6,
+    "sections_count": 3,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-14",
+      "SECTION-19",
+      "SECTION-8"
+    ]
+  },
+  "MINORS": {
+    "subject_code": "MINORS",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-6"
+    ]
+  },
+  "MLOps [L]": {
+    "subject_code": "MLOps [L]",
+    "subject_type": "L",
+    "total_demand_hours": 45,
+    "sections_count": 19,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-15",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-19",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-7",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  },
+  "MLOps [L] [N-314A]": {
+    "subject_code": "MLOps [L] [N-314A]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-6"
+    ]
+  },
+  "MLOps [L] [N-417]": {
+    "subject_code": "MLOps [L] [N-417]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-7"
+    ]
+  },
+  "MLOps [L] [N-504]": {
+    "subject_code": "MLOps [L] [N-504]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-7"
+    ]
+  },
+  "MLOps [L] [N-506]": {
+    "subject_code": "MLOps [L] [N-506]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-11"
+    ]
+  },
+  "MLOps [L]N-306": {
+    "subject_code": "MLOps [L]N-306",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-2"
+    ]
+  },
+  "MLOps [L]N-314": {
+    "subject_code": "MLOps [L]N-314",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-14"
+    ]
+  },
+  "MLOps [L]N-517": {
+    "subject_code": "MLOps [L]N-517",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-2"
+    ]
+  },
+  "MLOps [L]N-519": {
+    "subject_code": "MLOps [L]N-519",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-17"
+    ]
+  },
+  "MLOps [L][N-307]": {
+    "subject_code": "MLOps [L][N-307]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-4"
+    ]
+  },
+  "MLOps [L][N-404]": {
+    "subject_code": "MLOps [L][N-404]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-16"
+    ]
+  },
+  "MLOps [L][N-511]": {
+    "subject_code": "MLOps [L][N-511]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-15"
+    ]
+  },
+  "MLOps [P]": {
+    "subject_code": "MLOps [P]",
+    "subject_type": "L",
+    "total_demand_hours": 6,
+    "sections_count": 6,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-7"
+    ]
+  },
+  "MLOps [P] [N-304]": {
+    "subject_code": "MLOps [P] [N-304]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-8"
+    ]
+  },
+  "MLOps [P] [N-305]": {
+    "subject_code": "MLOps [P] [N-305]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-11"
+    ]
+  },
+  "MLOps [P] [N-312]": {
+    "subject_code": "MLOps [P] [N-312]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-12"
+    ]
+  },
+  "MLOps [P] [N-316]": {
+    "subject_code": "MLOps [P] [N-316]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-10",
+      "SECTION-13"
+    ]
+  },
+  "MLOps [P](N-306)": {
+    "subject_code": "MLOps [P](N-306)",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-6"
+    ]
+  },
+  "MLOps [P][N-301]": {
+    "subject_code": "MLOps [P][N-301]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-18"
+    ]
+  },
+  "MLOps [P][N-304]": {
+    "subject_code": "MLOps [P][N-304]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-5"
+    ]
+  },
+  "MLOps [P][N-305]": {
+    "subject_code": "MLOps [P][N-305]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-4"
+    ]
+  },
+  "MLOps [P][N-313]": {
+    "subject_code": "MLOps [P][N-313]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-15"
+    ]
+  },
+  "MLOps [P][N-401]": {
+    "subject_code": "MLOps [P][N-401]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-14"
+    ]
+  },
+  "MLOps [P][N-416]": {
+    "subject_code": "MLOps [P][N-416]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-19"
+    ]
+  },
+  "MLOps [P][N-511]": {
+    "subject_code": "MLOps [P][N-511]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-9"
+    ]
+  },
+  "Monday": {
+    "subject_code": "Monday",
+    "subject_type": "L",
+    "total_demand_hours": 19,
+    "sections_count": 19,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-15",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-19",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-7",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  },
+  "NLP [L]": {
+    "subject_code": "NLP [L]",
+    "subject_type": "L",
+    "total_demand_hours": 43,
+    "sections_count": 19,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-15",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-19",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-7",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  },
+  "NLP [L] (N-301)": {
+    "subject_code": "NLP [L] (N-301)",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1"
+    ]
+  },
+  "NLP [L] [N-314A]": {
+    "subject_code": "NLP [L] [N-314A]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-6"
+    ]
+  },
+  "NLP [L] [N-318]": {
+    "subject_code": "NLP [L] [N-318]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-13"
+    ]
+  },
+  "NLP [L] [N-407]": {
+    "subject_code": "NLP [L] [N-407]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-3"
+    ]
+  },
+  "NLP [L] [N-411]": {
+    "subject_code": "NLP [L] [N-411]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-2"
+    ]
+  },
+  "NLP [L] [N-413]": {
+    "subject_code": "NLP [L] [N-413]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-6"
+    ]
+  },
+  "NLP [L] [N-414A]": {
+    "subject_code": "NLP [L] [N-414A]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-5"
+    ]
+  },
+  "NLP [L]N-306": {
+    "subject_code": "NLP [L]N-306",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-2"
+    ]
+  },
+  "NLP [L]N-414": {
+    "subject_code": "NLP [L]N-414",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-8"
+    ]
+  },
+  "NLP [L][N-307]": {
+    "subject_code": "NLP [L][N-307]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-4"
+    ]
+  },
+  "NLP [L][N-314B]": {
+    "subject_code": "NLP [L][N-314B]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-11"
+    ]
+  },
+  "NLP [L][N-414B]": {
+    "subject_code": "NLP [L][N-414B]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-10"
+    ]
+  },
+  "NLP [L][N-419]": {
+    "subject_code": "NLP [L][N-419]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-18"
+    ]
+  },
+  "NLP [L][N-507]": {
+    "subject_code": "NLP [L][N-507]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-17"
+    ]
+  },
+  "NLP [P]": {
+    "subject_code": "NLP [P]",
+    "subject_type": "L",
+    "total_demand_hours": 7,
+    "sections_count": 7,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-13",
+      "SECTION-16",
+      "SECTION-18",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-6"
+    ]
+  },
+  "NLP [P] [N-311]": {
+    "subject_code": "NLP [P] [N-311]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-10"
+    ]
+  },
+  "NLP [P] [N-405]": {
+    "subject_code": "NLP [P] [N-405]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-12"
+    ]
+  },
+  "NLP [P](N-306)": {
+    "subject_code": "NLP [P](N-306)",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-7"
+    ]
+  },
+  "NLP [P][N-301]": {
+    "subject_code": "NLP [P][N-301]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-4"
+    ]
+  },
+  "NLP [P][N-304]": {
+    "subject_code": "NLP [P][N-304]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-9"
+    ]
+  },
+  "NLP [P][N-306]": {
+    "subject_code": "NLP [P][N-306]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-5"
+    ]
+  },
+  "NLP [P][N-404]": {
+    "subject_code": "NLP [P][N-404]",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 3,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-11",
+      "SECTION-14",
+      "SECTION-15"
+    ]
+  },
+  "NLP [P][N-416]": {
+    "subject_code": "NLP [P][N-416]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-17",
+      "SECTION-19"
+    ]
+  },
+  "NLP[P]": {
+    "subject_code": "NLP[P]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-8"
+    ]
+  },
+  "PID  [L]": {
+    "subject_code": "PID  [L]",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 3,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-12",
+      "SECTION-17",
+      "SECTION-5"
+    ]
+  },
+  "PID  [L][N-505]": {
+    "subject_code": "PID  [L][N-505]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-12"
+    ]
+  },
+  "PID  [L][N-519]": {
+    "subject_code": "PID  [L][N-519]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-17"
+    ]
+  },
+  "PID  [T]": {
+    "subject_code": "PID  [T]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-5"
+    ]
+  },
+  "PID [L]": {
+    "subject_code": "PID [L]",
+    "subject_type": "L",
+    "total_demand_hours": 17,
+    "sections_count": 11,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-14",
+      "SECTION-15",
+      "SECTION-18",
+      "SECTION-19",
+      "SECTION-4",
+      "SECTION-6",
+      "SECTION-7",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  },
+  "PID [L] N-408]": {
+    "subject_code": "PID [L] N-408]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-3"
+    ]
+  },
+  "PID [L] [N-307]": {
+    "subject_code": "PID [L] [N-307]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-11"
+    ]
+  },
+  "PID [L] [N-401]": {
+    "subject_code": "PID [L] [N-401]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-19"
+    ]
+  },
+  "PID [L] [N-406]": {
+    "subject_code": "PID [L] [N-406]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-11"
+    ]
+  },
+  "PID [L] [N-411]": {
+    "subject_code": "PID [L] [N-411]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-2"
+    ]
+  },
+  "PID [L]N-414": {
+    "subject_code": "PID [L]N-414",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-6"
+    ]
+  },
+  "PID [L][N-301]": {
+    "subject_code": "PID [L][N-301]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1"
+    ]
+  },
+  "PID [L][N-404]": {
+    "subject_code": "PID [L][N-404]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-16"
+    ]
+  },
+  "PID [L][N-505]": {
+    "subject_code": "PID [L][N-505]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-16"
+    ]
+  },
+  "PID [L][N-515]": {
+    "subject_code": "PID [L][N-515]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-14"
+    ]
+  },
+  "PID [L][N-519]": {
+    "subject_code": "PID [L][N-519]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-13",
+      "SECTION-18"
+    ]
+  },
+  "PID [T]": {
+    "subject_code": "PID [T]",
+    "subject_type": "L",
+    "total_demand_hours": 11,
+    "sections_count": 10,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-18",
+      "SECTION-19",
+      "SECTION-2",
+      "SECTION-4",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  },
+  "PID [T] [N-314B]": {
+    "subject_code": "PID [T] [N-314B]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-11"
+    ]
+  },
+  "PID [T] [N-318]": {
+    "subject_code": "PID [T] [N-318]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-19"
+    ]
+  },
+  "PID [T] [N-508]": {
+    "subject_code": "PID [T] [N-508]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-13"
+    ]
+  },
+  "PID [T][N-307]": {
+    "subject_code": "PID [T][N-307]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-4"
+    ]
+  },
+  "PID [T][N-311]": {
+    "subject_code": "PID [T][N-311]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-15"
+    ]
+  },
+  "PID [T][N-314A]": {
+    "subject_code": "PID [T][N-314A]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-2",
+      "SECTION-3"
+    ]
+  },
+  "PID [T][N-314B]": {
+    "subject_code": "PID [T][N-314B]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-16",
+      "SECTION-7"
+    ]
+  },
+  "PID [T][N-318]": {
+    "subject_code": "PID [T][N-318]",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-12",
+      "SECTION-6"
+    ]
+  },
+  "PID [T][N-505]": {
+    "subject_code": "PID [T][N-505]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-17"
+    ]
+  },
+  "PID [T][N-519]": {
+    "subject_code": "PID [T][N-519]",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-8"
+    ]
+  },
+  "SELF LEARNING": {
+    "subject_code": "SELF LEARNING",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-14"
+    ]
+  },
+  "Saturday": {
+    "subject_code": "Saturday",
+    "subject_type": "L",
+    "total_demand_hours": 19,
+    "sections_count": 19,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-15",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-19",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-7",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  },
+  "Thursday": {
+    "subject_code": "Thursday",
+    "subject_type": "L",
+    "total_demand_hours": 19,
+    "sections_count": 19,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-15",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-19",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-7",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  },
+  "Tuesday": {
+    "subject_code": "Tuesday",
+    "subject_type": "L",
+    "total_demand_hours": 19,
+    "sections_count": 19,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-15",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-19",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-7",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  },
+  "Wednesday": {
+    "subject_code": "Wednesday",
+    "subject_type": "L",
+    "total_demand_hours": 18,
+    "sections_count": 18,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-15",
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-19",
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-7",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  }
+}

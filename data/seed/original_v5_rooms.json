@@ -1,0 +1,971 @@
+{
+  "/AL/IL": {
+    "room_code": "/AL/IL",
+    "room_type": "classroom",
+    "total_occupied_hours": 1,
+    "daily_breakdown": {
+      "SAT": 1
+    },
+    "sections_using": [
+      "III AIML-G"
+    ]
+  },
+  "215": {
+    "room_code": "215",
+    "room_type": "classroom",
+    "total_occupied_hours": 38,
+    "daily_breakdown": {
+      "MON": 5,
+      "TUE": 7,
+      "WED": 8,
+      "SAT": 5,
+      "FRI": 6,
+      "THU": 7
+    },
+    "sections_using": [
+      "II AIML-A",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II DS-A",
+      "II DS-B",
+      "II MSC (DS)",
+      "III AIML-F",
+      "IV - CSBS",
+      "IV AIML-C",
+      "IV AIML-E"
+    ]
+  },
+  "216": {
+    "room_code": "216",
+    "room_type": "classroom",
+    "total_occupied_hours": 43,
+    "daily_breakdown": {
+      "MON": 6,
+      "WED": 7,
+      "FRI": 7,
+      "TUE": 7,
+      "SAT": 5,
+      "THU": 11
+    },
+    "sections_using": [
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-H",
+      "II CS-A",
+      "II CSBS",
+      "II DS-A",
+      "III AIML-A",
+      "III AIML-C",
+      "III BS(DS)",
+      "III CS",
+      "III DS-B",
+      "IV AIML-B"
+    ]
+  },
+  "217": {
+    "room_code": "217",
+    "room_type": "classroom",
+    "total_occupied_hours": 40,
+    "daily_breakdown": {
+      "TUE": 7,
+      "THU": 6,
+      "MON": 6,
+      "FRI": 5,
+      "WED": 7,
+      "SAT": 9
+    },
+    "sections_using": [
+      "II AIML-E",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "III AIML-A",
+      "III AIML-C",
+      "III AIML-D",
+      "III CS",
+      "III CSBS",
+      "IV - CSBS",
+      "IV AIML-A",
+      "IV AIML-C"
+    ]
+  },
+  "218": {
+    "room_code": "218",
+    "room_type": "classroom",
+    "total_occupied_hours": 28,
+    "daily_breakdown": {
+      "WED": 4,
+      "MON": 5,
+      "FRI": 6,
+      "SAT": 5,
+      "THU": 6,
+      "TUE": 2
+    },
+    "sections_using": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-D",
+      "II AIML-G",
+      "II AIML-I",
+      "II AIML-L",
+      "II DS-B",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G",
+      "III DS-A",
+      "III DS-B",
+      "III IOT",
+      "IV AIML-A",
+      "IV AIML-E"
+    ]
+  },
+  "402": {
+    "room_code": "402",
+    "room_type": "classroom",
+    "total_occupied_hours": 30,
+    "daily_breakdown": {
+      "MON": 6,
+      "TUE": 6,
+      "THU": 6,
+      "WED": 4,
+      "FRI": 4,
+      "SAT": 4
+    },
+    "sections_using": [
+      "II CSBS",
+      "II IOT",
+      "II MSC (DS)",
+      "III BS(DS)",
+      "III CSBS",
+      "III IOT",
+      "IV - CSBS"
+    ]
+  },
+  "418": {
+    "room_code": "418",
+    "room_type": "classroom",
+    "total_occupied_hours": 30,
+    "daily_breakdown": {
+      "SAT": 5,
+      "MON": 7,
+      "WED": 4,
+      "FRI": 5,
+      "TUE": 5,
+      "THU": 4
+    },
+    "sections_using": [
+      "II AIML-C",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-I",
+      "II AIML-K",
+      "II AIML-L",
+      "II CSBS",
+      "II DS-B",
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-F",
+      "III AIML-G",
+      "III DS-A",
+      "IV AIML-A",
+      "IV AIML-E"
+    ]
+  },
+  "501": {
+    "room_code": "501",
+    "room_type": "classroom",
+    "total_occupied_hours": 39,
+    "daily_breakdown": {
+      "MON": 6,
+      "WED": 5,
+      "TUE": 7,
+      "FRI": 9,
+      "THU": 7,
+      "SAT": 5
+    },
+    "sections_using": [
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-L",
+      "II BS(DS)",
+      "II CS-A",
+      "II CSBS",
+      "II DS-A",
+      "III AIML-D",
+      "III AIML-F",
+      "III BS(DS)",
+      "III CSBS",
+      "III DS-B",
+      "IV DS"
+    ]
+  },
+  "501A": {
+    "room_code": "501A",
+    "room_type": "classroom",
+    "total_occupied_hours": 3,
+    "daily_breakdown": {
+      "THU": 1,
+      "TUE": 2
+    },
+    "sections_using": [
+      "II IOT",
+      "III IOT"
+    ]
+  },
+  "502": {
+    "room_code": "502",
+    "room_type": "classroom",
+    "total_occupied_hours": 36,
+    "daily_breakdown": {
+      "TUE": 8,
+      "WED": 4,
+      "FRI": 7,
+      "SAT": 3,
+      "THU": 8,
+      "MON": 6
+    },
+    "sections_using": [
+      "II IOT",
+      "II MSC (DS)",
+      "III BS(DS)",
+      "III CSBS",
+      "III IOT",
+      "IV - CSBS"
+    ]
+  },
+  "514": {
+    "room_code": "514",
+    "room_type": "classroom",
+    "total_occupied_hours": 27,
+    "daily_breakdown": {
+      "MON": 4,
+      "WED": 6,
+      "FRI": 3,
+      "THU": 5,
+      "TUE": 6,
+      "SAT": 3
+    },
+    "sections_using": [
+      "II CS-B",
+      "II IOT",
+      "II MSC (DS)",
+      "III BS(DS)",
+      "III CSBS",
+      "III DS-A",
+      "III IOT",
+      "IV - CSBS"
+    ]
+  },
+  "514-A": {
+    "room_code": "514-A",
+    "room_type": "classroom",
+    "total_occupied_hours": 27,
+    "daily_breakdown": {
+      "SAT": 5,
+      "WED": 8,
+      "THU": 7,
+      "MON": 2,
+      "TUE": 5
+    },
+    "sections_using": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-I",
+      "II AIML-L",
+      "II CS-A",
+      "II CS-B",
+      "III AIML-A",
+      "III AIML-G",
+      "III CS",
+      "IV AIML-E",
+      "IV CS"
+    ]
+  },
+  "514-B": {
+    "room_code": "514-B",
+    "room_type": "classroom",
+    "total_occupied_hours": 20,
+    "daily_breakdown": {
+      "SAT": 4,
+      "TUE": 4,
+      "THU": 5,
+      "WED": 5,
+      "FRI": 2
+    },
+    "sections_using": [
+      "II AIML-C",
+      "II AIML-F",
+      "II AIML-L",
+      "II BS(DS)",
+      "II CSBS",
+      "III AIML-B",
+      "III AIML-D",
+      "IV AIML-D"
+    ]
+  },
+  "514A": {
+    "room_code": "514A",
+    "room_type": "classroom",
+    "total_occupied_hours": 9,
+    "daily_breakdown": {
+      "FRI": 7,
+      "MON": 2
+    },
+    "sections_using": [
+      "II AIML-E",
+      "II AIML-H",
+      "III AIML-A"
+    ]
+  },
+  "514B": {
+    "room_code": "514B",
+    "room_type": "classroom",
+    "total_occupied_hours": 14,
+    "daily_breakdown": {
+      "TUE": 2,
+      "FRI": 7,
+      "MON": 5
+    },
+    "sections_using": [
+      "II AIML-G",
+      "II AIML-K",
+      "II DS-A",
+      "II DS-B",
+      "III AIML-E",
+      "III CS"
+    ]
+  },
+  "518": {
+    "room_code": "518",
+    "room_type": "classroom",
+    "total_occupied_hours": 32,
+    "daily_breakdown": {
+      "FRI": 5,
+      "SAT": 4,
+      "TUE": 5,
+      "THU": 6,
+      "MON": 5,
+      "WED": 7
+    },
+    "sections_using": [
+      "II AIML-D",
+      "II AIML-F",
+      "II AIML-I",
+      "II MSC (DS)",
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-E",
+      "III AIML-F",
+      "III BS(DS)",
+      "III CS",
+      "III CSBS",
+      "III DS-A",
+      "IV AIML-A",
+      "IV CS"
+    ]
+  },
+  "601": {
+    "room_code": "601",
+    "room_type": "classroom",
+    "total_occupied_hours": 42,
+    "daily_breakdown": {
+      "WED": 7,
+      "MON": 7,
+      "THU": 7,
+      "SAT": 7,
+      "TUE": 7,
+      "FRI": 7
+    },
+    "sections_using": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-G",
+      "II AIML-I",
+      "II AIML-K",
+      "II CS-B",
+      "II DS-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-G",
+      "III DS-B",
+      "IV AIML-A"
+    ]
+  },
+  "602": {
+    "room_code": "602",
+    "room_type": "classroom",
+    "total_occupied_hours": 9,
+    "daily_breakdown": {
+      "FRI": 2,
+      "SAT": 3,
+      "MON": 2,
+      "TUE": 2
+    },
+    "sections_using": [
+      "II MSC (DS)",
+      "III BS(DS)",
+      "III IOT"
+    ]
+  },
+  "604": {
+    "room_code": "604",
+    "room_type": "computer_lab",
+    "total_occupied_hours": 45,
+    "daily_breakdown": {
+      "TUE": 7,
+      "WED": 8,
+      "THU": 7,
+      "FRI": 7,
+      "SAT": 7,
+      "MON": 9
+    },
+    "sections_using": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-G",
+      "II AIML-J",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B",
+      "II IOT",
+      "III AIML-D",
+      "III AIML-G",
+      "IV AIML-C"
+    ]
+  },
+  "605": {
+    "room_code": "605",
+    "room_type": "computer_lab",
+    "total_occupied_hours": 43,
+    "daily_breakdown": {
+      "TUE": 8,
+      "WED": 7,
+      "THU": 7,
+      "FRI": 7,
+      "MON": 7,
+      "SAT": 7
+    },
+    "sections_using": [
+      "II AIML-B",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-L",
+      "II BS(DS)",
+      "II CS-B",
+      "III AIML-B",
+      "III AIML-F",
+      "III DS-A",
+      "IV AIML-A",
+      "IV AIML-B"
+    ]
+  },
+  "606": {
+    "room_code": "606",
+    "room_type": "computer_lab",
+    "total_occupied_hours": 48,
+    "daily_breakdown": {
+      "WED": 8,
+      "THU": 8,
+      "SAT": 7,
+      "TUE": 9,
+      "MON": 9,
+      "FRI": 7
+    },
+    "sections_using": [
+      "II AIML-E",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-L",
+      "II CS-A",
+      "II CS-B",
+      "II CSBS",
+      "II DS-B",
+      "II IOT",
+      "III CS",
+      "IV CS"
+    ]
+  },
+  "607": {
+    "room_code": "607",
+    "room_type": "classroom",
+    "total_occupied_hours": 43,
+    "daily_breakdown": {
+      "MON": 9,
+      "THU": 7,
+      "FRI": 7,
+      "WED": 6,
+      "TUE": 7,
+      "SAT": 7
+    },
+    "sections_using": [
+      "II AIML-A",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-H",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II CS-A",
+      "II CSBS",
+      "II DS-A",
+      "III AIML-D",
+      "III DS-A",
+      "III DS-B",
+      "IV AIML-C",
+      "IV AIML-D",
+      "IV CS",
+      "IV DS"
+    ]
+  },
+  "608": {
+    "room_code": "608",
+    "room_type": "classroom",
+    "total_occupied_hours": 41,
+    "daily_breakdown": {
+      "THU": 7,
+      "TUE": 7,
+      "SAT": 4,
+      "MON": 5,
+      "FRI": 10,
+      "WED": 8
+    },
+    "sections_using": [
+      "II AIML-B",
+      "II AIML-D",
+      "II AIML-H",
+      "II CS-A",
+      "II CS-B",
+      "II CSBS",
+      "II DS-A",
+      "II IOT",
+      "II MSC (DS)",
+      "III AIML-G",
+      "III BS(DS)",
+      "III CS",
+      "III IOT",
+      "IV CS"
+    ]
+  },
+  "611": {
+    "room_code": "611",
+    "room_type": "computer_lab",
+    "total_occupied_hours": 43,
+    "daily_breakdown": {
+      "MON": 8,
+      "TUE": 6,
+      "THU": 8,
+      "FRI": 8,
+      "WED": 7,
+      "SAT": 6
+    },
+    "sections_using": [
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-G",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II CS-A",
+      "III AIML-D",
+      "III AIML-G",
+      "III CS",
+      "III DS-B",
+      "IV AIML-D",
+      "IV AIML-E",
+      "IV CS"
+    ]
+  },
+  "612": {
+    "room_code": "612",
+    "room_type": "computer_lab",
+    "total_occupied_hours": 44,
+    "daily_breakdown": {
+      "MON": 9,
+      "FRI": 7,
+      "TUE": 7,
+      "WED": 8,
+      "SAT": 7,
+      "THU": 6
+    },
+    "sections_using": [
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II CS-B",
+      "II DS-B",
+      "II IOT",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-E",
+      "III AIML-G",
+      "III DS-A",
+      "IV AIML-D"
+    ]
+  },
+  "613": {
+    "room_code": "613",
+    "room_type": "classroom",
+    "total_occupied_hours": 53,
+    "daily_breakdown": {
+      "THU": 9,
+      "MON": 8,
+      "TUE": 10,
+      "WED": 11,
+      "FRI": 8,
+      "SAT": 7
+    },
+    "sections_using": [
+      "II AIML-C",
+      "II CS-B",
+      "II DS-A",
+      "II DS-B",
+      "II IOT",
+      "III DS-A",
+      "III DS-B",
+      "IV DS"
+    ]
+  },
+  "614": {
+    "room_code": "614",
+    "room_type": "classroom",
+    "total_occupied_hours": 25,
+    "daily_breakdown": {
+      "TUE": 6,
+      "MON": 4,
+      "FRI": 5,
+      "THU": 4,
+      "SAT": 2,
+      "WED": 4
+    },
+    "sections_using": [
+      "II AIML-B",
+      "II AIML-E",
+      "II AIML-H",
+      "II CS-A",
+      "II CS-B",
+      "II DS-B",
+      "II IOT",
+      "III BS(DS)",
+      "III CSBS"
+    ]
+  },
+  "615": {
+    "room_code": "615",
+    "room_type": "computer_lab",
+    "total_occupied_hours": 45,
+    "daily_breakdown": {
+      "WED": 6,
+      "FRI": 9,
+      "MON": 7,
+      "TUE": 7,
+      "THU": 7,
+      "SAT": 9
+    },
+    "sections_using": [
+      "II AIML-D",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II CS-A",
+      "II CS-B",
+      "II DS-B",
+      "II IOT",
+      "III AIML-C",
+      "III AIML-E",
+      "III AIML-F",
+      "III DS-A",
+      "III DS-B",
+      "IV AIML-A",
+      "IV AIML-D",
+      "IV CS"
+    ]
+  },
+  "616": {
+    "room_code": "616",
+    "room_type": "computer_lab",
+    "total_occupied_hours": 42,
+    "daily_breakdown": {
+      "SAT": 7,
+      "TUE": 7,
+      "FRI": 7,
+      "MON": 7,
+      "WED": 7,
+      "THU": 7
+    },
+    "sections_using": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-F",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-L",
+      "II BS(DS)",
+      "II CS-A",
+      "II DS-A",
+      "IV AIML-B",
+      "IV AIML-E"
+    ]
+  },
+  "617": {
+    "room_code": "617",
+    "room_type": "computer_lab",
+    "total_occupied_hours": 46,
+    "daily_breakdown": {
+      "MON": 8,
+      "SAT": 7,
+      "THU": 9,
+      "TUE": 7,
+      "FRI": 8,
+      "WED": 7
+    },
+    "sections_using": [
+      "II AIML-B",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II CSBS",
+      "II DS-A",
+      "III AIML-A",
+      "III AIML-E",
+      "III AIML-G",
+      "IV AIML-C",
+      "IV AIML-D"
+    ]
+  },
+  "618": {
+    "room_code": "618",
+    "room_type": "classroom",
+    "total_occupied_hours": 36,
+    "daily_breakdown": {
+      "TUE": 5,
+      "MON": 6,
+      "FRI": 5,
+      "THU": 5,
+      "WED": 8,
+      "SAT": 7
+    },
+    "sections_using": [
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-G",
+      "II AIML-J",
+      "II AIML-L",
+      "II CS-A",
+      "II CSBS",
+      "II DS-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III CS",
+      "III DS-A",
+      "IV AIML-B"
+    ]
+  },
+  "619": {
+    "room_code": "619",
+    "room_type": "classroom",
+    "total_occupied_hours": 32,
+    "daily_breakdown": {
+      "MON": 7,
+      "THU": 7,
+      "FRI": 5,
+      "TUE": 4,
+      "WED": 4,
+      "SAT": 5
+    },
+    "sections_using": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-F",
+      "II AIML-K",
+      "II CS-A",
+      "II DS-A",
+      "II DS-B",
+      "II IOT",
+      "II MSC (DS)",
+      "III AIML-C",
+      "III AIML-E",
+      "III AIML-F"
+    ]
+  },
+  "619A": {
+    "room_code": "619A",
+    "room_type": "classroom",
+    "total_occupied_hours": 1,
+    "daily_breakdown": {
+      "MON": 1
+    },
+    "sections_using": [
+      "III BS(DS)"
+    ]
+  },
+  "A-Block First Floor": {
+    "room_code": "A-Block First Floor",
+    "room_type": "classroom",
+    "total_occupied_hours": 5,
+    "daily_breakdown": {
+      "MON": 1,
+      "TUE": 1,
+      "WED": 1,
+      "THU": 1,
+      "FRI": 1
+    },
+    "sections_using": [
+      "IV AIML-D"
+    ]
+  },
+  "AFF-09": {
+    "room_code": "AFF-09",
+    "room_type": "classroom",
+    "total_occupied_hours": 14,
+    "daily_breakdown": {
+      "THU": 4,
+      "TUE": 4,
+      "MON": 4,
+      "WED": 2
+    },
+    "sections_using": [
+      "II MSC (DS)",
+      "III AIML-D",
+      "III AIML-F",
+      "III CS",
+      "III DS-A",
+      "IV AIML-C"
+    ]
+  },
+  "AFF-10": {
+    "room_code": "AFF-10",
+    "room_type": "classroom",
+    "total_occupied_hours": 18,
+    "daily_breakdown": {
+      "MON": 5,
+      "SAT": 3,
+      "THU": 6,
+      "TUE": 4
+    },
+    "sections_using": [
+      "II BS(DS)",
+      "III AIML-A",
+      "III AIML-E",
+      "III BS(DS)",
+      "III DS-B",
+      "IV AIML-B",
+      "IV AIML-D"
+    ]
+  },
+  "AFF-9": {
+    "room_code": "AFF-9",
+    "room_type": "classroom",
+    "total_occupied_hours": 9,
+    "daily_breakdown": {
+      "SAT": 4,
+      "WED": 3,
+      "TUE": 2
+    },
+    "sections_using": [
+      "III CS",
+      "III DS-A",
+      "IV AIML-A",
+      "IV AIML-E"
+    ]
+  },
+  "AFTF-12": {
+    "room_code": "AFTF-12",
+    "room_type": "gpu_lab",
+    "total_occupied_hours": 23,
+    "daily_breakdown": {
+      "SAT": 3,
+      "TUE": 2,
+      "WED": 2,
+      "MON": 9,
+      "THU": 2,
+      "FRI": 5
+    },
+    "sections_using": [
+      "II MSC (DS)",
+      "III AIML-A",
+      "III AIML-C",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G",
+      "IV AIML-A",
+      "IV AIML-B",
+      "IV AIML-D"
+    ]
+  },
+  "AFTF-13": {
+    "room_code": "AFTF-13",
+    "room_type": "gpu_lab",
+    "total_occupied_hours": 37,
+    "daily_breakdown": {
+      "TUE": 8,
+      "WED": 6,
+      "MON": 7,
+      "THU": 8,
+      "FRI": 4,
+      "SAT": 4
+    },
+    "sections_using": [
+      "II AIML-F",
+      "II BS(DS)",
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-E",
+      "III AIML-F",
+      "III CS",
+      "IV AIML-A",
+      "IV AIML-C",
+      "IV AIML-D",
+      "IV AIML-E"
+    ]
+  },
+  "AFTF-14": {
+    "room_code": "AFTF-14",
+    "room_type": "gpu_lab",
+    "total_occupied_hours": 28,
+    "daily_breakdown": {
+      "THU": 5,
+      "TUE": 7,
+      "WED": 5,
+      "MON": 5,
+      "FRI": 2,
+      "SAT": 4
+    },
+    "sections_using": [
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III DS-B",
+      "IV AIML-B",
+      "IV AIML-C",
+      "IV AIML-D",
+      "IV AIML-E"
+    ]
+  }
+}

@@ -1,0 +1,2187 @@
+{
+  "ADS": {
+    "subject_code": "ADS",
+    "subject_type": "L",
+    "total_demand_hours": 6,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III AIML-A",
+      "III AIML-C"
+    ]
+  },
+  "ADS(P)": {
+    "subject_code": "ADS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III AIML-A",
+      "III AIML-C"
+    ]
+  },
+  "AI": {
+    "subject_code": "AI",
+    "subject_type": "L",
+    "total_demand_hours": 34,
+    "sections_count": 17,
+    "assigned_faculty": [
+      "CHANDOLU CHARANA SREE",
+      "Dr. Amar Jukuntla",
+      "Dr. B. Sudha Rani",
+      "Dr. G. Kalaiarasi",
+      "Dr. Jawad Ahmad Dar",
+      "Dr. P. Giri Prasad",
+      "G.Akhila",
+      "K.Baby Tejaswi",
+      "K.Leela Tapaswi",
+      "KONDAPALLI PRABHU TEJA",
+      "Mr D Vinod Kumar",
+      "Mr. D.Vinod Kumar",
+      "Ms. D. Urlamma",
+      "PALAPARTHI YAMUNA",
+      "V. Amarnath",
+      "VAKA JAHNAVI",
+      "VENNA VIJAYA MANIKANTA"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B",
+      "III CSBS",
+      "IV - CSBS"
+    ]
+  },
+  "AI & IES": {
+    "subject_code": "AI & IES",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III IOT"
+    ]
+  },
+  "AI &IES(P)": {
+    "subject_code": "AI &IES(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III IOT"
+    ]
+  },
+  "AI(P)": {
+    "subject_code": "AI(P)",
+    "subject_type": "P",
+    "total_demand_hours": 34,
+    "sections_count": 17,
+    "assigned_faculty": [
+      "CHANDOLU CHARANA SREE",
+      "Dr. Amar Jukuntla",
+      "Dr. B. Sudha Rani",
+      "Dr. G. Kalaiarasi",
+      "Dr. Jawad Ahmad Dar",
+      "Dr. P. Giri Prasad",
+      "G.Akhila",
+      "K.Baby Tejaswi",
+      "K.Leela Tapaswi",
+      "KONDAPALLI PRABHU TEJA",
+      "Mr D Vinod Kumar",
+      "Mr. D.Vinod Kumar",
+      "Ms. D. Urlamma",
+      "PALAPARTHI YAMUNA",
+      "V. Amarnath",
+      "VAKA JAHNAVI",
+      "VENNA VIJAYA MANIKANTA"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B",
+      "III CSBS",
+      "IV - CSBS"
+    ]
+  },
+  "AT&DWV": {
+    "subject_code": "AT&DWV",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CS"
+    ]
+  },
+  "BDA": {
+    "subject_code": "BDA",
+    "subject_type": "L",
+    "total_demand_hours": 6,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II MSC (DS)",
+      "IV - CSBS"
+    ]
+  },
+  "BDA(P)": {
+    "subject_code": "BDA(P)",
+    "subject_type": "P",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II MSC (DS)",
+      "IV - CSBS"
+    ]
+  },
+  "BEC": {
+    "subject_code": "BEC",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II BS(DS)"
+    ]
+  },
+  "CAL/AL/P": {
+    "subject_code": "CAL/AL/P",
+    "subject_type": "L",
+    "total_demand_hours": 5,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV AIML-D"
+    ]
+  },
+  "CC & A(P)": {
+    "subject_code": "CC & A(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV DS"
+    ]
+  },
+  "CC&CC(NPTEL)": {
+    "subject_code": "CC&CC(NPTEL)",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CS"
+    ]
+  },
+  "CC&CC(P)(NPTEL)": {
+    "subject_code": "CC&CC(P)(NPTEL)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CS"
+    ]
+  },
+  "CCA": {
+    "subject_code": "CCA",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV DS"
+    ]
+  },
+  "CN": {
+    "subject_code": "CN",
+    "subject_type": "L",
+    "total_demand_hours": 9,
+    "sections_count": 3,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II CS-A",
+      "II CS-B",
+      "III IOT"
+    ]
+  },
+  "CN(P)": {
+    "subject_code": "CN(P)",
+    "subject_type": "P",
+    "total_demand_hours": 6,
+    "sections_count": 3,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II CS-A",
+      "II CS-B",
+      "III IOT"
+    ]
+  },
+  "CNS": {
+    "subject_code": "CNS",
+    "subject_type": "L",
+    "total_demand_hours": 12,
+    "sections_count": 6,
+    "assigned_faculty": [
+      "Dr. Guttikonda Prashanti",
+      "J.Divya",
+      "Ms N Pooja",
+      "Ms. Attuluri Ramya",
+      "Ms. Jayamma Rodda",
+      "PURIMETLA RUKMINILAKSHMI CHAITANYA",
+      "SHAIK FIRDOUSE SULTANA"
+    ],
+    "sections_offering": [
+      "IV AIML-A",
+      "IV AIML-B",
+      "IV AIML-C",
+      "IV AIML-D",
+      "IV AIML-E",
+      "IV DS"
+    ]
+  },
+  "CNS (P)": {
+    "subject_code": "CNS (P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV AIML-E"
+    ]
+  },
+  "CNS(P)": {
+    "subject_code": "CNS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 10,
+    "sections_count": 5,
+    "assigned_faculty": [
+      "Dr. Guttikonda Prashanti",
+      "J.Divya",
+      "Ms N Pooja",
+      "Ms. Attuluri Ramya",
+      "Ms. Jayamma Rodda",
+      "PURIMETLA RUKMINILAKSHMI CHAITANYA",
+      "SHAIK FIRDOUSE SULTANA"
+    ],
+    "sections_offering": [
+      "IV AIML-A",
+      "IV AIML-B",
+      "IV AIML-C",
+      "IV AIML-D",
+      "IV DS"
+    ]
+  },
+  "CRT": {
+    "subject_code": "CRT",
+    "subject_type": "L",
+    "total_demand_hours": 117,
+    "sections_count": 10,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G",
+      "III CS",
+      "III DS-A",
+      "III DS-B"
+    ]
+  },
+  "CS": {
+    "subject_code": "CS",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV CS"
+    ]
+  },
+  "CS(P)": {
+    "subject_code": "CS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV CS"
+    ]
+  },
+  "CV": {
+    "subject_code": "CV",
+    "subject_type": "L",
+    "total_demand_hours": 28,
+    "sections_count": 9,
+    "assigned_faculty": [
+      "CHALLA SAI MOHITHA",
+      "Dr. Arnab De",
+      "GUDLURU UMADEVI",
+      "GUNTI VASANTHI",
+      "KOSANA RAJA SEKHAR",
+      "MAJETI LALITHA MAHA LAKSHMI",
+      "MR. M. Komal Krishna",
+      "Mr K Karthik",
+      "Ms. K.Vyshnavi",
+      "S. Venkata Bhavani",
+      "SK.Sameera Sultana",
+      "SK.SameeraSultana",
+      "SUNKARA DEVENDRA KUMAR"
+    ],
+    "sections_offering": [
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G",
+      "III DS-A",
+      "III DS-B"
+    ]
+  },
+  "CV(P)": {
+    "subject_code": "CV(P)",
+    "subject_type": "P",
+    "total_demand_hours": 18,
+    "sections_count": 9,
+    "assigned_faculty": [
+      "CHALLA SAI MOHITHA",
+      "Dr. Arnab De",
+      "GUDLURU UMADEVI",
+      "GUNTI VASANTHI",
+      "KOSANA RAJA SEKHAR",
+      "MAJETI LALITHA MAHA LAKSHMI",
+      "MR. M. Komal Krishna",
+      "Mr K Karthik",
+      "Ms. K.Vyshnavi",
+      "S. Venkata Bhavani",
+      "SK.Sameera Sultana",
+      "SK.SameeraSultana",
+      "SUNKARA DEVENDRA KUMAR"
+    ],
+    "sections_offering": [
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G",
+      "III DS-A",
+      "III DS-B"
+    ]
+  },
+  "DBMS": {
+    "subject_code": "DBMS",
+    "subject_type": "L",
+    "total_demand_hours": 40,
+    "sections_count": 19,
+    "assigned_faculty": [
+      "CHANDOLU CHARANA SREE",
+      "G.Akhila",
+      "K.Baby Tejaswi",
+      "K.Leela Tapaswi",
+      "KANTHETI MAANVITHA LAKSHMI PRIYA",
+      "MAIDUKURI VIJAYALAKSHMI",
+      "Mr Prajwal Santakke",
+      "Mr. K.Sambasivarao",
+      "Mr. P Srinivasa Rao",
+      "SHAIK FIRDOUSE SULTANA"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II BS(DS)",
+      "II CS-A",
+      "II CS-B",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B",
+      "II IOT"
+    ]
+  },
+  "DBMS(P)": {
+    "subject_code": "DBMS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 38,
+    "sections_count": 19,
+    "assigned_faculty": [
+      "CHANDOLU CHARANA SREE",
+      "G.Akhila",
+      "K.Baby Tejaswi",
+      "K.Leela Tapaswi",
+      "KANTHETI MAANVITHA LAKSHMI PRIYA",
+      "MAIDUKURI VIJAYALAKSHMI",
+      "Mr Prajwal Santakke",
+      "Mr. K.Sambasivarao",
+      "Mr. P Srinivasa Rao",
+      "SHAIK FIRDOUSE SULTANA"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II BS(DS)",
+      "II CS-A",
+      "II CS-B",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B",
+      "II IOT"
+    ]
+  },
+  "DBMS(T)": {
+    "subject_code": "DBMS(T)",
+    "subject_type": "T",
+    "total_demand_hours": 36,
+    "sections_count": 18,
+    "assigned_faculty": [
+      "CHANDOLU CHARANA SREE",
+      "G.Akhila",
+      "K.Baby Tejaswi",
+      "K.Leela Tapaswi",
+      "KANTHETI MAANVITHA LAKSHMI PRIYA",
+      "MAIDUKURI VIJAYALAKSHMI",
+      "Mr Prajwal Santakke",
+      "Mr. P Srinivasa Rao",
+      "SHAIK FIRDOUSE SULTANA"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II CS-A",
+      "II CS-B",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B",
+      "II IOT"
+    ]
+  },
+  "DEF": {
+    "subject_code": "DEF",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [
+      "Mr. Mahendra Varma",
+      "Ms. Vemuri Lakshmi Ravali"
+    ],
+    "sections_offering": [
+      "II AIML-A"
+    ]
+  },
+  "DEF(P)": {
+    "subject_code": "DEF(P)",
+    "subject_type": "P",
+    "total_demand_hours": 22,
+    "sections_count": 11,
+    "assigned_faculty": [
+      "Mitikala Ramanjaneyulu",
+      "Mr. Mahendra Varma",
+      "Mr. VSNS Yaswanth Kommuri",
+      "Ms. K. Sabhamini",
+      "Ms. Vemuri Lakshmi Ravali"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L"
+    ]
+  },
+  "DEF(T)": {
+    "subject_code": "DEF(T)",
+    "subject_type": "T",
+    "total_demand_hours": 24,
+    "sections_count": 11,
+    "assigned_faculty": [
+      "Mitikala Ramanjaneyulu",
+      "Mr. Mahendra Varma",
+      "Mr. VSNS Yaswanth Kommuri",
+      "Ms. K. Sabhamini"
+    ],
+    "sections_offering": [
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L"
+    ]
+  },
+  "DHV": {
+    "subject_code": "DHV",
+    "subject_type": "L",
+    "total_demand_hours": 4,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II BS(DS)"
+    ]
+  },
+  "DL": {
+    "subject_code": "DL",
+    "subject_type": "L",
+    "total_demand_hours": 24,
+    "sections_count": 8,
+    "assigned_faculty": [
+      "Dr. Eva Patel",
+      "Dr. Sivadi Balakrishna",
+      "KANCHARLA KARUNA KUMARI",
+      "KANTHETI MAANVITHA LAKSHMI PRIYA",
+      "KARETI HYMAVATHI",
+      "M. Pramod Chandra",
+      "MAJETI LALITHA MAHA LAKSHMI",
+      "Mr. Brundavanam Satya Sai",
+      "Ms. R. Vanitha Venkata Madhuri",
+      "PALLAKI SRI HARSHAVARDHAN REDDY",
+      "V. Amarnath",
+      "VAKA JAHNAVI"
+    ],
+    "sections_offering": [
+      "II MSC (DS)",
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G"
+    ]
+  },
+  "DL(P)": {
+    "subject_code": "DL(P)",
+    "subject_type": "P",
+    "total_demand_hours": 16,
+    "sections_count": 8,
+    "assigned_faculty": [
+      "Dr. Eva Patel",
+      "Dr. Sivadi Balakrishna",
+      "KANCHARLA KARUNA KUMARI",
+      "KANTHETI MAANVITHA LAKSHMI PRIYA",
+      "KARETI HYMAVATHI",
+      "M. Pramod Chandra",
+      "MAJETI LALITHA MAHA LAKSHMI",
+      "Mr. Brundavanam Satya Sai",
+      "Ms. R. Vanitha Venkata Madhuri",
+      "PALLAKI SRI HARSHAVARDHAN REDDY",
+      "V. Amarnath",
+      "VAKA JAHNAVI"
+    ],
+    "sections_offering": [
+      "II MSC (DS)",
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G"
+    ]
+  },
+  "DLCO": {
+    "subject_code": "DLCO",
+    "subject_type": "L",
+    "total_demand_hours": 5,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II IOT"
+    ]
+  },
+  "DMA": {
+    "subject_code": "DMA",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CSBS"
+    ]
+  },
+  "DMA(P)": {
+    "subject_code": "DMA(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CSBS"
+    ]
+  },
+  "DMA(T)": {
+    "subject_code": "DMA(T)",
+    "subject_type": "T",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CSBS"
+    ]
+  },
+  "DMS": {
+    "subject_code": "DMS",
+    "subject_type": "L",
+    "total_demand_hours": 24,
+    "sections_count": 12,
+    "assigned_faculty": [
+      "DR. ANKAMMA RAO MALLELA",
+      "DR. IMTIYAZ BHATT",
+      "DR. MANIGANDAN A",
+      "DR. N. BHARGAVI"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L"
+    ]
+  },
+  "DMS(P)": {
+    "subject_code": "DMS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 12,
+    "sections_count": 6,
+    "assigned_faculty": [
+      "DR. ANKAMMA RAO MALLELA",
+      "DR. IMTIYAZ BHATT",
+      "DR. MANIGANDAN A"
+    ],
+    "sections_offering": [
+      "II AIML-C",
+      "II AIML-E",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-L"
+    ]
+  },
+  "DMS(T)": {
+    "subject_code": "DMS(T)",
+    "subject_type": "T",
+    "total_demand_hours": 12,
+    "sections_count": 6,
+    "assigned_faculty": [
+      "DR. ANKAMMA RAO MALLELA",
+      "DR. IMTIYAZ BHATT",
+      "DR. MANIGANDAN A",
+      "DR. N. BHARGAVI"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-D",
+      "II AIML-F",
+      "II AIML-J",
+      "II AIML-K"
+    ]
+  },
+  "DS": {
+    "subject_code": "DS",
+    "subject_type": "L",
+    "total_demand_hours": 36,
+    "sections_count": 18,
+    "assigned_faculty": [
+      "Ch.Omkara Lakshmi",
+      "Dr. A.V. Nageswara Rao",
+      "Dr. S.Srikantha Reddy",
+      "GOPI KRISHNA P",
+      "K.Leela Tapaswi",
+      "K.Nikhitha",
+      "KANCHARLA KARUNA KUMARI",
+      "KARETI HYMAVATHI",
+      "KOSANA RAJA SEKHAR",
+      "M SRI CHAKRAPANI",
+      "MS. D.SUPRIYA",
+      "Mr. Bharadwaja Chepuri",
+      "Mr. Mahendra Varma",
+      "Mr. PLN Manoj Kumar",
+      "Ms. Narra Bhagyalakshmi",
+      "P. Girija",
+      "SUNKARA DEVENDRA KUMAR",
+      "VENNA VIJAYA MANIKANTA",
+      "Y NEHA",
+      "Y. Ashok",
+      "Y. Ramya Sri",
+      "YARRA ESWARAIAH"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II CS-A",
+      "II CS-B",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B",
+      "II IOT"
+    ]
+  },
+  "DS(P)": {
+    "subject_code": "DS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 36,
+    "sections_count": 17,
+    "assigned_faculty": [
+      "Ch.Omkara Lakshmi",
+      "Dr. A.V. Nageswara Rao",
+      "Dr. S.Srikantha Reddy",
+      "GOPI KRISHNA P",
+      "K.Leela Tapaswi",
+      "K.Nikhitha",
+      "KANCHARLA KARUNA KUMARI",
+      "KARETI HYMAVATHI",
+      "KOSANA RAJA SEKHAR",
+      "M SRI CHAKRAPANI",
+      "MS. D.SUPRIYA",
+      "Mr. Bharadwaja Chepuri",
+      "Mr. Mahendra Varma",
+      "Mr. PLN Manoj Kumar",
+      "Ms. Narra Bhagyalakshmi",
+      "P. Girija",
+      "SUNKARA DEVENDRA KUMAR",
+      "VENNA VIJAYA MANIKANTA",
+      "Y NEHA",
+      "Y. Ashok",
+      "Y. Ramya Sri",
+      "YARRA ESWARAIAH"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II CS-A",
+      "II CS-B",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B",
+      "II IOT"
+    ]
+  },
+  "DS(T)": {
+    "subject_code": "DS(T)",
+    "subject_type": "T",
+    "total_demand_hours": 36,
+    "sections_count": 17,
+    "assigned_faculty": [
+      "Ch.Omkara Lakshmi",
+      "Dr. A.V. Nageswara Rao",
+      "Dr. S.Srikantha Reddy",
+      "GOPI KRISHNA P",
+      "K.Leela Tapaswi",
+      "K.Nikhitha",
+      "KANCHARLA KARUNA KUMARI",
+      "KARETI HYMAVATHI",
+      "KOSANA RAJA SEKHAR",
+      "M SRI CHAKRAPANI",
+      "MS. D.SUPRIYA",
+      "Mr. Bharadwaja Chepuri",
+      "Mr. Mahendra Varma",
+      "Mr. PLN Manoj Kumar",
+      "Ms. Narra Bhagyalakshmi",
+      "P. Girija",
+      "SUNKARA DEVENDRA KUMAR",
+      "VENNA VIJAYA MANIKANTA",
+      "Y NEHA",
+      "Y. Ashok",
+      "Y. Ramya Sri",
+      "YARRA ESWARAIAH"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II CS-A",
+      "II CS-B",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B",
+      "II IOT"
+    ]
+  },
+  "DSF(P)": {
+    "subject_code": "DSF(P)",
+    "subject_type": "P",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II DS-A",
+      "II DS-B"
+    ]
+  },
+  "DSF(T)": {
+    "subject_code": "DSF(T)",
+    "subject_type": "T",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II DS-A",
+      "II DS-B"
+    ]
+  },
+  "DWV(P)": {
+    "subject_code": "DWV(P)",
+    "subject_type": "P",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II CS-A",
+      "II CS-B"
+    ]
+  },
+  "DWV(T)": {
+    "subject_code": "DWV(T)",
+    "subject_type": "T",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II CS-A",
+      "II CS-B"
+    ]
+  },
+  "EH": {
+    "subject_code": "EH",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CS"
+    ]
+  },
+  "EH(p)": {
+    "subject_code": "EH(p)",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CS"
+    ]
+  },
+  "FIP": {
+    "subject_code": "FIP",
+    "subject_type": "L",
+    "total_demand_hours": 7,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II MSC (DS)",
+      "III AIML-F"
+    ]
+  },
+  "FIP(P)": {
+    "subject_code": "FIP(P)",
+    "subject_type": "P",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II MSC (DS)",
+      "III AIML-F"
+    ]
+  },
+  "FIS": {
+    "subject_code": "FIS",
+    "subject_type": "L",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II CS-A",
+      "II CS-B"
+    ]
+  },
+  "FIS(P)": {
+    "subject_code": "FIS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II CS-A",
+      "II CS-B"
+    ]
+  },
+  "FML": {
+    "subject_code": "FML",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II BS(DS)"
+    ]
+  },
+  "FOOP": {
+    "subject_code": "FOOP",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II BS(DS)"
+    ]
+  },
+  "FOOP(P)": {
+    "subject_code": "FOOP(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II BS(DS)"
+    ]
+  },
+  "GEN AI": {
+    "subject_code": "GEN AI",
+    "subject_type": "L",
+    "total_demand_hours": 17,
+    "sections_count": 6,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV AIML-A",
+      "IV AIML-B",
+      "IV AIML-C",
+      "IV AIML-D",
+      "IV AIML-E",
+      "IV DS"
+    ]
+  },
+  "GEN AI & AS": {
+    "subject_code": "GEN AI & AS",
+    "subject_type": "L",
+    "total_demand_hours": 12,
+    "sections_count": 6,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV AIML-A",
+      "IV AIML-B",
+      "IV AIML-C",
+      "IV AIML-D",
+      "IV AIML-E",
+      "IV DS"
+    ]
+  },
+  "GENAI": {
+    "subject_code": "GENAI",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [
+      "Kuchipudi koushika",
+      "M. Harya Vardhan",
+      "Mr. Mahendra Varma",
+      "Mr. PVV Satya Surya Teja Sri Manoj"
+    ],
+    "sections_offering": [
+      "IV AIML-A"
+    ]
+  },
+  "HONORS": {
+    "subject_code": "HONORS",
+    "subject_type": "L",
+    "total_demand_hours": 14,
+    "sections_count": 4,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CSBS",
+      "III IOT",
+      "IV - CSBS",
+      "IV DS"
+    ]
+  },
+  "ID&PS": {
+    "subject_code": "ID&PS",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV CS"
+    ]
+  },
+  "ID&PS(P)": {
+    "subject_code": "ID&PS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV CS"
+    ]
+  },
+  "IDP": {
+    "subject_code": "IDP",
+    "subject_type": "L",
+    "total_demand_hours": 22,
+    "sections_count": 11,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G",
+      "III CS",
+      "III CSBS",
+      "III DS-A",
+      "III DS-B"
+    ]
+  },
+  "IDP(P)": {
+    "subject_code": "IDP(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III IOT"
+    ]
+  },
+  "IIMP": {
+    "subject_code": "IIMP",
+    "subject_type": "L",
+    "total_demand_hours": 5,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CSBS"
+    ]
+  },
+  "IOT": {
+    "subject_code": "IOT",
+    "subject_type": "L",
+    "total_demand_hours": 19,
+    "sections_count": 6,
+    "assigned_faculty": [
+      "Dr.K.Lova Raju",
+      "Mr.K.Janaki Ram",
+      "Ms.G.Jyostna"
+    ],
+    "sections_offering": [
+      "IV AIML-A",
+      "IV AIML-B",
+      "IV AIML-C",
+      "IV AIML-D",
+      "IV AIML-E",
+      "IV CS"
+    ]
+  },
+  "IOT A & P": {
+    "subject_code": "IOT A & P",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III IOT"
+    ]
+  },
+  "IOT A & P(P)": {
+    "subject_code": "IOT A & P(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III IOT"
+    ]
+  },
+  "IOT(P)": {
+    "subject_code": "IOT(P)",
+    "subject_type": "P",
+    "total_demand_hours": 12,
+    "sections_count": 6,
+    "assigned_faculty": [
+      "Dr.K.Lova Raju",
+      "Mr.K.Janaki Ram",
+      "Ms.G.Jyostna"
+    ],
+    "sections_offering": [
+      "IV AIML-A",
+      "IV AIML-B",
+      "IV AIML-C",
+      "IV AIML-D",
+      "IV AIML-E",
+      "IV CS"
+    ]
+  },
+  "IS": {
+    "subject_code": "IS",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV - CSBS"
+    ]
+  },
+  "IS(P)": {
+    "subject_code": "IS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV - CSBS"
+    ]
+  },
+  "ITPM": {
+    "subject_code": "ITPM",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV - CSBS"
+    ]
+  },
+  "ITPM(P)": {
+    "subject_code": "ITPM(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV - CSBS"
+    ]
+  },
+  "KRR": {
+    "subject_code": "KRR",
+    "subject_type": "L",
+    "total_demand_hours": 14,
+    "sections_count": 5,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV AIML-A",
+      "IV AIML-B",
+      "IV AIML-C",
+      "IV AIML-D",
+      "IV AIML-E"
+    ]
+  },
+  "KRR(T)": {
+    "subject_code": "KRR(T)",
+    "subject_type": "T",
+    "total_demand_hours": 6,
+    "sections_count": 3,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV AIML-A",
+      "IV AIML-C",
+      "IV AIML-D"
+    ]
+  },
+  "LIB": {
+    "subject_code": "LIB",
+    "subject_type": "L",
+    "total_demand_hours": 8,
+    "sections_count": 6,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II AIML-C",
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-G"
+    ]
+  },
+  "LIBRARY": {
+    "subject_code": "LIBRARY",
+    "subject_type": "LIBRARY",
+    "total_demand_hours": 20,
+    "sections_count": 19,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II CS-A",
+      "II CS-B",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B",
+      "II IOT",
+      "III AIML-G",
+      "III IOT"
+    ]
+  },
+  "MAD": {
+    "subject_code": "MAD",
+    "subject_type": "L",
+    "total_demand_hours": 6,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II MSC (DS)",
+      "III IOT"
+    ]
+  },
+  "MAD(P)": {
+    "subject_code": "MAD(P)",
+    "subject_type": "P",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II MSC (DS)",
+      "III IOT"
+    ]
+  },
+  "MFCS": {
+    "subject_code": "MFCS",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II CS-A"
+    ]
+  },
+  "MFCS(T)": {
+    "subject_code": "MFCS(T)",
+    "subject_type": "T",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II CS-A",
+      "II CS-B"
+    ]
+  },
+  "MFSC": {
+    "subject_code": "MFSC",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II CS-A",
+      "II CS-B"
+    ]
+  },
+  "MINORS/HONORS": {
+    "subject_code": "MINORS/HONORS",
+    "subject_type": "L",
+    "total_demand_hours": 58,
+    "sections_count": 15,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G",
+      "III CS",
+      "III DS-A",
+      "III DS-B",
+      "IV AIML-A",
+      "IV AIML-B",
+      "IV AIML-C",
+      "IV CS",
+      "IV DS"
+    ]
+  },
+  "ML": {
+    "subject_code": "ML",
+    "subject_type": "L",
+    "total_demand_hours": 11,
+    "sections_count": 4,
+    "assigned_faculty": [
+      "Dr. Fayaz Ahmad Naikoo",
+      "GOPI KRISHNA P",
+      "K.Sabhamini",
+      "KANTHETI MAANVITHA LAKSHMI PRIYA",
+      "Mr D Vinod Kumar",
+      "Ms. Ambati Hemalatha"
+    ],
+    "sections_offering": [
+      "III BS(DS)",
+      "III DS-A",
+      "III DS-B",
+      "IV CS"
+    ]
+  },
+  "ML(P)": {
+    "subject_code": "ML(P)",
+    "subject_type": "P",
+    "total_demand_hours": 6,
+    "sections_count": 3,
+    "assigned_faculty": [
+      "Dr. Fayaz Ahmad Naikoo",
+      "GOPI KRISHNA P",
+      "K.Sabhamini",
+      "KANTHETI MAANVITHA LAKSHMI PRIYA",
+      "Ms. Ambati Hemalatha"
+    ],
+    "sections_offering": [
+      "III DS-A",
+      "III DS-B",
+      "IV CS"
+    ]
+  },
+  "ML-II": {
+    "subject_code": "ML-II",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III BS(DS)"
+    ]
+  },
+  "MLOP": {
+    "subject_code": "MLOP",
+    "subject_type": "L",
+    "total_demand_hours": 12,
+    "sections_count": 4,
+    "assigned_faculty": [
+      "Abdul Rehman",
+      "M. Harya Vardhan"
+    ],
+    "sections_offering": [
+      "III AIML-B",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-G"
+    ]
+  },
+  "MLOP(P)": {
+    "subject_code": "MLOP(P)",
+    "subject_type": "P",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [
+      "Abdul Rehman"
+    ],
+    "sections_offering": [
+      "III AIML-D",
+      "III AIML-G"
+    ]
+  },
+  "MPMC": {
+    "subject_code": "MPMC",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II IOT"
+    ]
+  },
+  "MPMC(P)": {
+    "subject_code": "MPMC(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II IOT"
+    ]
+  },
+  "MWA": {
+    "subject_code": "MWA",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CSBS"
+    ]
+  },
+  "MWA(P)": {
+    "subject_code": "MWA(P)",
+    "subject_type": "P",
+    "total_demand_hours": 4,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CSBS"
+    ]
+  },
+  "NS": {
+    "subject_code": "NS",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CS"
+    ]
+  },
+  "NS(P)": {
+    "subject_code": "NS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III CS"
+    ]
+  },
+  "OE": {
+    "subject_code": "OE",
+    "subject_type": "L",
+    "total_demand_hours": 30,
+    "sections_count": 11,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G",
+      "III CS",
+      "III DS-A",
+      "III DS-B",
+      "III IOT"
+    ]
+  },
+  "OOPS": {
+    "subject_code": "OOPS",
+    "subject_type": "L",
+    "total_demand_hours": 34,
+    "sections_count": 17,
+    "assigned_faculty": [
+      "CHANDOLU CHARANA SREE",
+      "Ch.Omkara Lakshmi",
+      "Dr. A Subramanyam",
+      "Dr. C. Sateesh Kumar Reddy",
+      "Dr. Mastan Sharif",
+      "GOPI KRISHNA P",
+      "GUDLURU UMADEVI",
+      "K. Lakshmi Likhitha",
+      "K.Baby Tejaswi",
+      "KOSANA RAJA SEKHAR",
+      "MAIDUKURI VIJAYALAKSHMI",
+      "MAJETI LALITHA MAHA LAKSHMI",
+      "Mr L Srinivasa Rao",
+      "Mr. D. Pavan Kalyan",
+      "Ms. A. Chandana",
+      "Ms. D. Urlamma",
+      "Ms. G. Mahalakshmi",
+      "Ms. I.Leela Priya",
+      "Ms. M. YAMINI",
+      "Ms.Jasmitha Parasa",
+      "Nune Naga Surekha",
+      "PALAPARTHI YAMUNA",
+      "PALLAKI SRI HARSHAVARDHAN REDDY",
+      "PURIMETLA RUKMINILAKSHMI CHAITANYA",
+      "RAJIV KUMAR",
+      "SHAIK FIRDOUSE SULTANA",
+      "SK.Sameera Sultana",
+      "SUNKARA DEVENDRA KUMAR",
+      "YARRA ESWARAIAH"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II CS-A",
+      "II CS-B",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B"
+    ]
+  },
+  "OOPS(P)": {
+    "subject_code": "OOPS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 34,
+    "sections_count": 17,
+    "assigned_faculty": [
+      "CHANDOLU CHARANA SREE",
+      "Ch.Omkara Lakshmi",
+      "Dr. A Subramanyam",
+      "Dr. C. Sateesh Kumar Reddy",
+      "Dr. Mastan Sharif",
+      "GOPI KRISHNA P",
+      "GUDLURU UMADEVI",
+      "K. Lakshmi Likhitha",
+      "K.Baby Tejaswi",
+      "KOSANA RAJA SEKHAR",
+      "MAIDUKURI VIJAYALAKSHMI",
+      "MAJETI LALITHA MAHA LAKSHMI",
+      "Mr L Srinivasa Rao",
+      "Mr. D. Pavan Kalyan",
+      "Ms. A. Chandana",
+      "Ms. D. Urlamma",
+      "Ms. G. Mahalakshmi",
+      "Ms. I.Leela Priya",
+      "Ms. M. YAMINI",
+      "Ms.Jasmitha Parasa",
+      "Nune Naga Surekha",
+      "PALAPARTHI YAMUNA",
+      "PALLAKI SRI HARSHAVARDHAN REDDY",
+      "PURIMETLA RUKMINILAKSHMI CHAITANYA",
+      "RAJIV KUMAR",
+      "SHAIK FIRDOUSE SULTANA",
+      "SK.Sameera Sultana",
+      "SUNKARA DEVENDRA KUMAR",
+      "YARRA ESWARAIAH"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II CS-A",
+      "II CS-B",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B"
+    ]
+  },
+  "OOPS(T)": {
+    "subject_code": "OOPS(T)",
+    "subject_type": "T",
+    "total_demand_hours": 34,
+    "sections_count": 17,
+    "assigned_faculty": [
+      "CHANDOLU CHARANA SREE",
+      "Ch.Omkara Lakshmi",
+      "Dr. A Subramanyam",
+      "Dr. C. Sateesh Kumar Reddy",
+      "Dr. Mastan Sharif",
+      "GOPI KRISHNA P",
+      "GUDLURU UMADEVI",
+      "K. Lakshmi Likhitha",
+      "K.Baby Tejaswi",
+      "KOSANA RAJA SEKHAR",
+      "MAIDUKURI VIJAYALAKSHMI",
+      "MAJETI LALITHA MAHA LAKSHMI",
+      "Mr L Srinivasa Rao",
+      "Mr. D. Pavan Kalyan",
+      "Ms. A. Chandana",
+      "Ms. D. Urlamma",
+      "Ms. G. Mahalakshmi",
+      "Ms. I.Leela Priya",
+      "Ms. M. YAMINI",
+      "Ms.Jasmitha Parasa",
+      "Nune Naga Surekha",
+      "PALAPARTHI YAMUNA",
+      "PALLAKI SRI HARSHAVARDHAN REDDY",
+      "PURIMETLA RUKMINILAKSHMI CHAITANYA",
+      "RAJIV KUMAR",
+      "SHAIK FIRDOUSE SULTANA",
+      "SK.Sameera Sultana",
+      "SUNKARA DEVENDRA KUMAR",
+      "YARRA ESWARAIAH"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II CS-A",
+      "II CS-B",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B"
+    ]
+  },
+  "OS": {
+    "subject_code": "OS",
+    "subject_type": "L",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II CSBS",
+      "III BS(DS)"
+    ]
+  },
+  "OS(P)": {
+    "subject_code": "OS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 4,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II CSBS",
+      "III BS(DS)"
+    ]
+  },
+  "OT": {
+    "subject_code": "OT",
+    "subject_type": "L",
+    "total_demand_hours": 6,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II DS-A",
+      "II DS-B"
+    ]
+  },
+  "OT(P)": {
+    "subject_code": "OT(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II DS-B"
+    ]
+  },
+  "P&S": {
+    "subject_code": "P&S",
+    "subject_type": "L",
+    "total_demand_hours": 13,
+    "sections_count": 3,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II CSBS",
+      "II DS-A",
+      "II DS-B"
+    ]
+  },
+  "P&S(P)": {
+    "subject_code": "P&S(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II CSBS"
+    ]
+  },
+  "PQC": {
+    "subject_code": "PQC",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II IOT"
+    ]
+  },
+  "PQC(P)": {
+    "subject_code": "PQC(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II IOT"
+    ]
+  },
+  "PROJECT": {
+    "subject_code": "PROJECT",
+    "subject_type": "L",
+    "total_demand_hours": 5,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "II MSC (DS)",
+      "III BS(DS)"
+    ]
+  },
+  "QALR": {
+    "subject_code": "QALR",
+    "subject_type": "L",
+    "total_demand_hours": 33,
+    "sections_count": 13,
+    "assigned_faculty": [
+      "Mr. T. Krishna",
+      "Sk Chand Basha"
+    ],
+    "sections_offering": [
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G",
+      "III BS(DS)",
+      "III CS",
+      "III CSBS",
+      "III DS-A",
+      "III DS-B",
+      "III IOT"
+    ]
+  },
+  "QALR(P)": {
+    "subject_code": "QALR(P)",
+    "subject_type": "P",
+    "total_demand_hours": 6,
+    "sections_count": 3,
+    "assigned_faculty": [
+      "Mr. T. Krishna"
+    ],
+    "sections_offering": [
+      "III AIML-A",
+      "III AIML-B",
+      "III CSBS"
+    ]
+  },
+  "SFCDS": {
+    "subject_code": "SFCDS",
+    "subject_type": "L",
+    "total_demand_hours": 49,
+    "sections_count": 13,
+    "assigned_faculty": [
+      "DR. B. N. NAVEEN KUMAR",
+      "DR. BANDI GURAVAIAH",
+      "DR. P. KALPANA",
+      "DR. P. Kalpana",
+      "DR. RUSHI PRASAD SAHOO"
+    ],
+    "sections_offering": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "II IOT"
+    ]
+  },
+  "SFCDS(P)": {
+    "subject_code": "SFCDS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 16,
+    "sections_count": 8,
+    "assigned_faculty": [
+      "DR. B. N. NAVEEN KUMAR",
+      "DR. BANDI GURAVAIAH",
+      "DR. P. KALPANA",
+      "DR. RUSHI PRASAD SAHOO"
+    ],
+    "sections_offering": [
+      "II AIML-D",
+      "II AIML-F",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L"
+    ]
+  },
+  "SL/EL": {
+    "subject_code": "SL/EL",
+    "subject_type": "L",
+    "total_demand_hours": 5,
+    "sections_count": 4,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-D",
+      "III AIML-G"
+    ]
+  },
+  "SL/EL/AL/IL": {
+    "subject_code": "SL/EL/AL/IL",
+    "subject_type": "L",
+    "total_demand_hours": 13,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV AIML-C",
+      "IV AIML-E"
+    ]
+  },
+  "SL/EL/IL": {
+    "subject_code": "SL/EL/IL",
+    "subject_type": "L",
+    "total_demand_hours": 9,
+    "sections_count": 2,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV AIML-B",
+      "IV DS"
+    ]
+  },
+  "SL/EL/IL(Self learning/Experimental learning/interactive learling)": {
+    "subject_code": "SL/EL/IL(Self learning/Experimental learning/interactive learling)",
+    "subject_type": "L",
+    "total_demand_hours": 44,
+    "sections_count": 4,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV AIML-A",
+      "IV AIML-B",
+      "IV AIML-C",
+      "IV AIML-D"
+    ]
+  },
+  "SL/EL/IP": {
+    "subject_code": "SL/EL/IP",
+    "subject_type": "L",
+    "total_demand_hours": 6,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV DS"
+    ]
+  },
+  "SS": {
+    "subject_code": "SS",
+    "subject_type": "L",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III BS(DS)"
+    ]
+  },
+  "TM": {
+    "subject_code": "TM",
+    "subject_type": "L",
+    "total_demand_hours": 18,
+    "sections_count": 6,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV AIML-A",
+      "IV AIML-B",
+      "IV AIML-C",
+      "IV AIML-D",
+      "IV AIML-E",
+      "IV DS"
+    ]
+  },
+  "TM(P)": {
+    "subject_code": "TM(P)",
+    "subject_type": "P",
+    "total_demand_hours": 12,
+    "sections_count": 6,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV AIML-A",
+      "IV AIML-B",
+      "IV AIML-C",
+      "IV AIML-D",
+      "IV AIML-E",
+      "IV DS"
+    ]
+  },
+  "TS&AF": {
+    "subject_code": "TS&AF",
+    "subject_type": "L",
+    "total_demand_hours": 1,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III DS-A"
+    ]
+  },
+  "TSAF": {
+    "subject_code": "TSAF",
+    "subject_type": "L",
+    "total_demand_hours": 6,
+    "sections_count": 3,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III DS-A",
+      "III DS-B",
+      "IV DS"
+    ]
+  },
+  "TSAF(P)": {
+    "subject_code": "TSAF(P)",
+    "subject_type": "P",
+    "total_demand_hours": 6,
+    "sections_count": 3,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "III DS-A",
+      "III DS-B",
+      "IV DS"
+    ]
+  },
+  "UDSA": {
+    "subject_code": "UDSA",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV - CSBS"
+    ]
+  },
+  "UDSA(P)": {
+    "subject_code": "UDSA(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV - CSBS"
+    ]
+  },
+  "WDS": {
+    "subject_code": "WDS",
+    "subject_type": "L",
+    "total_demand_hours": 3,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV CS"
+    ]
+  },
+  "WDS(P)": {
+    "subject_code": "WDS(P)",
+    "subject_type": "P",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [],
+    "sections_offering": [
+      "IV CS"
+    ]
+  },
+  "WT": {
+    "subject_code": "WT",
+    "subject_type": "L",
+    "total_demand_hours": 23,
+    "sections_count": 11,
+    "assigned_faculty": [
+      "Dr. Chennapradaga Amarendra",
+      "GOPI KRISHNA P",
+      "K.Nikhitha",
+      "KANTHETI MAANVITHA LAKSHMI PRIYA",
+      "M SRI CHAKRAPANI",
+      "MS. D.SUPRIYA",
+      "Mr K Jagadeeshwar",
+      "Mr K Jagadeeshwar Nune Naga Surekha",
+      "Ms. B. Bhavana Sreeja",
+      "Ms. M. YAMINI",
+      "Ms. S. Krishna Veni",
+      "Ms. Syed Reshma",
+      "Nune Naga Surekha",
+      "P. Girija",
+      "PURIMETLA RUKMINILAKSHMI CHAITANYA",
+      "VENNA VIJAYA MANIKANTA",
+      "Y. Ashok",
+      "Y. Ramya Sri",
+      "YARRA ESWARAIAH"
+    ],
+    "sections_offering": [
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G",
+      "III BS(DS)",
+      "III CS",
+      "III DS-A",
+      "III DS-B"
+    ]
+  },
+  "WT(P)": {
+    "subject_code": "WT(P)",
+    "subject_type": "P",
+    "total_demand_hours": 42,
+    "sections_count": 11,
+    "assigned_faculty": [
+      "Dr. Chennapradaga Amarendra",
+      "GOPI KRISHNA P",
+      "K.Nikhitha",
+      "KANTHETI MAANVITHA LAKSHMI PRIYA",
+      "M SRI CHAKRAPANI",
+      "MS. D.SUPRIYA",
+      "Mr K Jagadeeshwar",
+      "Mr K Jagadeeshwar Nune Naga Surekha",
+      "Ms. B. Bhavana Sreeja",
+      "Ms. M. YAMINI",
+      "Ms. S. Krishna Veni",
+      "Ms. Syed Reshma",
+      "Nune Naga Surekha",
+      "P. Girija",
+      "PURIMETLA RUKMINILAKSHMI CHAITANYA",
+      "VENNA VIJAYA MANIKANTA",
+      "Y. Ashok",
+      "Y. Ramya Sri",
+      "YARRA ESWARAIAH"
+    ],
+    "sections_offering": [
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G",
+      "III BS(DS)",
+      "III CS",
+      "III DS-A",
+      "III DS-B"
+    ]
+  },
+  "WT(T)": {
+    "subject_code": "WT(T)",
+    "subject_type": "T",
+    "total_demand_hours": 2,
+    "sections_count": 1,
+    "assigned_faculty": [
+      "K.Nikhitha",
+      "Ms. S. Krishna Veni",
+      "Ms. Syed Reshma",
+      "P. Girija",
+      "Y. Ramya Sri"
+    ],
+    "sections_offering": [
+      "III AIML-E"
+    ]
+  }
+}

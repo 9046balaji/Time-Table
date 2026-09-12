@@ -1,0 +1,2675 @@
+{
+  "Abdul Rehman": {
+    "weekly_hours": 16,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "MON": 4,
+      "TUE": 4,
+      "THU": 5,
+      "WED": 3
+    },
+    "lecture_hours": 12,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "MLOP",
+      "MLOP(P)"
+    ],
+    "sections_taught": [
+      "III AIML-B",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-G"
+    ]
+  },
+  "CHALLA SAI MOHITHA": {
+    "weekly_hours": 16,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "TUE": 5,
+      "THU": 2,
+      "FRI": 3,
+      "SAT": 1,
+      "MON": 4,
+      "WED": 1
+    },
+    "lecture_hours": 10,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "CV",
+      "CV(P)"
+    ],
+    "sections_taught": [
+      "III AIML-B",
+      "III AIML-F",
+      "III AIML-G"
+    ]
+  },
+  "CHANDOLU CHARANA SREE": {
+    "weekly_hours": 16,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "TUE": 2,
+      "THU": 1,
+      "FRI": 4,
+      "SAT": 4,
+      "MON": 2,
+      "WED": 3
+    },
+    "lecture_hours": 10,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "AI",
+      "AI(P)",
+      "DBMS",
+      "DBMS(P)",
+      "DBMS(T)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-F",
+      "II AIML-I",
+      "II DS-B"
+    ]
+  },
+  "Ch.Omkara Lakshmi": {
+    "weekly_hours": 18,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 3,
+      "WED": 4,
+      "FRI": 2,
+      "SAT": 3,
+      "TUE": 2,
+      "THU": 4
+    },
+    "lecture_hours": 12,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II CS-A",
+      "II CS-B",
+      "II DS-A"
+    ]
+  },
+  "DR. ANKAMMA RAO MALLELA": {
+    "weekly_hours": 12,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "WED": 3,
+      "THU": 1,
+      "SAT": 2,
+      "MON": 3,
+      "FRI": 1,
+      "TUE": 2
+    },
+    "lecture_hours": 8,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "DMS",
+      "DMS(P)",
+      "DMS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-A",
+      "II AIML-H",
+      "II AIML-L"
+    ]
+  },
+  "DR. B. N. NAVEEN KUMAR": {
+    "weekly_hours": 15,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "MON": 3,
+      "TUE": 2,
+      "WED": 3,
+      "FRI": 3,
+      "THU": 2,
+      "SAT": 2
+    },
+    "lecture_hours": 9,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "SFCDS",
+      "SFCDS(P)"
+    ],
+    "sections_taught": [
+      "II AIML-D",
+      "II AIML-H",
+      "II AIML-I"
+    ]
+  },
+  "DR. BANDI GURAVAIAH": {
+    "weekly_hours": 15,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 3,
+      "TUE": 2,
+      "THU": 2,
+      "FRI": 4,
+      "WED": 3,
+      "SAT": 1
+    },
+    "lecture_hours": 11,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "SFCDS",
+      "SFCDS(P)"
+    ],
+    "sections_taught": [
+      "II AIML-B",
+      "II AIML-G",
+      "II AIML-K"
+    ]
+  },
+  "DR. IMTIYAZ BHATT": {
+    "weekly_hours": 12,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "TUE": 4,
+      "WED": 2,
+      "SAT": 2,
+      "MON": 1,
+      "FRI": 3
+    },
+    "lecture_hours": 8,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "DMS",
+      "DMS(P)",
+      "DMS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-I"
+    ]
+  },
+  "DR. MANIGANDAN A": {
+    "weekly_hours": 12,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "MON": 3,
+      "WED": 1,
+      "SAT": 2,
+      "TUE": 1,
+      "THU": 3,
+      "FRI": 2
+    },
+    "lecture_hours": 8,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "DMS",
+      "DMS(P)",
+      "DMS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-C",
+      "II AIML-G",
+      "II AIML-J"
+    ]
+  },
+  "DR. N. BHARGAVI": {
+    "weekly_hours": 12,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "MON": 1,
+      "FRI": 2,
+      "SAT": 3,
+      "TUE": 2,
+      "WED": 2,
+      "THU": 2
+    },
+    "lecture_hours": 12,
+    "lab_hours": 0,
+    "subjects_taught": [
+      "DMS",
+      "DMS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-B",
+      "II AIML-F",
+      "II AIML-K"
+    ]
+  },
+  "DR. P. KALPANA": {
+    "weekly_hours": 10,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "TUE": 2,
+      "WED": 1,
+      "FRI": 3,
+      "SAT": 2,
+      "MON": 1,
+      "THU": 1
+    },
+    "lecture_hours": 6,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "SFCDS",
+      "SFCDS(P)"
+    ],
+    "sections_taught": [
+      "II AIML-F",
+      "II AIML-L"
+    ]
+  },
+  "DR. P. Kalpana": {
+    "weekly_hours": 5,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 1,
+      "WED": 1,
+      "SAT": 1
+    },
+    "lecture_hours": 5,
+    "lab_hours": 0,
+    "subjects_taught": [
+      "SFCDS"
+    ],
+    "sections_taught": [
+      "II AIML-A"
+    ]
+  },
+  "DR. RUSHI PRASAD SAHOO": {
+    "weekly_hours": 15,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 3,
+      "TUE": 4,
+      "THU": 3,
+      "SAT": 3,
+      "FRI": 2
+    },
+    "lecture_hours": 13,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "SFCDS",
+      "SFCDS(P)"
+    ],
+    "sections_taught": [
+      "II AIML-C",
+      "II AIML-E",
+      "II AIML-J"
+    ]
+  },
+  "Dr. A Subramanyam": {
+    "weekly_hours": 6,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 1,
+      "WED": 1,
+      "SAT": 2
+    },
+    "lecture_hours": 4,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II CSBS"
+    ]
+  },
+  "Dr. A.V. Nageswara Rao": {
+    "weekly_hours": 12,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "MON": 3,
+      "TUE": 3,
+      "THU": 2,
+      "SAT": 3,
+      "WED": 1
+    },
+    "lecture_hours": 8,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-B",
+      "II AIML-K"
+    ]
+  },
+  "Dr. Amar Jukuntla": {
+    "weekly_hours": 12,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 1,
+      "TUE": 4,
+      "THU": 3,
+      "SAT": 4
+    },
+    "lecture_hours": 6,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "AI",
+      "AI(P)"
+    ],
+    "sections_taught": [
+      "II CSBS",
+      "III CSBS",
+      "IV - CSBS"
+    ]
+  },
+  "Dr. Arnab De": {
+    "weekly_hours": 15,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "WED": 1,
+      "THU": 3,
+      "FRI": 2,
+      "SAT": 3,
+      "MON": 2,
+      "TUE": 4
+    },
+    "lecture_hours": 9,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "CV",
+      "CV(P)"
+    ],
+    "sections_taught": [
+      "III AIML-A",
+      "III AIML-C",
+      "III AIML-F"
+    ]
+  },
+  "Dr. B. Sudha Rani": {
+    "weekly_hours": 24,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 6,
+      "SAT": 3,
+      "WED": 4,
+      "FRI": 5,
+      "THU": 4
+    },
+    "lecture_hours": 12,
+    "lab_hours": 12,
+    "subjects_taught": [
+      "AI",
+      "AI(P)"
+    ],
+    "sections_taught": [
+      "II AIML-A",
+      "II AIML-B",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-E",
+      "II AIML-H"
+    ]
+  },
+  "Dr. C. Sateesh Kumar Reddy": {
+    "weekly_hours": 12,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 4,
+      "TUE": 2,
+      "THU": 2,
+      "SAT": 3,
+      "WED": 1
+    },
+    "lecture_hours": 8,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II DS-A",
+      "II DS-B"
+    ]
+  },
+  "Dr. Chennapradaga Amarendra": {
+    "weekly_hours": 18,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "TUE": 3,
+      "WED": 3,
+      "THU": 3,
+      "FRI": 4,
+      "MON": 3,
+      "SAT": 2
+    },
+    "lecture_hours": 6,
+    "lab_hours": 12,
+    "subjects_taught": [
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "III AIML-A",
+      "III AIML-D",
+      "III AIML-F"
+    ]
+  },
+  "Dr. Eva Patel": {
+    "weekly_hours": 10,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 2,
+      "THU": 1,
+      "FRI": 2,
+      "WED": 2,
+      "SAT": 1
+    },
+    "lecture_hours": 6,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "DL",
+      "DL(P)"
+    ],
+    "sections_taught": [
+      "III AIML-A",
+      "III AIML-B"
+    ]
+  },
+  "Dr. Fayaz Ahmad Naikoo": {
+    "weekly_hours": 10,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "MON": 1,
+      "WED": 3,
+      "FRI": 2,
+      "SAT": 2,
+      "TUE": 1,
+      "THU": 1
+    },
+    "lecture_hours": 6,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "ML",
+      "ML(P)"
+    ],
+    "sections_taught": [
+      "III DS-A",
+      "IV CS"
+    ]
+  },
+  "Dr. G. Kalaiarasi": {
+    "weekly_hours": 24,
+    "max_daily_hours": 7,
+    "daily_breakdown": {
+      "TUE": 3,
+      "WED": 7,
+      "FRI": 4,
+      "MON": 5,
+      "THU": 3,
+      "SAT": 2
+    },
+    "lecture_hours": 12,
+    "lab_hours": 12,
+    "subjects_taught": [
+      "AI",
+      "AI(P)"
+    ],
+    "sections_taught": [
+      "II AIML-B",
+      "II AIML-G",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-L"
+    ]
+  },
+  "Dr. Guttikonda Prashanti": {
+    "weekly_hours": 8,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "MON": 1,
+      "WED": 3,
+      "SAT": 2,
+      "TUE": 2
+    },
+    "lecture_hours": 4,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "CNS",
+      "CNS(P)"
+    ],
+    "sections_taught": [
+      "IV AIML-A",
+      "IV AIML-D"
+    ]
+  },
+  "Dr. Jawad Ahmad Dar": {
+    "weekly_hours": 8,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "TUE": 1,
+      "THU": 2,
+      "SAT": 2,
+      "MON": 2,
+      "WED": 1
+    },
+    "lecture_hours": 4,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "AI",
+      "AI(P)"
+    ],
+    "sections_taught": [
+      "II AIML-E",
+      "II AIML-G"
+    ]
+  },
+  "Dr. Mastan Sharif": {
+    "weekly_hours": 6,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 1,
+      "THU": 2,
+      "SAT": 1
+    },
+    "lecture_hours": 4,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II DS-A"
+    ]
+  },
+  "Dr. P. Giri Prasad": {
+    "weekly_hours": 24,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "TUE": 3,
+      "THU": 5,
+      "FRI": 5,
+      "MON": 3,
+      "SAT": 4,
+      "WED": 4
+    },
+    "lecture_hours": 12,
+    "lab_hours": 12,
+    "subjects_taught": [
+      "AI",
+      "AI(P)"
+    ],
+    "sections_taught": [
+      "II AIML-C",
+      "II AIML-F",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L"
+    ]
+  },
+  "Dr. S.Srikantha Reddy": {
+    "weekly_hours": 30,
+    "max_daily_hours": 7,
+    "daily_breakdown": {
+      "MON": 4,
+      "WED": 7,
+      "THU": 4,
+      "FRI": 5,
+      "TUE": 5,
+      "SAT": 5
+    },
+    "lecture_hours": 22,
+    "lab_hours": 8,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-A",
+      "II AIML-C",
+      "II AIML-E",
+      "II AIML-J",
+      "II DS-A"
+    ]
+  },
+  "Dr. Sivadi Balakrishna": {
+    "weekly_hours": 10,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "MON": 1,
+      "THU": 2,
+      "FRI": 3,
+      "SAT": 2,
+      "TUE": 1,
+      "WED": 1
+    },
+    "lecture_hours": 6,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "DL",
+      "DL(P)"
+    ],
+    "sections_taught": [
+      "III AIML-C",
+      "III AIML-E"
+    ]
+  },
+  "Dr.K.Lova Raju": {
+    "weekly_hours": 10,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "TUE": 3,
+      "WED": 2,
+      "THU": 3,
+      "SAT": 1,
+      "MON": 1
+    },
+    "lecture_hours": 6,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "IOT",
+      "IOT(P)"
+    ],
+    "sections_taught": [
+      "IV AIML-A",
+      "IV AIML-E"
+    ]
+  },
+  "G.Akhila": {
+    "weekly_hours": 14,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "MON": 2,
+      "WED": 3,
+      "THU": 2,
+      "SAT": 3,
+      "TUE": 1,
+      "FRI": 3
+    },
+    "lecture_hours": 8,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "AI",
+      "AI(P)",
+      "DBMS",
+      "DBMS(P)",
+      "DBMS(T)"
+    ],
+    "sections_taught": [
+      "II CS-A",
+      "II DS-A",
+      "II DS-B"
+    ]
+  },
+  "GOPI KRISHNA P": {
+    "weekly_hours": 30,
+    "max_daily_hours": 8,
+    "daily_breakdown": {
+      "TUE": 4,
+      "WED": 8,
+      "FRI": 4,
+      "SAT": 5,
+      "MON": 6,
+      "THU": 3
+    },
+    "lecture_hours": 18,
+    "lab_hours": 12,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)",
+      "ML",
+      "ML(P)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)",
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "II AIML-J",
+      "II AIML-K",
+      "II CS-B",
+      "III DS-B"
+    ]
+  },
+  "GUDLURU UMADEVI": {
+    "weekly_hours": 32,
+    "max_daily_hours": 8,
+    "daily_breakdown": {
+      "WED": 5,
+      "THU": 5,
+      "FRI": 6,
+      "SAT": 8,
+      "MON": 6,
+      "TUE": 2
+    },
+    "lecture_hours": 20,
+    "lab_hours": 12,
+    "subjects_taught": [
+      "CV",
+      "CV(P)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-B",
+      "II AIML-C",
+      "III AIML-A",
+      "III AIML-D",
+      "III AIML-E",
+      "III DS-A"
+    ]
+  },
+  "GUNTI VASANTHI": {
+    "weekly_hours": 15,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "MON": 5,
+      "TUE": 5,
+      "FRI": 1,
+      "SAT": 2,
+      "THU": 1,
+      "WED": 1
+    },
+    "lecture_hours": 9,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "CV",
+      "CV(P)"
+    ],
+    "sections_taught": [
+      "III AIML-C",
+      "III AIML-F",
+      "III AIML-G"
+    ]
+  },
+  "J.Divya": {
+    "weekly_hours": 12,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "MON": 3,
+      "TUE": 2,
+      "THU": 3,
+      "WED": 1,
+      "FRI": 1,
+      "SAT": 2
+    },
+    "lecture_hours": 6,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "CNS",
+      "CNS (P)",
+      "CNS(P)"
+    ],
+    "sections_taught": [
+      "IV AIML-B",
+      "IV AIML-E",
+      "IV DS"
+    ]
+  },
+  "K. Lakshmi Likhitha": {
+    "weekly_hours": 6,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "MON": 1,
+      "TUE": 2,
+      "WED": 1,
+      "FRI": 2
+    },
+    "lecture_hours": 4,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-K"
+    ]
+  },
+  "K.Baby Tejaswi": {
+    "weekly_hours": 20,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "TUE": 5,
+      "WED": 2,
+      "THU": 4,
+      "FRI": 1,
+      "MON": 2,
+      "SAT": 6
+    },
+    "lecture_hours": 12,
+    "lab_hours": 8,
+    "subjects_taught": [
+      "AI",
+      "AI(P)",
+      "DBMS",
+      "DBMS(P)",
+      "DBMS(T)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II DS-A",
+      "II DS-B",
+      "III CSBS",
+      "IV - CSBS"
+    ]
+  },
+  "K.Leela Tapaswi": {
+    "weekly_hours": 22,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "MON": 3,
+      "WED": 4,
+      "THU": 4,
+      "SAT": 5,
+      "TUE": 3,
+      "FRI": 3
+    },
+    "lecture_hours": 14,
+    "lab_hours": 8,
+    "subjects_taught": [
+      "AI",
+      "AI(P)",
+      "DBMS",
+      "DBMS(P)",
+      "DBMS(T)",
+      "DS",
+      "DS(P)",
+      "DS(T)"
+    ],
+    "sections_taught": [
+      "II CS-A",
+      "II DS-A",
+      "II DS-B"
+    ]
+  },
+  "K.Nikhitha": {
+    "weekly_hours": 30,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 4,
+      "WED": 6,
+      "THU": 6,
+      "FRI": 5,
+      "SAT": 5,
+      "TUE": 4
+    },
+    "lecture_hours": 18,
+    "lab_hours": 12,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)",
+      "WT",
+      "WT(P)",
+      "WT(T)"
+    ],
+    "sections_taught": [
+      "II AIML-A",
+      "II AIML-E",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-E"
+    ]
+  },
+  "K.Sabhamini": {
+    "weekly_hours": 5,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "TUE": 1,
+      "WED": 2,
+      "THU": 1,
+      "FRI": 1
+    },
+    "lecture_hours": 3,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "ML",
+      "ML(P)"
+    ],
+    "sections_taught": [
+      "III DS-A"
+    ]
+  },
+  "KANCHARLA KARUNA KUMARI": {
+    "weekly_hours": 33,
+    "max_daily_hours": 10,
+    "daily_breakdown": {
+      "MON": 6,
+      "TUE": 5,
+      "THU": 10,
+      "SAT": 3,
+      "WED": 3,
+      "FRI": 6
+    },
+    "lecture_hours": 19,
+    "lab_hours": 14,
+    "subjects_taught": [
+      "DL",
+      "DL(P)",
+      "DS",
+      "DS(P)",
+      "DS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-B",
+      "II AIML-D",
+      "II AIML-F",
+      "III AIML-A",
+      "III AIML-C",
+      "III AIML-F"
+    ]
+  },
+  "KANTHETI MAANVITHA LAKSHMI PRIYA": {
+    "weekly_hours": 28,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 4,
+      "WED": 5,
+      "FRI": 6,
+      "SAT": 5,
+      "TUE": 5,
+      "THU": 3
+    },
+    "lecture_hours": 14,
+    "lab_hours": 14,
+    "subjects_taught": [
+      "DBMS",
+      "DBMS(P)",
+      "DBMS(T)",
+      "DL",
+      "DL(P)",
+      "ML",
+      "ML(P)",
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "II CS-B",
+      "III AIML-B",
+      "III AIML-D",
+      "III AIML-G",
+      "IV CS"
+    ]
+  },
+  "KARETI HYMAVATHI": {
+    "weekly_hours": 33,
+    "max_daily_hours": 8,
+    "daily_breakdown": {
+      "MON": 7,
+      "TUE": 5,
+      "THU": 8,
+      "SAT": 3,
+      "WED": 4,
+      "FRI": 6
+    },
+    "lecture_hours": 19,
+    "lab_hours": 14,
+    "subjects_taught": [
+      "DL",
+      "DL(P)",
+      "DS",
+      "DS(P)",
+      "DS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-B",
+      "II AIML-D",
+      "II AIML-F",
+      "III AIML-A",
+      "III AIML-D",
+      "III AIML-F"
+    ]
+  },
+  "KONDAPALLI PRABHU TEJA": {
+    "weekly_hours": 4,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "TUE": 1,
+      "THU": 1,
+      "FRI": 2
+    },
+    "lecture_hours": 2,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "AI",
+      "AI(P)"
+    ],
+    "sections_taught": [
+      "II AIML-D"
+    ]
+  },
+  "KOSANA RAJA SEKHAR": {
+    "weekly_hours": 23,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "MON": 5,
+      "TUE": 5,
+      "WED": 2,
+      "FRI": 5,
+      "SAT": 3,
+      "THU": 3
+    },
+    "lecture_hours": 15,
+    "lab_hours": 8,
+    "subjects_taught": [
+      "CV",
+      "CV(P)",
+      "DS",
+      "DS(P)",
+      "DS(T)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II CS-A",
+      "II CS-B",
+      "III DS-A"
+    ]
+  },
+  "Kuchipudi koushika": {
+    "weekly_hours": 1,
+    "max_daily_hours": 1,
+    "daily_breakdown": {
+      "FRI": 1
+    },
+    "lecture_hours": 1,
+    "lab_hours": 0,
+    "subjects_taught": [
+      "GENAI"
+    ],
+    "sections_taught": [
+      "IV AIML-A"
+    ]
+  },
+  "M SRI CHAKRAPANI": {
+    "weekly_hours": 30,
+    "max_daily_hours": 7,
+    "daily_breakdown": {
+      "MON": 7,
+      "TUE": 6,
+      "THU": 6,
+      "SAT": 3,
+      "WED": 2,
+      "FRI": 6
+    },
+    "lecture_hours": 16,
+    "lab_hours": 14,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)",
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "II AIML-B",
+      "II AIML-D",
+      "II AIML-F",
+      "II AIML-G",
+      "III AIML-D"
+    ]
+  },
+  "M. Harya Vardhan": {
+    "weekly_hours": 9,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 3,
+      "THU": 3,
+      "FRI": 1
+    },
+    "lecture_hours": 9,
+    "lab_hours": 0,
+    "subjects_taught": [
+      "GENAI",
+      "MLOP"
+    ],
+    "sections_taught": [
+      "III AIML-B",
+      "III AIML-E",
+      "IV AIML-A"
+    ]
+  },
+  "M. Pramod Chandra": {
+    "weekly_hours": 25,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "MON": 4,
+      "THU": 5,
+      "FRI": 4,
+      "SAT": 5,
+      "WED": 4,
+      "TUE": 3
+    },
+    "lecture_hours": 15,
+    "lab_hours": 10,
+    "subjects_taught": [
+      "DL",
+      "DL(P)"
+    ],
+    "sections_taught": [
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G"
+    ]
+  },
+  "MAIDUKURI VIJAYALAKSHMI": {
+    "weekly_hours": 12,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "TUE": 2,
+      "THU": 1,
+      "FRI": 2,
+      "SAT": 4,
+      "MON": 1,
+      "WED": 2
+    },
+    "lecture_hours": 8,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "DBMS",
+      "DBMS(P)",
+      "DBMS(T)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-F",
+      "II DS-B"
+    ]
+  },
+  "MAJETI LALITHA MAHA LAKSHMI": {
+    "weekly_hours": 37,
+    "max_daily_hours": 8,
+    "daily_breakdown": {
+      "WED": 7,
+      "THU": 4,
+      "FRI": 7,
+      "SAT": 7,
+      "MON": 8,
+      "TUE": 4
+    },
+    "lecture_hours": 23,
+    "lab_hours": 14,
+    "subjects_taught": [
+      "CV",
+      "CV(P)",
+      "DL",
+      "DL(P)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-B",
+      "II AIML-C",
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-E",
+      "III AIML-G",
+      "III DS-A"
+    ]
+  },
+  "MR. M. Komal Krishna": {
+    "weekly_hours": 20,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "MON": 5,
+      "TUE": 3,
+      "FRI": 4,
+      "SAT": 5,
+      "THU": 2,
+      "WED": 1
+    },
+    "lecture_hours": 12,
+    "lab_hours": 8,
+    "subjects_taught": [
+      "CV",
+      "CV(P)"
+    ],
+    "sections_taught": [
+      "III AIML-C",
+      "III AIML-E",
+      "III DS-A",
+      "III DS-B"
+    ]
+  },
+  "MS. D.SUPRIYA": {
+    "weekly_hours": 30,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "TUE": 4,
+      "WED": 6,
+      "THU": 5,
+      "FRI": 4,
+      "MON": 5,
+      "SAT": 6
+    },
+    "lecture_hours": 16,
+    "lab_hours": 14,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)",
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-L",
+      "III AIML-A",
+      "III AIML-F"
+    ]
+  },
+  "Mitikala Ramanjaneyulu": {
+    "weekly_hours": 20,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 4,
+      "SAT": 4,
+      "THU": 4,
+      "TUE": 4,
+      "WED": 2,
+      "FRI": 2
+    },
+    "lecture_hours": 10,
+    "lab_hours": 10,
+    "subjects_taught": [
+      "DEF(P)",
+      "DEF(T)"
+    ],
+    "sections_taught": [
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L"
+    ]
+  },
+  "Mr D Vinod Kumar": {
+    "weekly_hours": 6,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "TUE": 1,
+      "WED": 3,
+      "FRI": 1,
+      "THU": 1
+    },
+    "lecture_hours": 4,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "AI",
+      "AI(P)",
+      "ML"
+    ],
+    "sections_taught": [
+      "II DS-A",
+      "III BS(DS)"
+    ]
+  },
+  "Mr K Jagadeeshwar": {
+    "weekly_hours": 12,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "TUE": 3,
+      "WED": 3,
+      "FRI": 1,
+      "SAT": 2,
+      "MON": 1,
+      "THU": 2
+    },
+    "lecture_hours": 4,
+    "lab_hours": 8,
+    "subjects_taught": [
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "III AIML-G",
+      "III CS"
+    ]
+  },
+  "Mr K Jagadeeshwar Nune Naga Surekha": {
+    "weekly_hours": 6,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "MON": 2,
+      "THU": 1,
+      "FRI": 2,
+      "SAT": 1
+    },
+    "lecture_hours": 2,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "III DS-A"
+    ]
+  },
+  "Mr K Karthik": {
+    "weekly_hours": 10,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 4,
+      "TUE": 4,
+      "THU": 1,
+      "WED": 1
+    },
+    "lecture_hours": 6,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "CV",
+      "CV(P)"
+    ],
+    "sections_taught": [
+      "III AIML-F",
+      "III AIML-G"
+    ]
+  },
+  "Mr L Srinivasa Rao": {
+    "weekly_hours": 18,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 3,
+      "TUE": 4,
+      "FRI": 2,
+      "SAT": 4,
+      "WED": 3,
+      "THU": 2
+    },
+    "lecture_hours": 12,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II CS-A",
+      "II CS-B",
+      "II DS-B"
+    ]
+  },
+  "Mr Prajwal Santakke": {
+    "weekly_hours": 6,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "MON": 1,
+      "TUE": 2,
+      "THU": 1,
+      "FRI": 2
+    },
+    "lecture_hours": 4,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "DBMS",
+      "DBMS(P)",
+      "DBMS(T)"
+    ],
+    "sections_taught": [
+      "II CS-B"
+    ]
+  },
+  "Mr Prasant Kumar Sahoo": {
+    "weekly_hours": 1,
+    "max_daily_hours": 1,
+    "daily_breakdown": {
+      "MON": 1
+    },
+    "lecture_hours": 1,
+    "lab_hours": 0,
+    "subjects_taught": [
+      "OE"
+    ],
+    "sections_taught": [
+      "III IOT"
+    ]
+  },
+  "Mr. Bharadwaja Chepuri": {
+    "weekly_hours": 24,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 6,
+      "TUE": 4,
+      "THU": 4,
+      "SAT": 3,
+      "WED": 2,
+      "FRI": 5
+    },
+    "lecture_hours": 14,
+    "lab_hours": 10,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-B",
+      "II AIML-D",
+      "II AIML-F",
+      "II AIML-G"
+    ]
+  },
+  "Mr. Brundavanam Satya Sai": {
+    "weekly_hours": 20,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 3,
+      "WED": 4,
+      "FRI": 1,
+      "SAT": 4,
+      "THU": 6,
+      "TUE": 2
+    },
+    "lecture_hours": 12,
+    "lab_hours": 8,
+    "subjects_taught": [
+      "DL",
+      "DL(P)"
+    ],
+    "sections_taught": [
+      "II MSC (DS)",
+      "III AIML-D",
+      "III AIML-F",
+      "III AIML-G"
+    ]
+  },
+  "Mr. D. Pavan Kalyan": {
+    "weekly_hours": 18,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "TUE": 2,
+      "WED": 5,
+      "FRI": 5,
+      "SAT": 3,
+      "MON": 2,
+      "THU": 1
+    },
+    "lecture_hours": 12,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-L"
+    ]
+  },
+  "Mr. D.Vinod Kumar": {
+    "weekly_hours": 4,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "THU": 1,
+      "FRI": 2,
+      "SAT": 1
+    },
+    "lecture_hours": 2,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "AI",
+      "AI(P)"
+    ],
+    "sections_taught": [
+      "II DS-B"
+    ]
+  },
+  "Mr. K.Sambasivarao": {
+    "weekly_hours": 6,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 1,
+      "WED": 1,
+      "THU": 2
+    },
+    "lecture_hours": 4,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "DBMS",
+      "DBMS(P)"
+    ],
+    "sections_taught": [
+      "II BS(DS)"
+    ]
+  },
+  "Mr. Mahendra Varma": {
+    "weekly_hours": 35,
+    "max_daily_hours": 8,
+    "daily_breakdown": {
+      "MON": 7,
+      "TUE": 5,
+      "WED": 8,
+      "THU": 5,
+      "FRI": 5,
+      "SAT": 5
+    },
+    "lecture_hours": 21,
+    "lab_hours": 14,
+    "subjects_taught": [
+      "DEF",
+      "DEF(P)",
+      "DEF(T)",
+      "DS",
+      "DS(P)",
+      "DS(T)",
+      "GENAI"
+    ],
+    "sections_taught": [
+      "II AIML-A",
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II DS-A",
+      "II DS-B",
+      "IV AIML-A"
+    ]
+  },
+  "Mr. P Srinivasa Rao": {
+    "weekly_hours": 30,
+    "max_daily_hours": 7,
+    "daily_breakdown": {
+      "MON": 4,
+      "WED": 7,
+      "THU": 5,
+      "SAT": 6,
+      "TUE": 4,
+      "FRI": 4
+    },
+    "lecture_hours": 20,
+    "lab_hours": 10,
+    "subjects_taught": [
+      "DBMS",
+      "DBMS(P)",
+      "DBMS(T)"
+    ],
+    "sections_taught": [
+      "II CS-A",
+      "II CSBS",
+      "II DS-A",
+      "II DS-B",
+      "II IOT"
+    ]
+  },
+  "Mr. PLN Manoj Kumar": {
+    "weekly_hours": 24,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "TUE": 4,
+      "WED": 5,
+      "THU": 4,
+      "FRI": 3,
+      "MON": 4,
+      "SAT": 4
+    },
+    "lecture_hours": 16,
+    "lab_hours": 8,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-L",
+      "II DS-B"
+    ]
+  },
+  "Mr. PVV Satya Surya Teja Sri Manoj": {
+    "weekly_hours": 1,
+    "max_daily_hours": 1,
+    "daily_breakdown": {
+      "FRI": 1
+    },
+    "lecture_hours": 1,
+    "lab_hours": 0,
+    "subjects_taught": [
+      "GENAI"
+    ],
+    "sections_taught": [
+      "IV AIML-A"
+    ]
+  },
+  "Mr. T. Krishna": {
+    "weekly_hours": 21,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "MON": 5,
+      "THU": 5,
+      "TUE": 5,
+      "WED": 5,
+      "FRI": 1
+    },
+    "lecture_hours": 17,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "QALR",
+      "QALR(P)"
+    ],
+    "sections_taught": [
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E",
+      "III AIML-F",
+      "III AIML-G"
+    ]
+  },
+  "Mr. VSNS Yaswanth Kommuri": {
+    "weekly_hours": 4,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "TUE": 2,
+      "SAT": 2
+    },
+    "lecture_hours": 2,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "DEF(P)",
+      "DEF(T)"
+    ],
+    "sections_taught": [
+      "II AIML-L"
+    ]
+  },
+  "Mr.K.Janaki Ram": {
+    "weekly_hours": 5,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "MON": 1,
+      "TUE": 2,
+      "FRI": 1,
+      "SAT": 1
+    },
+    "lecture_hours": 3,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "IOT",
+      "IOT(P)"
+    ],
+    "sections_taught": [
+      "IV AIML-C"
+    ]
+  },
+  "Ms N Pooja": {
+    "weekly_hours": 4,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "MON": 1,
+      "TUE": 1,
+      "THU": 2
+    },
+    "lecture_hours": 2,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "CNS",
+      "CNS(P)"
+    ],
+    "sections_taught": [
+      "IV DS"
+    ]
+  },
+  "Ms. A. Chandana": {
+    "weekly_hours": 18,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 3,
+      "WED": 1,
+      "FRI": 4,
+      "SAT": 3,
+      "TUE": 4,
+      "THU": 3
+    },
+    "lecture_hours": 12,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-C",
+      "II AIML-F",
+      "II AIML-H"
+    ]
+  },
+  "Ms. Ambati Hemalatha": {
+    "weekly_hours": 15,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 4,
+      "WED": 4,
+      "FRI": 3,
+      "SAT": 2,
+      "TUE": 1,
+      "THU": 1
+    },
+    "lecture_hours": 9,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "ML",
+      "ML(P)"
+    ],
+    "sections_taught": [
+      "III DS-A",
+      "III DS-B",
+      "IV CS"
+    ]
+  },
+  "Ms. Attuluri Ramya": {
+    "weekly_hours": 12,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "MON": 2,
+      "WED": 3,
+      "SAT": 2,
+      "THU": 1,
+      "FRI": 2,
+      "TUE": 2
+    },
+    "lecture_hours": 6,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "CNS",
+      "CNS(P)"
+    ],
+    "sections_taught": [
+      "IV AIML-A",
+      "IV AIML-C",
+      "IV AIML-D"
+    ]
+  },
+  "Ms. B. Bhavana Sreeja": {
+    "weekly_hours": 18,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 4,
+      "WED": 3,
+      "THU": 3,
+      "FRI": 4,
+      "TUE": 2,
+      "SAT": 2
+    },
+    "lecture_hours": 6,
+    "lab_hours": 12,
+    "subjects_taught": [
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-F"
+    ]
+  },
+  "Ms. D. Urlamma": {
+    "weekly_hours": 22,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 4,
+      "TUE": 3,
+      "SAT": 4,
+      "WED": 3,
+      "FRI": 6,
+      "THU": 2
+    },
+    "lecture_hours": 12,
+    "lab_hours": 10,
+    "subjects_taught": [
+      "AI",
+      "AI(P)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-A",
+      "II AIML-C",
+      "II AIML-D",
+      "II AIML-F",
+      "II AIML-K"
+    ]
+  },
+  "Ms. G. Mahalakshmi": {
+    "weekly_hours": 18,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "MON": 1,
+      "TUE": 5,
+      "THU": 5,
+      "FRI": 2,
+      "SAT": 3,
+      "WED": 2
+    },
+    "lecture_hours": 12,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-A",
+      "II AIML-D",
+      "II AIML-G"
+    ]
+  },
+  "Ms. I.Leela Priya": {
+    "weekly_hours": 18,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "WED": 5,
+      "THU": 2,
+      "FRI": 4,
+      "SAT": 2,
+      "MON": 3,
+      "TUE": 2
+    },
+    "lecture_hours": 12,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-B",
+      "II AIML-E",
+      "II AIML-K"
+    ]
+  },
+  "Ms. Jayamma Rodda": {
+    "weekly_hours": 20,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 4,
+      "WED": 4,
+      "SAT": 4,
+      "TUE": 3,
+      "THU": 2,
+      "FRI": 3
+    },
+    "lecture_hours": 10,
+    "lab_hours": 10,
+    "subjects_taught": [
+      "CNS",
+      "CNS (P)",
+      "CNS(P)"
+    ],
+    "sections_taught": [
+      "IV AIML-A",
+      "IV AIML-B",
+      "IV AIML-C",
+      "IV AIML-D",
+      "IV AIML-E"
+    ]
+  },
+  "Ms. K. Sabhamini": {
+    "weekly_hours": 20,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 4,
+      "SAT": 4,
+      "THU": 4,
+      "TUE": 4,
+      "WED": 2,
+      "FRI": 2
+    },
+    "lecture_hours": 10,
+    "lab_hours": 10,
+    "subjects_taught": [
+      "DEF(P)",
+      "DEF(T)"
+    ],
+    "sections_taught": [
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L"
+    ]
+  },
+  "Ms. K.Vyshnavi": {
+    "weekly_hours": 26,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "WED": 3,
+      "THU": 5,
+      "FRI": 4,
+      "SAT": 6,
+      "TUE": 4,
+      "MON": 4
+    },
+    "lecture_hours": 16,
+    "lab_hours": 10,
+    "subjects_taught": [
+      "CV",
+      "CV(P)"
+    ],
+    "sections_taught": [
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-D",
+      "III AIML-G",
+      "III DS-A"
+    ]
+  },
+  "Ms. M. YAMINI": {
+    "weekly_hours": 24,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 4,
+      "TUE": 5,
+      "THU": 6,
+      "FRI": 5,
+      "WED": 3,
+      "SAT": 1
+    },
+    "lecture_hours": 10,
+    "lab_hours": 14,
+    "subjects_taught": [
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)",
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "II AIML-A",
+      "III AIML-A",
+      "III CS",
+      "III DS-A"
+    ]
+  },
+  "Ms. Narra Bhagyalakshmi": {
+    "weekly_hours": 18,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "MON": 5,
+      "TUE": 2,
+      "WED": 3,
+      "SAT": 3,
+      "FRI": 3,
+      "THU": 2
+    },
+    "lecture_hours": 12,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-K",
+      "II CS-A",
+      "II CS-B"
+    ]
+  },
+  "Ms. R. Vanitha Venkata Madhuri": {
+    "weekly_hours": 5,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "MON": 2,
+      "WED": 1,
+      "FRI": 1,
+      "SAT": 1
+    },
+    "lecture_hours": 3,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "DL",
+      "DL(P)"
+    ],
+    "sections_taught": [
+      "III AIML-D"
+    ]
+  },
+  "Ms. S. Krishna Veni": {
+    "weekly_hours": 25,
+    "max_daily_hours": 7,
+    "daily_breakdown": {
+      "TUE": 3,
+      "WED": 6,
+      "THU": 2,
+      "FRI": 7,
+      "SAT": 4,
+      "MON": 3
+    },
+    "lecture_hours": 11,
+    "lab_hours": 14,
+    "subjects_taught": [
+      "WT",
+      "WT(P)",
+      "WT(T)"
+    ],
+    "sections_taught": [
+      "III AIML-A",
+      "III AIML-E",
+      "III BS(DS)",
+      "III DS-B"
+    ]
+  },
+  "Ms. Syed Reshma": {
+    "weekly_hours": 18,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 4,
+      "THU": 3,
+      "SAT": 3,
+      "WED": 3,
+      "FRI": 3
+    },
+    "lecture_hours": 8,
+    "lab_hours": 10,
+    "subjects_taught": [
+      "WT",
+      "WT(P)",
+      "WT(T)"
+    ],
+    "sections_taught": [
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-E"
+    ]
+  },
+  "Ms. Vemuri Lakshmi Ravali": {
+    "weekly_hours": 4,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "TUE": 1,
+      "THU": 2,
+      "SAT": 1
+    },
+    "lecture_hours": 2,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "DEF",
+      "DEF(P)"
+    ],
+    "sections_taught": [
+      "II AIML-A"
+    ]
+  },
+  "Ms.G.Jyostna": {
+    "weekly_hours": 16,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "MON": 3,
+      "THU": 4,
+      "FRI": 3,
+      "SAT": 2,
+      "TUE": 3,
+      "WED": 1
+    },
+    "lecture_hours": 10,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "IOT",
+      "IOT(P)"
+    ],
+    "sections_taught": [
+      "IV AIML-B",
+      "IV AIML-D",
+      "IV CS"
+    ]
+  },
+  "Ms.Jasmitha Parasa": {
+    "weekly_hours": 6,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "MON": 1,
+      "TUE": 2,
+      "WED": 1,
+      "FRI": 2
+    },
+    "lecture_hours": 4,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-K"
+    ]
+  },
+  "Nune Naga Surekha": {
+    "weekly_hours": 24,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 3,
+      "WED": 6,
+      "FRI": 5,
+      "SAT": 3,
+      "TUE": 4,
+      "THU": 3
+    },
+    "lecture_hours": 12,
+    "lab_hours": 12,
+    "subjects_taught": [
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)",
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "II AIML-J",
+      "II AIML-L",
+      "III AIML-G",
+      "III CS"
+    ]
+  },
+  "P. Girija": {
+    "weekly_hours": 30,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 4,
+      "WED": 6,
+      "THU": 6,
+      "FRI": 5,
+      "SAT": 5,
+      "TUE": 4
+    },
+    "lecture_hours": 18,
+    "lab_hours": 12,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)",
+      "WT",
+      "WT(P)",
+      "WT(T)"
+    ],
+    "sections_taught": [
+      "II AIML-A",
+      "II AIML-E",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-E"
+    ]
+  },
+  "PALAPARTHI YAMUNA": {
+    "weekly_hours": 28,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 4,
+      "TUE": 6,
+      "THU": 6,
+      "FRI": 4,
+      "WED": 3,
+      "SAT": 5
+    },
+    "lecture_hours": 18,
+    "lab_hours": 10,
+    "subjects_taught": [
+      "AI",
+      "AI(P)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-A",
+      "II AIML-C",
+      "II AIML-E",
+      "II AIML-G",
+      "II AIML-H"
+    ]
+  },
+  "PALLAKI SRI HARSHAVARDHAN REDDY": {
+    "weekly_hours": 23,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 6,
+      "THU": 5,
+      "FRI": 4,
+      "WED": 3,
+      "SAT": 3
+    },
+    "lecture_hours": 15,
+    "lab_hours": 8,
+    "subjects_taught": [
+      "DL",
+      "DL(P)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-A",
+      "II AIML-G",
+      "II AIML-H",
+      "III AIML-E"
+    ]
+  },
+  "PURIMETLA RUKMINILAKSHMI CHAITANYA": {
+    "weekly_hours": 29,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 5,
+      "WED": 6,
+      "THU": 6,
+      "SAT": 4,
+      "TUE": 4,
+      "FRI": 4
+    },
+    "lecture_hours": 17,
+    "lab_hours": 12,
+    "subjects_taught": [
+      "CNS",
+      "CNS(P)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)",
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "II AIML-E",
+      "II AIML-H",
+      "II AIML-I",
+      "III DS-B",
+      "IV DS"
+    ]
+  },
+  "RAJIV KUMAR": {
+    "weekly_hours": 18,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "MON": 2,
+      "WED": 4,
+      "THU": 2,
+      "SAT": 5,
+      "TUE": 3,
+      "FRI": 2
+    },
+    "lecture_hours": 12,
+    "lab_hours": 6,
+    "subjects_taught": [
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-E",
+      "II AIML-F",
+      "II AIML-I"
+    ]
+  },
+  "S. Venkata Bhavani": {
+    "weekly_hours": 21,
+    "max_daily_hours": 7,
+    "daily_breakdown": {
+      "TUE": 2,
+      "THU": 2,
+      "FRI": 5,
+      "SAT": 7,
+      "MON": 4,
+      "WED": 1
+    },
+    "lecture_hours": 13,
+    "lab_hours": 8,
+    "subjects_taught": [
+      "CV",
+      "CV(P)"
+    ],
+    "sections_taught": [
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D",
+      "III AIML-E"
+    ]
+  },
+  "SHAIK FIRDOUSE SULTANA": {
+    "weekly_hours": 24,
+    "max_daily_hours": 5,
+    "daily_breakdown": {
+      "TUE": 4,
+      "WED": 3,
+      "THU": 5,
+      "SAT": 4,
+      "MON": 3,
+      "FRI": 5
+    },
+    "lecture_hours": 14,
+    "lab_hours": 10,
+    "subjects_taught": [
+      "CNS",
+      "CNS (P)",
+      "CNS(P)",
+      "DBMS",
+      "DBMS(P)",
+      "DBMS(T)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-G",
+      "II CS-B",
+      "IV AIML-C",
+      "IV AIML-E",
+      "IV DS"
+    ]
+  },
+  "SK.Sameera Sultana": {
+    "weekly_hours": 34,
+    "max_daily_hours": 8,
+    "daily_breakdown": {
+      "WED": 6,
+      "THU": 4,
+      "FRI": 8,
+      "SAT": 8,
+      "MON": 4,
+      "TUE": 4
+    },
+    "lecture_hours": 22,
+    "lab_hours": 12,
+    "subjects_taught": [
+      "CV",
+      "CV(P)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-B",
+      "II AIML-E",
+      "II AIML-K",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-D"
+    ]
+  },
+  "SK.SameeraSultana": {
+    "weekly_hours": 5,
+    "max_daily_hours": 2,
+    "daily_breakdown": {
+      "WED": 1,
+      "THU": 2,
+      "FRI": 1,
+      "SAT": 1
+    },
+    "lecture_hours": 3,
+    "lab_hours": 2,
+    "subjects_taught": [
+      "CV",
+      "CV(P)"
+    ],
+    "sections_taught": [
+      "III AIML-A"
+    ]
+  },
+  "SUNKARA DEVENDRA KUMAR": {
+    "weekly_hours": 23,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "TUE": 6,
+      "WED": 5,
+      "FRI": 2,
+      "SAT": 6,
+      "MON": 3,
+      "THU": 1
+    },
+    "lecture_hours": 15,
+    "lab_hours": 8,
+    "subjects_taught": [
+      "CV",
+      "CV(P)",
+      "DS",
+      "DS(P)",
+      "DS(T)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-I",
+      "II AIML-J",
+      "II AIML-K",
+      "III DS-A"
+    ]
+  },
+  "Sk Chand Basha": {
+    "weekly_hours": 9,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "MON": 2,
+      "THU": 3,
+      "WED": 2,
+      "TUE": 2
+    },
+    "lecture_hours": 9,
+    "lab_hours": 0,
+    "subjects_taught": [
+      "QALR"
+    ],
+    "sections_taught": [
+      "III CS",
+      "III DS-A",
+      "III DS-B"
+    ]
+  },
+  "V. Amarnath": {
+    "weekly_hours": 40,
+    "max_daily_hours": 9,
+    "daily_breakdown": {
+      "MON": 7,
+      "TUE": 7,
+      "SAT": 5,
+      "THU": 6,
+      "FRI": 9,
+      "WED": 6
+    },
+    "lecture_hours": 22,
+    "lab_hours": 18,
+    "subjects_taught": [
+      "AI",
+      "AI(P)",
+      "DL",
+      "DL(P)"
+    ],
+    "sections_taught": [
+      "II AIML-A",
+      "II AIML-C",
+      "II AIML-F",
+      "II AIML-G",
+      "II DS-A",
+      "III AIML-A",
+      "III AIML-B",
+      "III AIML-C",
+      "III AIML-E"
+    ]
+  },
+  "VAKA JAHNAVI": {
+    "weekly_hours": 21,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "TUE": 5,
+      "WED": 6,
+      "FRI": 2,
+      "MON": 3,
+      "THU": 2,
+      "SAT": 3
+    },
+    "lecture_hours": 11,
+    "lab_hours": 10,
+    "subjects_taught": [
+      "AI",
+      "AI(P)",
+      "DL",
+      "DL(P)"
+    ],
+    "sections_taught": [
+      "II AIML-B",
+      "II AIML-H",
+      "II AIML-J",
+      "II AIML-L",
+      "III AIML-G"
+    ]
+  },
+  "VENNA VIJAYA MANIKANTA": {
+    "weekly_hours": 28,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 3,
+      "TUE": 6,
+      "THU": 6,
+      "FRI": 3,
+      "WED": 5,
+      "SAT": 5
+    },
+    "lecture_hours": 16,
+    "lab_hours": 12,
+    "subjects_taught": [
+      "AI",
+      "AI(P)",
+      "DS",
+      "DS(P)",
+      "DS(T)",
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "II AIML-C",
+      "II AIML-J",
+      "II AIML-K",
+      "II AIML-L",
+      "III AIML-B"
+    ]
+  },
+  "Y NEHA": {
+    "weekly_hours": 12,
+    "max_daily_hours": 3,
+    "daily_breakdown": {
+      "MON": 3,
+      "TUE": 3,
+      "THU": 1,
+      "FRI": 3,
+      "SAT": 2
+    },
+    "lecture_hours": 8,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)"
+    ],
+    "sections_taught": [
+      "II AIML-C",
+      "II AIML-G"
+    ]
+  },
+  "Y. Ashok": {
+    "weekly_hours": 30,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "TUE": 4,
+      "WED": 6,
+      "THU": 5,
+      "FRI": 4,
+      "MON": 5,
+      "SAT": 6
+    },
+    "lecture_hours": 16,
+    "lab_hours": 14,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)",
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "II AIML-H",
+      "II AIML-I",
+      "II AIML-L",
+      "III AIML-A",
+      "III AIML-F"
+    ]
+  },
+  "Y. Ramya Sri": {
+    "weekly_hours": 12,
+    "max_daily_hours": 4,
+    "daily_breakdown": {
+      "TUE": 4,
+      "WED": 3,
+      "THU": 1,
+      "FRI": 2,
+      "SAT": 2
+    },
+    "lecture_hours": 8,
+    "lab_hours": 4,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)",
+      "WT",
+      "WT(P)",
+      "WT(T)"
+    ],
+    "sections_taught": [
+      "II AIML-H",
+      "III AIML-E"
+    ]
+  },
+  "YARRA ESWARAIAH": {
+    "weekly_hours": 24,
+    "max_daily_hours": 6,
+    "daily_breakdown": {
+      "MON": 3,
+      "TUE": 6,
+      "FRI": 5,
+      "SAT": 6,
+      "WED": 4
+    },
+    "lecture_hours": 14,
+    "lab_hours": 10,
+    "subjects_taught": [
+      "DS",
+      "DS(P)",
+      "DS(T)",
+      "OOPS",
+      "OOPS(P)",
+      "OOPS(T)",
+      "WT",
+      "WT(P)"
+    ],
+    "sections_taught": [
+      "II AIML-G",
+      "II AIML-J",
+      "II CS-A",
+      "III AIML-G"
+    ]
+  }
+}

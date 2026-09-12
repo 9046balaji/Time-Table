@@ -1,0 +1,719 @@
+{
+  "N-301": {
+    "room_code": "N-301",
+    "room_type": "classroom",
+    "total_occupied_hours": 9,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 3,
+      "THU": 1,
+      "FRI": 1,
+      "SAT": 1,
+      "WED": 1
+    },
+    "sections_using": [
+      "SECTION-1",
+      "SECTION-18",
+      "SECTION-4"
+    ]
+  },
+  "N-304": {
+    "room_code": "N-304",
+    "room_type": "classroom",
+    "total_occupied_hours": 7,
+    "daily_breakdown": {
+      "MON": 1,
+      "TUE": 2,
+      "SAT": 1,
+      "WED": 1,
+      "FRI": 1,
+      "THU": 1
+    },
+    "sections_using": [
+      "SECTION-2",
+      "SECTION-5",
+      "SECTION-8",
+      "SECTION-9"
+    ]
+  },
+  "N-305": {
+    "room_code": "N-305",
+    "room_type": "classroom",
+    "total_occupied_hours": 7,
+    "daily_breakdown": {
+      "TUE": 1,
+      "WED": 1,
+      "THU": 1,
+      "SAT": 2,
+      "FRI": 1,
+      "MON": 1
+    },
+    "sections_using": [
+      "SECTION-11",
+      "SECTION-3",
+      "SECTION-4"
+    ]
+  },
+  "N-306": {
+    "room_code": "N-306",
+    "room_type": "classroom",
+    "total_occupied_hours": 6,
+    "daily_breakdown": {
+      "FRI": 1,
+      "THU": 1,
+      "TUE": 1,
+      "SAT": 1,
+      "MON": 1,
+      "WED": 1
+    },
+    "sections_using": [
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-7"
+    ]
+  },
+  "N-307": {
+    "room_code": "N-307",
+    "room_type": "classroom",
+    "total_occupied_hours": 10,
+    "daily_breakdown": {
+      "WED": 2,
+      "SAT": 2,
+      "THU": 2,
+      "FRI": 2,
+      "TUE": 2
+    },
+    "sections_using": [
+      "SECTION-11",
+      "SECTION-4",
+      "SECTION-5"
+    ]
+  },
+  "N-311": {
+    "room_code": "N-311",
+    "room_type": "classroom",
+    "total_occupied_hours": 6,
+    "daily_breakdown": {
+      "MON": 1,
+      "TUE": 1,
+      "FRI": 1,
+      "WED": 1,
+      "THU": 1,
+      "SAT": 1
+    },
+    "sections_using": [
+      "SECTION-10",
+      "SECTION-13",
+      "SECTION-15",
+      "SECTION-5",
+      "SECTION-6"
+    ]
+  },
+  "N-312": {
+    "room_code": "N-312",
+    "room_type": "classroom",
+    "total_occupied_hours": 7,
+    "daily_breakdown": {
+      "WED": 1,
+      "MON": 1,
+      "THU": 1,
+      "FRI": 2,
+      "SAT": 1,
+      "TUE": 1
+    },
+    "sections_using": [
+      "SECTION-12",
+      "SECTION-2",
+      "SECTION-4",
+      "SECTION-7"
+    ]
+  },
+  "N-313": {
+    "room_code": "N-313",
+    "room_type": "classroom",
+    "total_occupied_hours": 19,
+    "daily_breakdown": {
+      "MON": 3,
+      "THU": 3,
+      "FRI": 3,
+      "TUE": 3,
+      "WED": 3,
+      "SAT": 4
+    },
+    "sections_using": [
+      "SECTION-1",
+      "SECTION-11",
+      "SECTION-12",
+      "SECTION-15",
+      "SECTION-2",
+      "SECTION-5",
+      "SECTION-7",
+      "SECTION-8"
+    ]
+  },
+  "N-314A": {
+    "room_code": "N-314A",
+    "room_type": "classroom",
+    "total_occupied_hours": 9,
+    "daily_breakdown": {
+      "THU": 2,
+      "MON": 1,
+      "SAT": 2,
+      "TUE": 2,
+      "FRI": 2
+    },
+    "sections_using": [
+      "SECTION-2",
+      "SECTION-3",
+      "SECTION-6",
+      "SECTION-9"
+    ]
+  },
+  "N-314B": {
+    "room_code": "N-314B",
+    "room_type": "classroom",
+    "total_occupied_hours": 7,
+    "daily_breakdown": {
+      "TUE": 1,
+      "THU": 1,
+      "SAT": 2,
+      "FRI": 2,
+      "MON": 1
+    },
+    "sections_using": [
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-16",
+      "SECTION-7"
+    ]
+  },
+  "N-315": {
+    "room_code": "N-315",
+    "room_type": "classroom",
+    "total_occupied_hours": 6,
+    "daily_breakdown": {
+      "TUE": 1,
+      "MON": 1,
+      "FRI": 1,
+      "WED": 1,
+      "SAT": 1,
+      "THU": 1
+    },
+    "sections_using": [
+      "SECTION-1",
+      "SECTION-10",
+      "SECTION-11",
+      "SECTION-15",
+      "SECTION-9"
+    ]
+  },
+  "N-316": {
+    "room_code": "N-316",
+    "room_type": "classroom",
+    "total_occupied_hours": 6,
+    "daily_breakdown": {
+      "SAT": 1,
+      "TUE": 1,
+      "WED": 1,
+      "FRI": 1,
+      "THU": 1,
+      "MON": 1
+    },
+    "sections_using": [
+      "SECTION-10",
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-18",
+      "SECTION-9"
+    ]
+  },
+  "N-317": {
+    "room_code": "N-317",
+    "room_type": "classroom",
+    "total_occupied_hours": 6,
+    "daily_breakdown": {
+      "MON": 1,
+      "WED": 1,
+      "SAT": 1,
+      "FRI": 1,
+      "TUE": 1,
+      "THU": 1
+    },
+    "sections_using": [
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-16",
+      "SECTION-19"
+    ]
+  },
+  "N-318": {
+    "room_code": "N-318",
+    "room_type": "classroom",
+    "total_occupied_hours": 9,
+    "daily_breakdown": {
+      "THU": 1,
+      "FRI": 1,
+      "SAT": 2,
+      "TUE": 2,
+      "WED": 1,
+      "MON": 2
+    },
+    "sections_using": [
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-14",
+      "SECTION-19",
+      "SECTION-6"
+    ]
+  },
+  "N-401": {
+    "room_code": "N-401",
+    "room_type": "classroom",
+    "total_occupied_hours": 7,
+    "daily_breakdown": {
+      "MON": 1,
+      "FRI": 1,
+      "TUE": 1,
+      "WED": 1,
+      "THU": 1,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-10",
+      "SECTION-14",
+      "SECTION-16",
+      "SECTION-19"
+    ]
+  },
+  "N-404": {
+    "room_code": "N-404",
+    "room_type": "classroom",
+    "total_occupied_hours": 8,
+    "daily_breakdown": {
+      "THU": 2,
+      "MON": 1,
+      "TUE": 1,
+      "SAT": 2,
+      "WED": 1,
+      "FRI": 1
+    },
+    "sections_using": [
+      "SECTION-11",
+      "SECTION-14",
+      "SECTION-15",
+      "SECTION-16",
+      "SECTION-17"
+    ]
+  },
+  "N-405": {
+    "room_code": "N-405",
+    "room_type": "classroom",
+    "total_occupied_hours": 6,
+    "daily_breakdown": {
+      "MON": 1,
+      "THU": 1,
+      "SAT": 1,
+      "WED": 1,
+      "TUE": 1,
+      "FRI": 1
+    },
+    "sections_using": [
+      "SECTION-12",
+      "SECTION-15",
+      "SECTION-18",
+      "SECTION-7"
+    ]
+  },
+  "N-406": {
+    "room_code": "N-406",
+    "room_type": "classroom",
+    "total_occupied_hours": 11,
+    "daily_breakdown": {
+      "FRI": 2,
+      "MON": 1,
+      "TUE": 2,
+      "WED": 1,
+      "THU": 2,
+      "SAT": 3
+    },
+    "sections_using": [
+      "SECTION-11",
+      "SECTION-17",
+      "SECTION-9"
+    ]
+  },
+  "N-407": {
+    "room_code": "N-407",
+    "room_type": "classroom",
+    "total_occupied_hours": 9,
+    "daily_breakdown": {
+      "MON": 2,
+      "THU": 2,
+      "FRI": 2,
+      "SAT": 2,
+      "WED": 1
+    },
+    "sections_using": [
+      "SECTION-1",
+      "SECTION-3",
+      "SECTION-5"
+    ]
+  },
+  "N-408": {
+    "room_code": "N-408",
+    "room_type": "classroom",
+    "total_occupied_hours": 9,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 2,
+      "WED": 2,
+      "THU": 1,
+      "FRI": 1,
+      "SAT": 1
+    },
+    "sections_using": [
+      "SECTION-2"
+    ]
+  },
+  "N-411": {
+    "room_code": "N-411",
+    "room_type": "classroom",
+    "total_occupied_hours": 15,
+    "daily_breakdown": {
+      "MON": 2,
+      "THU": 3,
+      "FRI": 3,
+      "SAT": 3,
+      "TUE": 2,
+      "WED": 2
+    },
+    "sections_using": [
+      "SECTION-1",
+      "SECTION-2",
+      "SECTION-3"
+    ]
+  },
+  "N-412": {
+    "room_code": "N-412",
+    "room_type": "classroom",
+    "total_occupied_hours": 12,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 2,
+      "WED": 2,
+      "THU": 2,
+      "FRI": 2,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-4"
+    ]
+  },
+  "N-413": {
+    "room_code": "N-413",
+    "room_type": "classroom",
+    "total_occupied_hours": 22,
+    "daily_breakdown": {
+      "MON": 4,
+      "THU": 3,
+      "TUE": 4,
+      "WED": 3,
+      "FRI": 4,
+      "SAT": 4
+    },
+    "sections_using": [
+      "SECTION-10",
+      "SECTION-13",
+      "SECTION-15",
+      "SECTION-3",
+      "SECTION-4",
+      "SECTION-5",
+      "SECTION-6",
+      "SECTION-9"
+    ]
+  },
+  "N-414A": {
+    "room_code": "N-414A",
+    "room_type": "classroom",
+    "total_occupied_hours": 10,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 2,
+      "WED": 1,
+      "THU": 1,
+      "FRI": 2,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-5",
+      "SECTION-6"
+    ]
+  },
+  "N-414B": {
+    "room_code": "N-414B",
+    "room_type": "classroom",
+    "total_occupied_hours": 2,
+    "daily_breakdown": {
+      "MON": 1,
+      "FRI": 1
+    },
+    "sections_using": [
+      "SECTION-10",
+      "SECTION-12"
+    ]
+  },
+  "N-414b": {
+    "room_code": "N-414b",
+    "room_type": "classroom",
+    "total_occupied_hours": 11,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 2,
+      "WED": 2,
+      "THU": 2,
+      "FRI": 1,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-7"
+    ]
+  },
+  "N-415": {
+    "room_code": "N-415",
+    "room_type": "classroom",
+    "total_occupied_hours": 14,
+    "daily_breakdown": {
+      "MON": 3,
+      "TUE": 2,
+      "WED": 2,
+      "THU": 2,
+      "FRI": 2,
+      "SAT": 3
+    },
+    "sections_using": [
+      "SECTION-8"
+    ]
+  },
+  "N-416": {
+    "room_code": "N-416",
+    "room_type": "classroom",
+    "total_occupied_hours": 14,
+    "daily_breakdown": {
+      "MON": 3,
+      "TUE": 1,
+      "WED": 3,
+      "THU": 2,
+      "FRI": 3,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-11",
+      "SECTION-17",
+      "SECTION-19",
+      "SECTION-9"
+    ]
+  },
+  "N-417": {
+    "room_code": "N-417",
+    "room_type": "classroom",
+    "total_occupied_hours": 12,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 2,
+      "WED": 2,
+      "THU": 2,
+      "FRI": 2,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-10",
+      "SECTION-7"
+    ]
+  },
+  "N-419": {
+    "room_code": "N-419",
+    "room_type": "classroom",
+    "total_occupied_hours": 2,
+    "daily_breakdown": {
+      "THU": 2
+    },
+    "sections_using": [
+      "SECTION-18"
+    ]
+  },
+  "N-504": {
+    "room_code": "N-504",
+    "room_type": "classroom",
+    "total_occupied_hours": 12,
+    "daily_breakdown": {
+      "FRI": 2,
+      "MON": 2,
+      "TUE": 2,
+      "WED": 2,
+      "THU": 2,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-12",
+      "SECTION-7"
+    ]
+  },
+  "N-505": {
+    "room_code": "N-505",
+    "room_type": "classroom",
+    "total_occupied_hours": 15,
+    "daily_breakdown": {
+      "MON": 4,
+      "TUE": 3,
+      "WED": 2,
+      "THU": 2,
+      "FRI": 2,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-12",
+      "SECTION-13",
+      "SECTION-16",
+      "SECTION-17"
+    ]
+  },
+  "N-506": {
+    "room_code": "N-506",
+    "room_type": "classroom",
+    "total_occupied_hours": 16,
+    "daily_breakdown": {
+      "MON": 3,
+      "WED": 3,
+      "TUE": 3,
+      "THU": 2,
+      "FRI": 3,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-11",
+      "SECTION-14"
+    ]
+  },
+  "N-507": {
+    "room_code": "N-507",
+    "room_type": "classroom",
+    "total_occupied_hours": 13,
+    "daily_breakdown": {
+      "MON": 3,
+      "TUE": 2,
+      "WED": 2,
+      "THU": 2,
+      "FRI": 2,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-15",
+      "SECTION-17"
+    ]
+  },
+  "N-508": {
+    "room_code": "N-508",
+    "room_type": "classroom",
+    "total_occupied_hours": 13,
+    "daily_breakdown": {
+      "THU": 2,
+      "MON": 3,
+      "TUE": 2,
+      "WED": 2,
+      "FRI": 2,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-13",
+      "SECTION-16"
+    ]
+  },
+  "N-511": {
+    "room_code": "N-511",
+    "room_type": "classroom",
+    "total_occupied_hours": 13,
+    "daily_breakdown": {
+      "WED": 3,
+      "MON": 3,
+      "TUE": 2,
+      "THU": 1,
+      "FRI": 2,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-15",
+      "SECTION-17",
+      "SECTION-9"
+    ]
+  },
+  "N-512": {
+    "room_code": "N-512",
+    "room_type": "classroom",
+    "total_occupied_hours": 13,
+    "daily_breakdown": {
+      "MON": 3,
+      "TUE": 2,
+      "WED": 2,
+      "THU": 2,
+      "FRI": 2,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-18"
+    ]
+  },
+  "N-513": {
+    "room_code": "N-513",
+    "room_type": "classroom",
+    "total_occupied_hours": 20,
+    "daily_breakdown": {
+      "MON": 4,
+      "THU": 4,
+      "TUE": 4,
+      "FRI": 4,
+      "WED": 2,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-16",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-19"
+    ]
+  },
+  "N-515": {
+    "room_code": "N-515",
+    "room_type": "classroom",
+    "total_occupied_hours": 2,
+    "daily_breakdown": {
+      "WED": 1,
+      "MON": 1
+    },
+    "sections_using": [
+      "SECTION-14",
+      "SECTION-6"
+    ]
+  },
+  "N-519": {
+    "room_code": "N-519",
+    "room_type": "classroom",
+    "total_occupied_hours": 9,
+    "daily_breakdown": {
+      "MON": 2,
+      "TUE": 1,
+      "FRI": 2,
+      "THU": 2,
+      "SAT": 2
+    },
+    "sections_using": [
+      "SECTION-13",
+      "SECTION-15",
+      "SECTION-17",
+      "SECTION-18",
+      "SECTION-8"
+    ]
+  }
+}

@@ -11,14 +11,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
-time_table
-scratch
-data
-bin
-files
-time table
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -32,6 +26,14 @@ htmlcov/
 .ruff_cache/
 venv/
 .venv/
+
+# Project Data (track data/seed/ and institutional files, ignore test outputs only)
+data/test_outputs/
+
+# Temporary scratch and archive docs
+scratch/
+bin/
+files/
 
 # Node / Next.js
 frontend/node_modules/
