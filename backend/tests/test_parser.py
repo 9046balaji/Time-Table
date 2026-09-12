@@ -16,6 +16,14 @@ V5_CANDIDATES = [
 ]
 V5_FILE_PATH = next((p for p in V5_CANDIDATES if os.path.exists(p)), V5_CANDIDATES[0])
 
+FOURTH_YEAR_CANDIDATES = [
+    os.path.join(ROOT_DIR, "time_table", "4th yr TT 17TH JULY.xlsx"),
+    os.path.join(ROOT_DIR, "4th yr TT 17TH JULY.xlsx"),
+    "time_table/4th yr TT 17TH JULY.xlsx",
+    "../time_table/4th yr TT 17TH JULY.xlsx",
+]
+FOURTH_YEAR_FILE_PATH = next((p for p in FOURTH_YEAR_CANDIDATES if os.path.exists(p)), FOURTH_YEAR_CANDIDATES[0])
+
 
 import hashlib
 
@@ -72,7 +80,7 @@ def test_v5_baseline_parsing():
 
 
 def test_4th_year_timetable_parsing():
-    file_path = os.path.join(ROOT_DIR, "4th yr TT 17TH JULY.xlsx")
+    file_path = FOURTH_YEAR_FILE_PATH
     if not os.path.exists(file_path):
         pytest.skip(f"4th Year Excel file not found at {file_path}")
 
@@ -89,7 +97,7 @@ def test_4th_year_timetable_parsing():
 
 def test_10_sections_focused_testing():
     """Verify that when testing focus is set to at most 10 sections, the parser limits section count to 10."""
-    file_path = os.path.join(ROOT_DIR, "4th yr TT 17TH JULY.xlsx")
+    file_path = FOURTH_YEAR_FILE_PATH
     if not os.path.exists(file_path):
         pytest.skip(f"4th Year Excel file not found at {file_path}")
 
