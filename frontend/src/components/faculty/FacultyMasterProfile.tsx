@@ -30,6 +30,7 @@ interface FacultyMasterProfileProps {
   facultyList: Faculty[];
   subjectList?: Subject[];
   sectionList?: Section[];
+  initialSearch?: string;
   onAddFaculty?: (newFac: Partial<Faculty>) => void;
   onUpdateFaculty?: (id: number, updatedFac: Partial<Faculty>) => void;
   onDeleteFaculty?: (id: number) => void;
@@ -42,11 +43,18 @@ export const FacultyMasterProfile: React.FC<FacultyMasterProfileProps> = ({
   facultyList,
   subjectList = [],
   sectionList = [],
+  initialSearch = "",
   onAddFaculty,
   onUpdateFaculty,
   onDeleteFaculty
 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch || "");
+
+  useEffect(() => {
+    if (initialSearch) {
+      setSearchQuery(initialSearch);
+    }
+  }, [initialSearch]);
   const [quickFilter, setQuickFilter] = useState<"ALL" | "PROF" | "CAP" | "OVERLOAD">("ALL");
   const [sortBy, setSortBy] = useState<"NAME" | "LOAD">("NAME");
 

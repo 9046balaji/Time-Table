@@ -81,12 +81,28 @@ export default function SchedulePage() {
 
   const searchParams = useSearchParams();
   const urlVersionId = searchParams?.get("version_id");
+  const urlSection = searchParams?.get("section");
+  const urlAction = searchParams?.get("action");
   const { state: solverState, startSolver } = useSolver();
   const [facultyList, setFacultyList] = useState<Faculty[]>([]);
   const [selectedFacultyId, setSelectedFacultyId] = useState<number | null>(null);
   const [facultyTimetableData, setFacultyTimetableData] = useState<any>(null);
   const [loadingFacultyTimetable, setLoadingFacultyTimetable] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  // Auto-select section if passed in URL query param
+  useEffect(() => {
+    if (urlSection) {
+      setSelectedSection(decodeURIComponent(urlSection));
+    }
+  }, [urlSection]);
+
+  // Auto-launch solver if action=solve is passed in URL query param
+  useEffect(() => {
+    if (urlAction === "solve") {
+      startSolver("CP-SAT");
+    }
+  }, [urlAction, startSolver]);
 
   // Search & Sort states for Schedule Workbench
   const [gridSearchQuery, setGridSearchQuery] = useState("");
@@ -407,15 +423,24 @@ export default function SchedulePage() {
     });
 
     try {
+      const facNames = targetEntry.facultyNames && targetEntry.facultyNames.length > 0
+        ? targetEntry.facultyNames
+        : (targetEntry.facultyName ? [targetEntry.facultyName] : []);
+
       // Live O(1) Pre-Validation Check
       const valRes = await timetableApi.validateSlotMove({
         entry_id: draggedEntryId,
         version_id: selectedVersionId,
         from_day: oldDay,
         from_period: oldPeriod,
+        target_day: targetDay,
+        target_period: targetPeriod,
         to_day: targetDay,
         to_period: targetPeriod,
-        room_code: targetEntry.roomCode
+        target_room_code: targetEntry.roomCode,
+        room_code: targetEntry.roomCode,
+        section_name: selectedSection,
+        faculty_names: facNames,
       }).catch(() => null);
 
       if (valRes && valRes.data && valRes.data.is_valid === false) {
@@ -432,13 +457,16 @@ export default function SchedulePage() {
         return;
       }
 
-      // Persist Validated Slot Assignment to Backend
+      // Persist Validated Slot Assignment to Backend with full metadata preserved
       timetableApi.updateSlot({
         entry_id: draggedEntryId,
         version_id: selectedVersionId,
         day: targetDay,
         period: targetPeriod,
-        section_name: selectedSection
+        section_name: selectedSection,
+        subject_code: targetEntry.subjectCode,
+        room_code: targetEntry.roomCode,
+        faculty_names: facNames,
       }).catch(() => null);
 
       setLastSwapHistory({
@@ -641,6 +669,13 @@ export default function SchedulePage() {
   };
 
   const handleDeleteSlotModal = async (entryId: string) => {
+    try {
+      if (entryId && !entryId.startsWith("slot_") && !isNaN(Number(entryId))) {
+        await timetableApi.deleteSlot(Number(entryId), selectedVersionId);
+      }
+    } catch (err) {
+      console.error("Failed to delete slot from backend:", err);
+    }
     setEntries(prev => prev.filter(e => e.id !== entryId));
     setCohortAllSlots(prev => prev.filter(e => String(e.id) !== String(entryId)));
     setToastMessage("Slot assignment cleared.");

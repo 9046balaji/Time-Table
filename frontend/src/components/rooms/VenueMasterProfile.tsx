@@ -21,6 +21,7 @@ import { timetableApi } from "@/lib/api";
 
 interface VenueMasterProfileProps {
   roomList: Room[];
+  initialSearch?: string;
   onAddRoom?: (newRoom: Partial<Room>) => void;
   onUpdateRoom?: (id: number, updatedRoom: Partial<Room>) => void;
   onDeleteRoom?: (id: number) => void;
@@ -31,11 +32,18 @@ const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export const VenueMasterProfile: React.FC<VenueMasterProfileProps> = ({
   roomList,
+  initialSearch = "",
   onAddRoom,
   onUpdateRoom,
   onDeleteRoom
 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch || "");
+
+  useEffect(() => {
+    if (initialSearch) {
+      setSearchQuery(initialSearch);
+    }
+  }, [initialSearch]);
   const [quickFilter, setQuickFilter] = useState<"ALL" | "CLASS" | "LAB" | "GPU">("ALL");
 
   // Selected Room for Slide-Over Drawer

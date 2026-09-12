@@ -67,3 +67,33 @@ async def test_trigger_solver_endpoint():
         data = response.json()
         assert "run_id" in data
         assert data["status"] == "RUNNING"
+
+
+@pytest.mark.asyncio
+async def test_validate_slot_move_aliasing():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        payload = {
+            "entry_id": 999999,
+            "to_day": "TUE",
+            "to_period": 3,
+            "room_code": "601",
+            "section_name": "II AIML A",
+            "faculty_names": ["Dr. S. Srikantha Reddy"],
+        }
+        response = await client.post("/api/v1/timetable/validate-move", json=payload)
+        assert response.status_code == 200
+        data = response.json()
+        assert "is_valid" in data
+        assert "target_day" in data
+        assert data["target_day"] == "TUE"
+        assert data["target_period"] == 3
+
+
+@pytest.mark.asyncio
+async def test_delete_slot_endpoint():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Test deleting a non-existent entry gracefully returns 404
+        response = await client.delete("/api/v1/timetable/slot/99999999?version_id=5")
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+

@@ -92,7 +92,9 @@ export const timetableApi = {
   validateSlotMove: (req: DragDropSwapRequest) =>
     api.post<ValidationMoveResult>('/api/v1/timetable/validate-move', req),
   updateSlotAssignment: (entryId: string | number, newTimeSlotId: number, newRoomId?: number) =>
-    api.patch(`/api/v1/timetable/entries/${entryId}`, { new_time_slot_id: newTimeSlotId, new_room_id: newRoomId }),
+    api.post('/api/v1/timetable/update-slot', { entry_id: entryId, time_slot_id: newTimeSlotId, room_id: newRoomId }),
+  deleteSlot: (entryId: string | number, versionId: number = 5) =>
+    api.delete(`/api/v1/timetable/slot/${entryId}?version_id=${versionId}`),
   importExcel: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -127,5 +129,13 @@ export const timetableApi = {
   exportJson: (versionId: number = 5) => api.get(`/api/v1/export/json?version_id=${versionId}`),
   exportRoomUtilization: (versionId: number = 5) =>
     api.get(`/api/v1/export/room-utilization?version_id=${versionId}`, { responseType: 'blob' }),
+  exportMasterIcal: (versionId: number = 5) =>
+    api.get(`/api/v1/export/ical/master`, { params: { version_id: versionId }, responseType: 'blob' }),
+  exportCohortIcal: (cohortKey: string, versionId: number = 5) =>
+    api.get(`/api/v1/export/ical/cohort/${cohortKey}`, { params: { version_id: versionId }, responseType: 'blob' }),
+  exportSectionIcal: (sectionIdentifier: string, versionId: number = 5) =>
+    api.get(`/api/v1/export/ical/section/${sectionIdentifier}`, { params: { version_id: versionId }, responseType: 'blob' }),
+  exportFacultyIcal: (facultyId: number, versionId: number = 5) =>
+    api.get(`/api/v1/export/ical/faculty/${facultyId}`, { params: { version_id: versionId }, responseType: 'blob' }),
   getTelemetryMetrics: () => api.get('/api/v1/telemetry/metrics'),
 };

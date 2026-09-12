@@ -17,10 +17,13 @@ import {
   FileCode,
   Building2,
   Search,
-  AlertCircle
+  AlertCircle,
+  Calendar,
+  Copy,
+  Check
 } from 'lucide-react';
-import { timetableApi } from '@/lib/api';
-import { Faculty } from '@/lib/types';
+import { timetableApi, getApiBaseUrl } from '@/lib/api';
+import { Faculty, Section } from '@/lib/types';
 
 export default function ExportPage() {
   const [downloadingExcel, setDownloadingExcel] = useState(false);
@@ -31,6 +34,8 @@ export default function ExportPage() {
   const [downloadingSingleFacultyPdf, setDownloadingSingleFacultyPdf] = useState(false);
   const [downloadingJson, setDownloadingJson] = useState(false);
   const [downloadingRoomUtilization, setDownloadingRoomUtilization] = useState(false);
+  const [downloadingIcal, setDownloadingIcal] = useState(false);
+  const [copiedFeedUrl, setCopiedFeedUrl] = useState<string | null>(null);
   const [syncingSmartClass, setSyncingSmartClass] = useState(false);
   const [syncResult, setSyncResult] = useState<any>(null);
 
@@ -39,6 +44,9 @@ export default function ExportPage() {
 
   const [cohortGroups, setCohortGroups] = useState<any[]>([]);
   const [selectedCohortKey, setSelectedCohortKey] = useState<string>('II_AIML');
+
+  const [sectionList, setSectionList] = useState<Section[]>([]);
+  const [selectedSectionName, setSelectedSectionName] = useState<string>('');
 
   const [facultyList, setFacultyList] = useState<Faculty[]>([]);
   const [selectedFacultyId, setSelectedFacultyId] = useState<number | null>(null);
@@ -102,6 +110,16 @@ export default function ExportPage() {
           { id: 1, name: "Dr. S. Srikantha Reddy", designation: "Associate Professor" }
         ] as Faculty[]);
         setSelectedFacultyId(1);
+      });
+
+    timetableApi.getSections()
+      .then(res => {
+        const secs = Array.isArray(res.data) ? res.data : [];
+        setSectionList(secs);
+        if (secs.length > 0) setSelectedSectionName(secs[0].name);
+      })
+      .catch(() => {
+        setSectionList([]);
       });
   }, []);
 
@@ -289,6 +307,64 @@ export default function ExportPage() {
     } finally {
       setSyncingSmartClass(false);
     }
+  };
+
+  const handleDownloadIcal = async (type: 'master' | 'cohort' | 'section' | 'faculty') => {
+    setDownloadingIcal(true);
+    try {
+      let res: any;
+      let filename = `VFSTR_V${selectedVersionId}_Master_Calendar.ics`;
+      if (type === 'master') {
+        res = await timetableApi.exportMasterIcal(selectedVersionId);
+      } else if (type === 'cohort') {
+        res = await timetableApi.exportCohortIcal(selectedCohortKey, selectedVersionId);
+        filename = `VFSTR_V${selectedVersionId}_Cohort_${selectedCohortKey}_Calendar.ics`;
+      } else if (type === 'section') {
+        if (!selectedSectionName) return;
+        res = await timetableApi.exportSectionIcal(selectedSectionName, selectedVersionId);
+        filename = `VFSTR_V${selectedVersionId}_Section_${selectedSectionName}_Calendar.ics`;
+      } else if (type === 'faculty') {
+        if (!selectedFacultyId) return;
+        res = await timetableApi.exportFacultyIcal(selectedFacultyId, selectedVersionId);
+        const facObj = facultyList.find(f => f.id === selectedFacultyId);
+        filename = `VFSTR_V${selectedVersionId}_Faculty_${facObj?.name.replace(/[^a-zA-Z0-9]/g, '_') || selectedFacultyId}.ics`;
+      }
+
+      if (res?.data) {
+        const blob = new Blob([res.data], { type: 'text/calendar;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setSyncResult({ status: 'SUCCESS', message: `Downloaded iCalendar file (${filename}).`, synced_at: new Date().toLocaleTimeString() });
+      }
+    } catch (err) {
+      console.error('Failed to download iCal file', err);
+      setSyncResult({ status: 'ERROR', message: 'Failed to download iCal file.', synced_at: new Date().toLocaleTimeString() });
+    } finally {
+      setDownloadingIcal(false);
+    }
+  };
+
+  const handleCopyFeedUrl = (type: 'master' | 'cohort' | 'section' | 'faculty') => {
+    const base = getApiBaseUrl();
+    let feedPath = `${base}/api/v1/export/ical/master?version_id=${selectedVersionId}`;
+    if (type === 'cohort') {
+      feedPath = `${base}/api/v1/export/ical/cohort/${selectedCohortKey}?version_id=${selectedVersionId}`;
+    } else if (type === 'section') {
+      feedPath = `${base}/api/v1/export/ical/section/${selectedSectionName || 'II_AIML_A'}?version_id=${selectedVersionId}`;
+    } else if (type === 'faculty') {
+      feedPath = `${base}/api/v1/export/ical/faculty/${selectedFacultyId || 1}?version_id=${selectedVersionId}`;
+    }
+
+    navigator.clipboard.writeText(feedPath).then(() => {
+      setCopiedFeedUrl(type);
+      setTimeout(() => setCopiedFeedUrl(null), 3000);
+      setSyncResult({ status: 'SUCCESS', message: `Copied calendar feed URL: ${feedPath}`, synced_at: new Date().toLocaleTimeString() });
+    });
   };
 
   const selectedFacultyObj = facultyList.find(f => f.id === selectedFacultyId);
@@ -497,6 +573,158 @@ export default function ExportPage() {
               {downloadingSingleFacultyPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4 text-purple-700" />}
               Download {selectedFacultyObj ? selectedFacultyObj.name.split(' ')[0] : 'Faculty'}&apos;s PDF (V{selectedVersionId})
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic Live Calendar Feed (iCal / .ics) Section */}
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-cyan-950 text-white rounded-2xl p-6 shadow-md border border-blue-700/40">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-600/30 rounded-xl border border-blue-400/30 text-blue-200">
+              <Calendar className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-base text-white">Live Calendar Subscription Feeds (iCal / .ics)</h3>
+                <span className="px-2 py-0.5 bg-blue-500/30 text-blue-200 text-xs font-semibold rounded-full border border-blue-400/30">
+                  Google / Apple / Outlook
+                </span>
+              </div>
+              <p className="text-xs text-blue-200">Subscribe or download real-time academic calendar feeds for students, faculty, cohorts, or the entire department.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Master Department Calendar */}
+          <div className="bg-white/10 dark:bg-slate-900/50 backdrop-blur-sm border border-white/15 rounded-xl p-4 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-300">Department</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-200 font-mono">V{selectedVersionId}</span>
+              </div>
+              <h4 className="font-bold text-sm text-white mb-1">Master Timetable Feed</h4>
+              <p className="text-xs text-blue-100/80 mb-4">Complete schedule across all 44 sections, labs, and faculty.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleDownloadIcal('master')}
+                disabled={downloadingIcal}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 bg-white text-blue-950 font-bold px-3 py-2 rounded-lg text-xs hover:bg-blue-50 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {downloadingIcal ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Download .ics
+              </button>
+              <button
+                onClick={() => handleCopyFeedUrl('master')}
+                className="inline-flex items-center justify-center p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer"
+                title="Copy Feed URL"
+              >
+                {copiedFeedUrl === 'master' ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Cohort Calendar */}
+          <div className="bg-white/10 dark:bg-slate-900/50 backdrop-blur-sm border border-white/15 rounded-xl p-4 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">Cohort Track</span>
+                <select
+                  value={selectedCohortKey}
+                  onChange={(e) => setSelectedCohortKey(e.target.value)}
+                  className="bg-indigo-950/80 border border-indigo-400/40 text-white text-[11px] rounded px-1.5 py-0.5 font-medium focus:outline-none cursor-pointer"
+                >
+                  {cohortGroups.map(c => (
+                    <option key={c.key} value={c.key}>{c.key}</option>
+                  ))}
+                </select>
+              </div>
+              <h4 className="font-bold text-sm text-white mb-1 truncate">{selectedCohortObj?.label || selectedCohortKey}</h4>
+              <p className="text-xs text-indigo-100/80 mb-4">Cohort-wide aggregated periods and shared lab slots.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleDownloadIcal('cohort')}
+                disabled={downloadingIcal}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 bg-white text-indigo-950 font-bold px-3 py-2 rounded-lg text-xs hover:bg-indigo-50 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {downloadingIcal ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Download .ics
+              </button>
+              <button
+                onClick={() => handleCopyFeedUrl('cohort')}
+                className="inline-flex items-center justify-center p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer"
+                title="Copy Feed URL"
+              >
+                {copiedFeedUrl === 'cohort' ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Section Calendar */}
+          <div className="bg-white/10 dark:bg-slate-900/50 backdrop-blur-sm border border-white/15 rounded-xl p-4 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-cyan-300">Student Section</span>
+                <select
+                  value={selectedSectionName}
+                  onChange={(e) => setSelectedSectionName(e.target.value)}
+                  className="bg-cyan-950/80 border border-cyan-400/40 text-white text-[11px] rounded px-1.5 py-0.5 font-medium focus:outline-none cursor-pointer max-w-[120px]"
+                >
+                  {sectionList.map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <h4 className="font-bold text-sm text-white mb-1 truncate">{selectedSectionName || 'Select Section'}</h4>
+              <p className="text-xs text-cyan-100/80 mb-4">Student-tailored schedule with room numbers and faculty.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleDownloadIcal('section')}
+                disabled={downloadingIcal || !selectedSectionName}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 bg-white text-cyan-950 font-bold px-3 py-2 rounded-lg text-xs hover:bg-cyan-50 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {downloadingIcal ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Download .ics
+              </button>
+              <button
+                onClick={() => handleCopyFeedUrl('section')}
+                disabled={!selectedSectionName}
+                className="inline-flex items-center justify-center p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer disabled:opacity-50"
+                title="Copy Feed URL"
+              >
+                {copiedFeedUrl === 'section' ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Faculty Calendar */}
+          <div className="bg-white/10 dark:bg-slate-900/50 backdrop-blur-sm border border-white/15 rounded-xl p-4 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-purple-300">Faculty Member</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-200 font-mono">Personal</span>
+              </div>
+              <h4 className="font-bold text-sm text-white mb-1 truncate">{selectedFacultyObj ? selectedFacultyObj.name : 'Select Faculty'}</h4>
+              <p className="text-xs text-purple-100/80 mb-4">Personal teaching workload synced across devices.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleDownloadIcal('faculty')}
+                disabled={downloadingIcal || !selectedFacultyId}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 bg-white text-purple-950 font-bold px-3 py-2 rounded-lg text-xs hover:bg-purple-50 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {downloadingIcal ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Download .ics
+              </button>
+              <button
+                onClick={() => handleCopyFeedUrl('faculty')}
+                disabled={!selectedFacultyId}
+                className="inline-flex items-center justify-center p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer disabled:opacity-50"
+                title="Copy Feed URL"
+              >
+                {copiedFeedUrl === 'faculty' ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
         </div>
       </div>

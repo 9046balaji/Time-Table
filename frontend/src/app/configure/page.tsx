@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Users, GraduationCap, Building2, BookOpen, Plus, Search, Filter,
   Upload, Download, CheckCircle2, AlertCircle, Edit, Trash2, X, Sparkles,
@@ -25,8 +26,19 @@ interface ToastState {
 }
 
 export default function ConfigurePage() {
+  const searchParams = useSearchParams();
+  const urlTab = searchParams?.get('tab');
+  const urlSearch = searchParams?.get('search');
+
   const [activeTab, setActiveTab] = useState<TabType>('faculty');
   const [toast, setToast] = useState<ToastState | null>(null);
+
+  // Sync active tab with URL query param
+  useEffect(() => {
+    if (urlTab && ['faculty', 'rooms', 'subjects', 'sections'].includes(urlTab)) {
+      setActiveTab(urlTab as TabType);
+    }
+  }, [urlTab]);
 
   // Entity States
   const [facultyList, setFacultyList] = useState<Faculty[]>([]);
@@ -35,14 +47,21 @@ export default function ConfigurePage() {
   const [sectionList, setSectionList] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Collapsible Analytics State
-  const [showFacultyAnalytics, setShowFacultyAnalytics] = useState(false);
-  const [showRoomAnalytics, setShowRoomAnalytics] = useState(false);
-
   // Section Tab Pagination & Search State
   const [sectionSearch, setSectionSearch] = useState("");
   const [sectionPage, setSectionPage] = useState(1);
   const sectionsPerPage = 10;
+
+  // Sync search with section search if on sections tab
+  useEffect(() => {
+    if (urlSearch && urlTab === 'sections') {
+      setSectionSearch(decodeURIComponent(urlSearch));
+    }
+  }, [urlSearch, urlTab]);
+
+  // Collapsible Analytics State
+  const [showFacultyAnalytics, setShowFacultyAnalytics] = useState(false);
+  const [showRoomAnalytics, setShowRoomAnalytics] = useState(false);
 
   const filteredSections = useMemo(() => {
     return sectionList.filter((s: Section) =>
@@ -206,6 +225,7 @@ export default function ConfigurePage() {
             facultyList={facultyList}
             subjectList={subjectList}
             sectionList={sectionList}
+            initialSearch={urlSearch && activeTab === 'faculty' ? decodeURIComponent(urlSearch) : undefined}
             onAddFaculty={async (newFac) => {
               try {
                 const res = await timetableApi.createFaculty(newFac);
@@ -258,6 +278,7 @@ export default function ConfigurePage() {
 
           <VenueMasterProfile
             roomList={roomList}
+            initialSearch={urlSearch && activeTab === 'rooms' ? decodeURIComponent(urlSearch) : undefined}
             onAddRoom={async (newRoom) => {
               try {
                 const res = await timetableApi.createRoom(newRoom);
@@ -298,6 +319,7 @@ export default function ConfigurePage() {
       {activeTab === 'subjects' && (
         <CurriculumMasterProfile
           subjectList={subjectList}
+          initialSearch={urlSearch && activeTab === 'subjects' ? decodeURIComponent(urlSearch) : undefined}
           onAddSubject={async (newSub) => {
             try {
               const res = await timetableApi.createSubject(newSub);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   BookOpen,
   Search,
@@ -19,6 +19,7 @@ import { Subject } from "@/lib/types";
 
 interface CurriculumMasterProfileProps {
   subjectList: Subject[];
+  initialSearch?: string;
   onAddSubject?: (newSub: Partial<Subject>) => void;
   onUpdateSubject?: (id: number, updatedSub: Partial<Subject>) => void;
   onDeleteSubject?: (id: number) => void;
@@ -26,11 +27,18 @@ interface CurriculumMasterProfileProps {
 
 export const CurriculumMasterProfile: React.FC<CurriculumMasterProfileProps> = ({
   subjectList,
+  initialSearch = "",
   onAddSubject,
   onUpdateSubject,
   onDeleteSubject
 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch || "");
+
+  useEffect(() => {
+    if (initialSearch) {
+      setSearchQuery(initialSearch);
+    }
+  }, [initialSearch]);
   const [quickFilter, setQuickFilter] = useState<"ALL" | "LEC" | "LAB" | "GPU">("ALL");
 
   // Selected Subject for Slide-Over Drawer

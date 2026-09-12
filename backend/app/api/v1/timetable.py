@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
@@ -86,11 +86,11 @@ async def validate_slot_move(req: Dict[str, Any], db: AsyncSession = Depends(get
     fac_names = req.get("faculty_names") or []
     if isinstance(fac_names, str):
         fac_names = [f.strip() for f in fac_names.split(",") if f.strip()]
-    target_day = str(req.get("target_day") or "MON")
-    target_period = int(req.get("target_period") or 1)
-    target_room = req.get("target_room_code")
+    target_day = str(req.get("target_day") or req.get("to_day") or "MON")
+    target_period = int(req.get("target_period") or req.get("to_period") or 1)
+    target_room = req.get("target_room_code") or req.get("room_code")
 
-    return store.validate_move(
+    res = store.validate_move(
         entry_id=entry_id,
         section_name=sec_name,
         faculty_names=fac_names,
@@ -98,6 +98,10 @@ async def validate_slot_move(req: Dict[str, Any], db: AsyncSession = Depends(get
         target_period=target_period,
         target_room_code=target_room
     )
+    if isinstance(res, dict):
+        res["target_day"] = target_day
+        res["target_period"] = target_period
+    return res
 
 
 @router.post("/update-slot", response_model=Dict[str, Any])
@@ -150,9 +154,12 @@ async def update_timetable_slot(req: Dict[str, Any], db: AsyncSession = Depends(
                 entry_obj = ent_res.scalar_one_or_none()
 
             if entry_obj:
-                entry_obj.raw_subject_text = subj_code
-                entry_obj.raw_room_text = room_code
-                entry_obj.raw_faculty_text = ", ".join(fac_names) if fac_names else ""
+                if req.get("subject_code"):
+                    entry_obj.raw_subject_text = subj_code
+                if req.get("room_code"):
+                    entry_obj.raw_room_text = room_code
+                if fac_names or "faculty_names" in req:
+                    entry_obj.raw_faculty_text = ", ".join(fac_names) if fac_names else ""
                 if sec_obj: entry_obj.section_id = sec_obj.id
                 if ts_obj: entry_obj.time_slot_id = ts_obj.id
                 if rm_obj: entry_obj.room_id = rm_obj.id
@@ -229,3 +236,32 @@ async def update_timetable_slot(req: Dict[str, Any], db: AsyncSession = Depends(
             "faculty": fac_names
         }
     }
+
+
+@router.delete("/slot/{entry_id}", response_model=Dict[str, Any])
+async def delete_timetable_slot(
+    entry_id: int,
+    version_id: int = Query(5),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Safely deletes a timetable entry and its associated faculty mappings.
+    """
+    from sqlalchemy import select, delete
+    from app.models.timetable import TimetableEntry
+    from app.models.timetable_entry_faculty import TimetableEntryFaculty
+
+    entry_res = await db.execute(
+        select(TimetableEntry).where(TimetableEntry.id == entry_id)
+    )
+    entry = entry_res.scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail=f"Slot {entry_id} not found.")
+
+    await db.execute(
+        delete(TimetableEntryFaculty).where(TimetableEntryFaculty.timetable_entry_id == entry_id)
+    )
+    await db.delete(entry)
+    await db.commit()
+    return {"success": True, "message": f"Slot {entry_id} deleted successfully."}
+
