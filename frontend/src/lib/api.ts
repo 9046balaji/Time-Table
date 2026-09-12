@@ -9,7 +9,10 @@ import {
   TimetableGenerationRequest,
   WizardGenerationResponse,
   DragDropSwapRequest,
-  ValidationMoveResult
+  ValidationMoveResult,
+  TimetableVersionInfo,
+  CohortGroupInfo,
+  WizardDefaultsResponse
 } from './types';
 
 export function getApiBaseUrl(): string {
@@ -55,29 +58,105 @@ api.interceptors.request.use((config) => {
 
 
 
+// In-memory Request Cache & Promise Deduplication Layer (30s TTL)
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const cacheStore = new Map<string, CacheEntry<unknown>>();
+const pendingRequests = new Map<string, Promise<unknown>>();
+const DEFAULT_TTL_MS = 30000;
+
+export function invalidateApiCache(prefix?: string): void {
+  if (!prefix) {
+    cacheStore.clear();
+    return;
+  }
+  for (const key of cacheStore.keys()) {
+    if (key.startsWith(prefix)) {
+      cacheStore.delete(key);
+    }
+  }
+}
+
+async function cachedGet<T>(url: string, ttlMs: number = DEFAULT_TTL_MS): Promise<{ data: T }> {
+  const now = Date.now();
+  const cached = cacheStore.get(url);
+  if (cached && now - cached.timestamp < ttlMs) {
+    return { data: cached.data as T };
+  }
+
+  if (pendingRequests.has(url)) {
+    return pendingRequests.get(url) as Promise<{ data: T }>;
+  }
+
+  const promise = api.get<T>(url).then((res) => {
+    cacheStore.set(url, { data: res.data, timestamp: Date.now() });
+    pendingRequests.delete(url);
+    return { data: res.data };
+  }).catch((err) => {
+    pendingRequests.delete(url);
+    throw err;
+  });
+
+  pendingRequests.set(url, promise);
+  return promise;
+}
+
 export const timetableApi = {
-  getSections: () => api.get<{ total: number; count: number; items: Section[] }>('/api/v1/sections'),
-  getFaculty: () => api.get<Faculty[]>('/api/v1/configure/faculty'),
-  getRooms: () => api.get<Room[]>('/api/v1/configure/rooms'),
-  getSubjects: () => api.get<Subject[]>('/api/v1/configure/subjects'),
-  getWizardDefaults: () => api.get<any>('/api/v1/configure/wizard-defaults'),
+  getSections: () => cachedGet<{ total: number; count: number; items: Section[] }>('/api/v1/sections'),
+  getFaculty: () => cachedGet<Faculty[]>('/api/v1/configure/faculty'),
+  getRooms: () => cachedGet<Room[]>('/api/v1/configure/rooms'),
+  getSubjects: () => cachedGet<Subject[]>('/api/v1/configure/subjects'),
+  getWizardDefaults: () => cachedGet<WizardDefaultsResponse>('/api/v1/configure/wizard-defaults'),
   
-  createFaculty: (data: Partial<Faculty>) => api.post<Faculty>('/api/v1/configure/faculty', data),
-  updateFaculty: (id: number, data: Partial<Faculty>) => api.put<Faculty>(`/api/v1/configure/faculty/${id}`, data),
-  deleteFaculty: (id: number) => api.delete(`/api/v1/configure/faculty/${id}`),
+  createFaculty: (data: Partial<Faculty>) => {
+    invalidateApiCache('/api/v1/configure/faculty');
+    return api.post<Faculty>('/api/v1/configure/faculty', data);
+  },
+  updateFaculty: (id: number, data: Partial<Faculty>) => {
+    invalidateApiCache('/api/v1/configure/faculty');
+    return api.put<Faculty>(`/api/v1/configure/faculty/${id}`, data);
+  },
+  deleteFaculty: (id: number) => {
+    invalidateApiCache('/api/v1/configure/faculty');
+    return api.delete(`/api/v1/configure/faculty/${id}`);
+  },
 
-  createRoom: (data: Partial<Room>) => api.post<Room>('/api/v1/configure/rooms', data),
-  updateRoom: (id: number, data: Partial<Room>) => api.put<Room>(`/api/v1/configure/rooms/${id}`, data),
-  deleteRoom: (id: number) => api.delete(`/api/v1/configure/rooms/${id}`),
+  createRoom: (data: Partial<Room>) => {
+    invalidateApiCache('/api/v1/configure/rooms');
+    return api.post<Room>('/api/v1/configure/rooms', data);
+  },
+  updateRoom: (id: number, data: Partial<Room>) => {
+    invalidateApiCache('/api/v1/configure/rooms');
+    return api.put<Room>(`/api/v1/configure/rooms/${id}`, data);
+  },
+  deleteRoom: (id: number) => {
+    invalidateApiCache('/api/v1/configure/rooms');
+    return api.delete(`/api/v1/configure/rooms/${id}`);
+  },
 
-  createSubject: (data: Partial<Subject>) => api.post<Subject>('/api/v1/configure/subjects', data),
-  updateSubject: (id: number, data: Partial<Subject>) => api.put<Subject>(`/api/v1/configure/subjects/${id}`, data),
-  deleteSubject: (id: number) => api.delete(`/api/v1/configure/subjects/${id}`),
+  createSubject: (data: Partial<Subject>) => {
+    invalidateApiCache('/api/v1/configure/subjects');
+    return api.post<Subject>('/api/v1/configure/subjects', data);
+  },
+  updateSubject: (id: number, data: Partial<Subject>) => {
+    invalidateApiCache('/api/v1/configure/subjects');
+    return api.put<Subject>(`/api/v1/configure/subjects/${id}`, data);
+  },
+  deleteSubject: (id: number) => {
+    invalidateApiCache('/api/v1/configure/subjects');
+    return api.delete(`/api/v1/configure/subjects/${id}`);
+  },
 
-  batchAssignSectionSubject: (data: SectionSubjectMapRequest) =>
-    api.post('/api/v1/configure/section-subjects/batch-assign', data),
+  batchAssignSectionSubject: (data: SectionSubjectMapRequest) => {
+    invalidateApiCache('/api/v1/configure');
+    return api.post('/api/v1/configure/section-subjects/batch-assign', data);
+  },
 
   importCSV: (entityType: string, file: File) => {
+    invalidateApiCache('/api/v1/configure');
     const formData = new FormData();
     formData.append('file', file);
     return api.post(`/api/v1/configure/import-csv?entity_type=${entityType}`, formData, {
@@ -85,29 +164,36 @@ export const timetableApi = {
     });
   },
 
-  getVersions: () => api.get<any[]>('/api/v1/timetable/versions'),
+  getVersions: () => cachedGet<TimetableVersionInfo[]>('/api/v1/timetable/versions', 10000),
   getTimetable: (versionId: number = 5, sectionName?: string) =>
     api.get(`/api/v1/timetable/version/${versionId}`, { params: { section_name: sectionName } }),
   validate: (versionId: number = 5) => api.get<ValidationReport>(`/api/v1/validate/${versionId}`),
   validateSlotMove: (req: DragDropSwapRequest) =>
     api.post<ValidationMoveResult>('/api/v1/timetable/validate-move', req),
-  updateSlotAssignment: (entryId: string | number, newTimeSlotId: number, newRoomId?: number) =>
-    api.post('/api/v1/timetable/update-slot', { entry_id: entryId, time_slot_id: newTimeSlotId, room_id: newRoomId }),
-  deleteSlot: (entryId: string | number, versionId: number = 5) =>
-    api.delete(`/api/v1/timetable/slot/${entryId}?version_id=${versionId}`),
+  updateSlotAssignment: (entryId: string | number, newTimeSlotId: number, newRoomId?: number) => {
+    invalidateApiCache('/api/v1/timetable');
+    return api.post('/api/v1/timetable/update-slot', { entry_id: entryId, time_slot_id: newTimeSlotId, room_id: newRoomId });
+  },
+  deleteSlot: (entryId: string | number, versionId: number = 5) => {
+    invalidateApiCache('/api/v1/timetable');
+    return api.delete(`/api/v1/timetable/slot/${entryId}?version_id=${versionId}`);
+  },
   importExcel: (file: File) => {
+    invalidateApiCache();
     const formData = new FormData();
     formData.append('file', file);
     return api.post('/api/v1/import/excel', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
-  generateFromWizard: (payload: TimetableGenerationRequest) =>
-    api.post<WizardGenerationResponse>('/api/v1/solve/generate-from-wizard', payload),
+  generateFromWizard: (payload: TimetableGenerationRequest) => {
+    invalidateApiCache();
+    return api.post<WizardGenerationResponse>('/api/v1/solve/generate-from-wizard', payload);
+  },
   exportExcel: (versionId: number = 5) =>
     api.post(`/api/v1/export/excel?version_id=${versionId}`, {}, { responseType: 'blob' }),
   getCohortGroups: () =>
-    api.get<any[]>('/api/v1/export/excel/cohorts'),
+    cachedGet<CohortGroupInfo[]>('/api/v1/export/excel/cohorts', 60000),
   exportCohortExcel: (cohortKey: string, versionId: number = 5) =>
     api.post(`/api/v1/export/excel/cohort/${cohortKey}?version_id=${versionId}`, {}, { responseType: 'blob' }),
   exportMinorsHonorsExcel: (versionId: number = 5) =>
@@ -125,7 +211,10 @@ export const timetableApi = {
   exportSingleFacultyPdf: (facultyId: number, versionId: number = 5) =>
     api.get(`/api/v1/export/pdf/faculty/${facultyId}`, { params: { version_id: versionId }, responseType: 'blob' }),
   syncSmartClass: () => api.post('/api/v1/timetable/sync-master'),
-  updateSlot: (data: any) => api.post('/api/v1/timetable/update-slot', data),
+  updateSlot: (data: unknown) => {
+    invalidateApiCache('/api/v1/timetable');
+    return api.post('/api/v1/timetable/update-slot', data);
+  },
   exportJson: (versionId: number = 5) => api.get(`/api/v1/export/json?version_id=${versionId}`),
   exportRoomUtilization: (versionId: number = 5) =>
     api.get(`/api/v1/export/room-utilization?version_id=${versionId}`, { responseType: 'blob' }),

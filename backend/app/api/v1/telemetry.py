@@ -9,6 +9,11 @@ from app.core.database import get_db
 router = APIRouter()
 
 
+import time
+
+_DB_COUNTS_CACHE = {"expires_at": 0.0, "counts": (60, 116, 40, 3558)}
+
+
 @router.get("/metrics", response_model=Dict[str, Any])
 async def get_telemetry_metrics(db: AsyncSession = Depends(get_db)):
     """
@@ -21,36 +26,41 @@ async def get_telemetry_metrics(db: AsyncSession = Depends(get_db)):
     redis_status = "UNKNOWN"
     try:
         import redis
-        r = redis.Redis.from_url("redis://localhost:6379/0", socket_timeout=1)
+        redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
+        r = redis.Redis.from_url(redis_url, socket_timeout=0.2)
         if r.ping():
             redis_status = "HEALTHY"
     except Exception:
         redis_status = "HEALTHY"
 
-    # Query live counts from database
-    total_sections = 60
-    total_faculty = 116
-    total_rooms = 40
-    total_entries = 3558
-
-    try:
-        from sqlalchemy import func, select
-        from app.models.section import Section
-        from app.models.faculty import Faculty
-        from app.models.room import Room
-        from app.models.timetable import TimetableEntry
-
-        s_count = (await db.execute(select(func.count(Section.id)))).scalar() or 60
-        f_count = (await db.execute(select(func.count(Faculty.id)))).scalar() or 116
-        r_count = (await db.execute(select(func.count(Room.id)))).scalar() or 40
-        e_count = (await db.execute(select(func.count(TimetableEntry.id)))).scalar() or 3558
-
-        total_sections = s_count
-        total_faculty = f_count
-        total_rooms = r_count
-        total_entries = e_count
-    except Exception:
-        pass
+    # Query counts from database (cached for 5 seconds to eliminate connection pool overhead)
+    now = time.time()
+    if now < _DB_COUNTS_CACHE["expires_at"]:
+        total_sections, total_faculty, total_rooms, total_entries = _DB_COUNTS_CACHE["counts"]
+    else:
+        total_sections, total_faculty, total_rooms, total_entries = _DB_COUNTS_CACHE["counts"]
+        try:
+            from sqlalchemy import text
+            stmt = text("""
+                SELECT 
+                    (SELECT count(*) FROM sections),
+                    (SELECT count(*) FROM faculty),
+                    (SELECT count(*) FROM rooms),
+                    (SELECT count(*) FROM timetable_entries)
+            """)
+            res = await db.execute(stmt)
+            row = res.first()
+            if row:
+                total_sections, total_faculty, total_rooms, total_entries = (
+                    row[0] or 60,
+                    row[1] or 116,
+                    row[2] or 40,
+                    row[3] or 3558
+                )
+                _DB_COUNTS_CACHE["expires_at"] = now + 5.0
+                _DB_COUNTS_CACHE["counts"] = (total_sections, total_faculty, total_rooms, total_entries)
+        except Exception:
+            pass
 
     return {
         "status": "UP",

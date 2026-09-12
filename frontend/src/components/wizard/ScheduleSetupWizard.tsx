@@ -76,8 +76,8 @@ export const ScheduleSetupWizard: React.FC<ScheduleSetupWizardProps> = ({ onSucc
     timetableApi.getWizardDefaults()
       .then((res) => {
         const d = res.data;
-        setFacultyPool((d.faculty || []).map((f: any) => f.name));
-        setAvailableSections(d.sections || []);
+        setFacultyPool((d.faculty || []).map((f) => f.name));
+        setAvailableSections((d.sections || []).map((s) => typeof s === 'string' ? s : s.name));
         setRoomsPool(d.rooms || []);
         setCurriculaMap(d.curricula || {});
       })

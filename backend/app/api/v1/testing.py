@@ -4,7 +4,7 @@ import re
 import json
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse, JSONResponse
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from backend.parser.excel_parser import ExcelTimetableParser, normalize_faculty_name
 from backend.solver.conflict_checker import ConflictChecker
 
@@ -49,6 +49,9 @@ def get_source_filepath(dataset: str) -> str:
 
 
 
+_TESTED_DATA_CACHE: Dict[Tuple[str, int, float], Dict[str, Any]] = {}
+
+
 @router.get("/tested-data", response_model=Dict[str, Any])
 async def get_tested_timetable_data(
     dataset: str = Query("4th_year", description="Dataset type"),
@@ -57,6 +60,12 @@ async def get_tested_timetable_data(
     file_path = get_source_filepath(dataset)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail=f"Source dataset file not found: {file_path}")
+
+    # Check high-performance memory cache (keyed by dataset, max_sections, and file modification timestamp)
+    file_mtime = os.path.getmtime(file_path)
+    cache_key = (dataset, max_sections, file_mtime)
+    if cache_key in _TESTED_DATA_CACHE:
+        return _TESTED_DATA_CACHE[cache_key]
 
     parser = ExcelTimetableParser()
     res = parser.parse_file(file_path, max_sections=max_sections)
@@ -158,7 +167,7 @@ async def get_tested_timetable_data(
             "slots": slot_list
         })
 
-    return {
+    result_payload = {
         "dataset": dataset,
         "file_parsed": os.path.basename(file_path),
         "total_sections": len(sections_list),
@@ -168,6 +177,8 @@ async def get_tested_timetable_data(
         "faculty_clashes": report.faculty_clashes,
         "sections": sections_list
     }
+    _TESTED_DATA_CACHE[cache_key] = result_payload
+    return result_payload
 
 
 @router.get("/export/excel")

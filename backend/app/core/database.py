@@ -55,6 +55,11 @@ async def ensure_database() -> None:
                 await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS failed_actions JSON DEFAULT '[]'::json NOT NULL;"))
                 await conn.execute(text("ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS session_timeout_at TIMESTAMP WITHOUT TIME ZONE;"))
                 await conn.execute(text("ALTER TABLE agent_events ADD COLUMN IF NOT EXISTS sequence_number INTEGER DEFAULT 1 NOT NULL;"))
+                # Timetable performance indexes
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_tt_entries_room_slot ON timetable_entries (timetable_version_id, room_id, time_slot_id);"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_tt_entries_version ON timetable_entries (timetable_version_id);"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_tt_entries_time_slot ON timetable_entries (time_slot_id);"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_tt_entries_subject ON timetable_entries (subject_id);"))
     except (RuntimeError, Exception) as ex:
         print(f"[ensure_database Warning] {ex}")
 

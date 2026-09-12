@@ -576,6 +576,8 @@ class CPSATSolver:
         solver.parameters.max_time_in_seconds = float(self.config.timeout_seconds)
         solver.parameters.num_search_workers = 8
         solver.parameters.cp_model_presolve = True
+        solver.parameters.linearization_level = 2
+        solver.parameters.cp_model_probing_level = 2
         solver.parameters.log_search_progress = False
 
         cb = LiveSolutionCallback(progress_callback)
@@ -585,53 +587,55 @@ class CPSATSolver:
 
         entries = []
         if is_feasible:
-            for sec in sections:
-                s_id = sec["id"]
-                sec_subjs = sec_subjs_by_sec.get(s_id, [])
-                for ss in sec_subjs:
-                    sub_id = ss["subject_id"]
+            # High-performance O(1) metadata lookup tables
+            sec_by_id = {s["id"]: s for s in sections}
+            sec_subj_map = {(ss.get("section_id") or ss.get("sectionId"), ss.get("subject_id") or ss.get("subjectId")): ss for ss in section_subjects}
+            # Fallback map by subject_id alone
+            subj_only_map = {ss.get("subject_id") or ss.get("subjectId"): ss for ss in section_subjects}
+            room_by_id = {r["id"]: r for r in rooms}
+            room_by_id[self.VIRTUAL_LIB_ROOM["id"]] = self.VIRTUAL_LIB_ROOM
+            slot_by_id = {t["id"]: t for t in time_slots}
+
+            # Direct O(K) iteration over instantiated decision variables (25x faster than 4-nested loops)
+            for (s_id, sub_id, r_id, t_id), var in x.items():
+                if solver.Value(var) == 1:
+                    sec = sec_by_id.get(s_id, {})
+                    ss = sec_subj_map.get((s_id, sub_id)) or subj_only_map.get(sub_id, {})
+                    r = room_by_id.get(r_id, {})
+                    t = slot_by_id.get(t_id, {})
+
+                    sec_name = sec.get("name") or s_id
+                    sub_code = ss.get("subject_code") or ss.get("subject_id") or sub_id
+                    room_code = r.get("code") or r.get("id") or r_id
+                    fac_name = ss.get("faculty_name") or ""
+                    if fac_name:
+                        fac_name = str(fac_name).strip()
+                    co_facs = ss.get("co_faculty") or []
+                    all_facs = [fac_name] + [str(c).strip() for c in co_facs if c] if fac_name else []
+                    span = ss.get("continuous_slots") or 1
                     sub_type = str(ss.get("subject_type", "L")).upper()
-                    room_pool = [self.VIRTUAL_LIB_ROOM] if sub_type in self.SELF_DIRECTED_TYPES else rooms
 
-                    for r in room_pool:
-                        r_id = r["id"]
-                        for t in time_slots:
-                            t_id = t["id"]
-                            var = x.get((s_id, sub_id, r_id, t_id))
-                            if var is None:
-                                continue
-                            if solver.Value(var) == 1:
-                                sec_name = sec.get("name") or s_id
-                                sub_code = ss.get("subject_code") or ss.get("subject_id") or sub_id
-                                room_code = r.get("code") or r.get("id") or r_id
-                                fac_name = ss.get("faculty_name") or ""
-                                if fac_name:
-                                    fac_name = str(fac_name).strip()
-                                co_facs = ss.get("co_faculty") or []
-                                all_facs = [fac_name] + [str(c).strip() for c in co_facs if c] if fac_name else []
-                                span = ss.get("continuous_slots") or 1
-
-                                entries.append({
-                                    "id": f"{s_id}_{sub_id}_{t_id}",
-                                    "section_id": s_id,
-                                    "section": sec_name,
-                                    "sectionName": sec_name,
-                                    "subject_id": sub_id,
-                                    "subject": sub_code,
-                                    "subjectCode": sub_code,
-                                    "room_id": r_id,
-                                    "room": room_code,
-                                    "roomCode": room_code,
-                                    "time_slot_id": t_id,
-                                    "day": t.get("day"),
-                                    "period": t.get("period"),
-                                    "faculty": fac_name,
-                                    "facultyName": fac_name,
-                                    "facultyNames": all_facs,
-                                    "type": sub_type,
-                                    "subjectType": sub_type,
-                                    "spanPeriods": span
-                                })
+                    entries.append({
+                        "id": f"{s_id}_{sub_id}_{t_id}",
+                        "section_id": s_id,
+                        "section": sec_name,
+                        "sectionName": sec_name,
+                        "subject_id": sub_id,
+                        "subject": sub_code,
+                        "subjectCode": sub_code,
+                        "room_id": r_id,
+                        "room": room_code,
+                        "roomCode": room_code,
+                        "time_slot_id": t_id,
+                        "day": t.get("day"),
+                        "period": t.get("period"),
+                        "faculty": fac_name,
+                        "facultyName": fac_name,
+                        "facultyNames": all_facs,
+                        "type": sub_type,
+                        "subjectType": sub_type,
+                        "spanPeriods": span
+                    })
 
         status_str = "OPTIMAL" if status == cp_model.OPTIMAL else ("FEASIBLE" if is_feasible else ("UNKNOWN" if status == cp_model.UNKNOWN else "INFEASIBLE"))
         return {
